@@ -40,6 +40,18 @@ spring:
     model:
       chat: ${AI_CHAT_PROVIDER:anthropic}
       embedding: ${AI_EMBEDDING_PROVIDER:transformers}
+      # Specra only uses chat and embeddings. The image/audio/moderation
+      # auto-configurations are not gated by the two switches above, so they
+      # would still build an OpenAI bean and abort startup with "OpenAI API
+      # key must be set" whenever OPENAI_API_KEY is present but empty --
+      # which is exactly what .env.example ships and what launch.json feeds in
+      # through envFile. A `${VAR:default}` default only applies when VAR is
+      # absent, never when it is set to an empty string.
+      image: none
+      moderation: none
+      audio:
+        transcription: none
+        speech: none
 
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:not-set}
