@@ -1,0 +1,250 @@
+{
+  "app": {
+    "name": "Specra",
+    "tagline": "Notes, chat and retrieval on your own Postgres."
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "dashboard": "Dashboard",
+    "notes": "Notes",
+    "chat": "Chat",
+    "settings": "Settings",
+    "account": "Account",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "toggleSidebar": "Toggle sidebar",
+    "openCommandPalette": "Search or jump to…",
+    "docs": "API docs"
+  },
+  "actions": {
+    "create": "Create",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Try again",
+    "search": "Search",
+    "previous": "Previous",
+    "next": "Next",
+    "back": "Back",
+    "reset": "Reset",
+    "send": "Send",
+    "stop": "Stop"
+  },
+  "states": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "apiOffline": "API offline",
+    "apiOfflineHint": "Start it with cd apps/api && ./mvnw spring-boot:run"
+  },
+  "theme": {
+    "label": "Theme",
+    "description": "Light, dark, or whatever this device is set to.",
+    "change": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language",
+    "description": "Applies to this app and to messages the API sends back.",
+    "change": "Change language"
+  },
+  "marketing": {
+    "badge": "Next.js 16 · Spring Boot 3 · pgvector",
+    "title": "Your notes, answerable.",
+    "subtitle": "Specra keeps notes in PostgreSQL, indexes them into pgvector, and answers questions from them with whichever model provider you point it at.",
+    "primaryCta": "Open the workspace",
+    "secondaryCta": "Read the API docs",
+    "features": {
+      "notes": {
+        "title": "Notes that stay yours",
+        "body": "CRUD through Spring Data JPA, paged and sorted on the server, rendered with TanStack Table."
+      },
+      "rag": {
+        "title": "Retrieval, not guesswork",
+        "body": "Index a note and it is chunked, embedded and stored in pgvector. Answers cite the notes they came from."
+      },
+      "providers": {
+        "title": "No vendor in the code",
+        "body": "Anthropic, OpenAI and Ollama are all on the classpath. Which one runs is one environment variable."
+      },
+      "observability": {
+        "title": "Traceable by default",
+        "body": "Every response carries a request id and a trace id, and every error is an RFC 9457 problem document."
+      }
+    },
+    "footerNote": "A reference stack, not a product."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "What is in the workspace right now.",
+    "stats": {
+      "notes": "Notes",
+      "notesHint": "stored in PostgreSQL",
+      "indexed": "Indexed on this page",
+      "indexedHint": "chunks live in pgvector",
+      "provider": "Chat provider",
+      "providerHint": "embeddings: {provider} · {dimensions}d",
+      "providerFallback": "start the API to see this"
+    },
+    "cards": {
+      "notes": {
+        "title": "Notes",
+        "body": "CRUD through Spring Data JPA, paged and sorted on the server.",
+        "cta": "Open notes"
+      },
+      "chat": {
+        "title": "Chat & RAG",
+        "body": "Streaming answers over SSE, with history in Postgres. Flip on RAG to answer strictly from indexed notes.",
+        "cta": "Open chat"
+      }
+    },
+    "swapHint": "Swap providers without touching code:"
+  },
+  "notes": {
+    "title": "Notes",
+    "subtitle": "Stored in PostgreSQL. Index one to make it retrievable from pgvector.",
+    "searchPlaceholder": "Search title and content…",
+    "count": "{count, plural, =0 {No notes} one {# note} other {# notes}}",
+    "pagination": "{page} of {total}",
+    "new": {
+      "trigger": "New note",
+      "title": "New note",
+      "description": "Validated by Zod here and by bean validation on the API.",
+      "submit": "Create"
+    },
+    "table": {
+      "title": "Title",
+      "tags": "Tags",
+      "indexed": "Indexed",
+      "updated": "Updated",
+      "actions": "Actions",
+      "empty": "No notes yet.",
+      "emptyHint": "Create one and index it, then ask about it in chat.",
+      "noTags": "—",
+      "indexRow": "Index {title}",
+      "editRow": "Edit {title}",
+      "deleteRow": "Delete {title}"
+    },
+    "badge": {
+      "indexed": "in pgvector",
+      "notIndexed": "not indexed"
+    },
+    "detail": {
+      "back": "All notes",
+      "updatedAt": "Updated {date}",
+      "index": "Index",
+      "reindex": "Re-index"
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Kickoff notes",
+      "content": "Content",
+      "contentPlaceholder": "What happened, what was decided, what comes next…",
+      "tags": "Tags",
+      "tagsPlaceholder": "meeting, q3",
+      "tagsHint": "Comma separated. Stored lowercase."
+    },
+    "validation": {
+      "titleRequired": "Title is required",
+      "titleMax": "Max 200 characters",
+      "contentRequired": "Content is required",
+      "tagMax": "Tags are limited to 64 characters",
+      "tagsMax": "At most 20 tags"
+    },
+    "confirmDelete": {
+      "title": "Delete this note?",
+      "description": "\"{title}\" and its embeddings are removed. This cannot be undone.",
+      "confirm": "Delete note"
+    },
+    "toast": {
+      "created": "Created \"{title}\"",
+      "updated": "Saved. Re-index to refresh what RAG sees.",
+      "deleted": "Deleted \"{title}\"",
+      "indexed": "\"{title}\" is now searchable by RAG",
+      "indexedShort": "Indexed into pgvector"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "subtitle": "Plain conversation. History is kept in PostgreSQL.",
+    "subtitleRag": "Answers are grounded in the notes you indexed into pgvector.",
+    "rag": "RAG",
+    "stream": "Stream",
+    "empty": "Say something to get started.",
+    "emptyRag": "Ask about something you have indexed.",
+    "placeholder": "Message… (Enter to send)",
+    "placeholderRag": "Ask about your notes…",
+    "sources": "Retrieved from",
+    "validation": {
+      "messageRequired": "Type something first",
+      "messageMax": "At most 8000 characters",
+      "questionRequired": "Ask a question",
+      "questionMax": "At most 4000 characters"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Preferences for this workspace. Stored in your browser.",
+    "tabs": {
+      "profile": "Profile",
+      "appearance": "Appearance",
+      "language": "Language"
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Who you are in this workspace.",
+      "name": "Display name",
+      "email": "Email",
+      "demoNotice": "This scaffold has no auth backend yet. The values are kept in the browser only."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "How Specra looks on this device."
+    },
+    "language": {
+      "title": "Language",
+      "description": "Changing this rewrites the URL, so the choice survives a shared link.",
+      "current": "Currently reading {language}"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in to Specra",
+      "subtitle": "No account is needed yet — this scaffold signs you in locally.",
+      "name": "Name",
+      "namePlaceholder": "Ada Lovelace",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Continue",
+      "notice": "Nothing is sent anywhere. The session lives in this browser until you sign out.",
+      "backToSite": "Back to the site"
+    },
+    "validation": {
+      "nameRequired": "Tell us what to call you",
+      "emailInvalid": "That does not look like an email address"
+    }
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "placeholder": "Type a command or search…",
+    "empty": "Nothing matches that.",
+    "groups": {
+      "navigation": "Go to",
+      "theme": "Theme",
+      "language": "Language"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Cannot reach the API. Is it running?",
+    "title": "That did not work",
+    "reference": "Reference: {id}",
+    "notFound": {
+      "title": "Page not found",
+      "description": "The link is wrong, or whatever was here has moved.",
+      "cta": "Back to the dashboard"
+    }
+  }
+}

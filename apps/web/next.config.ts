@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -11,4 +12,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wires src/i18n/request.ts into the server runtime, which is what lets a Server Component call
+// getTranslations() without being handed a locale explicitly.
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

@@ -7,7 +7,6 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -20,23 +19,21 @@ import org.springframework.context.annotation.Primary;
  * {@code spring.ai.model.embedding}. So exactly one {@link ChatModel} bean exists at runtime and
  * this class injects it by type — swapping providers is an env var, not a code change.
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class AiConfig {
 
-  private final String systemPrompt;
+  private final SpecraProperties.Ai properties;
 
-  public AiConfig(@Value("${specra.ai.system-prompt}") String systemPrompt) {
-    this.systemPrompt = systemPrompt;
+  public AiConfig(SpecraProperties properties) {
+    this.properties = properties.ai();
   }
 
   /** Conversation history, persisted in Postgres by the JDBC chat-memory repository. */
   @Bean
-  public ChatMemory chatMemory(
-      ChatMemoryRepository repository,
-      @Value("${specra.ai.chat-memory.max-messages:40}") int maxMessages) {
+  public ChatMemory chatMemory(ChatMemoryRepository repository) {
     return MessageWindowChatMemory.builder()
         .chatMemoryRepository(repository)
-        .maxMessages(maxMessages)
+        .maxMessages(properties.chatMemory().maxMessages())
         .build();
   }
 
@@ -47,7 +44,7 @@ public class AiConfig {
   @Primary
   public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory) {
     return ChatClient.builder(chatModel)
-        .defaultSystem(systemPrompt)
+        .defaultSystem(properties.systemPrompt())
         .defaultAdvisors(
             MessageChatMemoryAdvisor.builder(chatMemory).build(), new SimpleLoggerAdvisor())
         .build();
@@ -63,7 +60,8 @@ public class AiConfig {
         .defaultSystem(
             """
             Answer strictly from the supplied context. If the context does not contain the answer, \
-            say you do not know rather than guessing. Cite the note titles you relied on.
+            say you do not know rather than guessing. Cite the note titles you relied on. \
+            Answer in the same language the question was asked in.
             """)
         .defaultAdvisors(new SimpleLoggerAdvisor())
         .build();

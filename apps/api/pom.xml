@@ -63,6 +63,27 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- Needed by the @Observed / @Timed aspects in ObservabilityConfig. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+
+    <!-- ── observability ───────────────────────────────────────────────── -->
+    <!-- Gives every request a span, and puts traceId/spanId into the SLF4J MDC
+         so a log line, an error body and a metric all name the same request.
+         No span exporter is wired in on purpose: the ids are useful on their
+         own, and shipping them somewhere is one more dependency plus an
+         endpoint, added when there is a collector to point at. -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.postgresql</groupId>

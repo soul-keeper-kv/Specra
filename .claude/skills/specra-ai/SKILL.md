@@ -1,6 +1,6 @@
 ---
 name: specra-ai
-description: Work on Specra's AI layer — Spring AI, switching or adding an LLM provider, ChatClient, advisors, chat memory, pgvector RAG, embeddings, chunking, and SSE token streaming. Use when touching apps/api/src/main/java/dev/specra/api/ai/, AiConfig, spring.ai.* configuration, or the streaming/chat/RAG code in apps/web.
+description: Work on Specra's AI layer — Spring AI, switching or adding an LLM provider, ChatClient, advisors, chat memory, pgvector RAG, embeddings, chunking, and SSE token streaming. Use when touching apps/api/src/main/java/dev/specra/api/feature/ai/, AiConfig, spring.ai.* configuration, or the streaming/chat/RAG code in apps/web.
 ---
 
 # Specra's AI layer
@@ -85,7 +85,8 @@ It looks redundant. It is not. Two reasons:
 2. A token containing a newline would be split across several `data:` lines, i.e.
    several frames.
 
-The client in `apps/web/src/lib/api/ai.ts` calls `JSON.parse` to recover the exact text.
+The client in `apps/web/src/features/chat/api/ai.ts` calls `JSON.parse` to recover the exact
+text.
 
 Change one side and you **must** change the other. `AiStreamIT` asserts on the real
 bytes over HTTP, and `StubChatModel.STREAM_TOKENS` deliberately contains both a
@@ -120,7 +121,9 @@ curl -s 'localhost:8080/api/ai/retrieve?q=...&threshold=0.1'   # what RAG retrie
 ```
 
 With no API key the app **still starts normally** and only returns 502 on a call
-(`GlobalExceptionHandler` catches `NonTransientAiException`). That is by design, not a
+(`GlobalExceptionHandler` maps `NonTransientAiException` to the `ai-provider-error` code,
+and `TransientAiException` to `ai-provider-unavailable` — 503, because a retry may work).
+That is by design, not a
 bug.
 
 ## Check the Spring AI API before writing against it

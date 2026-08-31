@@ -4,6 +4,8 @@ packages:
 
 # pnpm does not run a dependency's install scripts unless it is allowed here.
 allowBuilds:
+  "@parcel/watcher": false
+  "@swc/core": false
   unrs-resolver: true
 
 # lucide-react 1.38.0 is newer than pnpm's default minimum release age gate.

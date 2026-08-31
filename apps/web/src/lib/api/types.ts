@@ -31,13 +31,28 @@ export type PageResponse<T> = {
   last: boolean;
 };
 
-export type ApiErrorBody = {
-  timestamp: string;
+/**
+ * RFC 9457 problem document — what every non-2xx response carries.
+ *
+ * `title` and `detail` are translated per request, so they are for display only. Anything the code
+ * needs to decide on goes through `code`, which is stable across languages. See the `ApiProblem`
+ * record on the API for the authoritative list.
+ */
+export type ApiProblem = {
+  /** Stable URI for this class of error, e.g. https://specra.dev/problems/resource-not-found */
+  type: string;
+  title: string;
   status: number;
-  error: string;
-  message: string;
-  path: string;
-  fieldErrors: Record<string, string>;
+  detail: string;
+  /** The request path that failed. */
+  instance?: string;
+  /** Machine-readable code, e.g. "validation-failed". Branch on this, never on the text. */
+  code: string;
+  timestamp: string;
+  traceId?: string;
+  requestId?: string;
+  /** Present only when `code` is "validation-failed". Keyed by field name. */
+  fieldErrors?: Record<string, string>;
 };
 
 export type ChatReply = {

@@ -1,3 +1,7 @@
+| <http://localhost:3000> | Web (redirects to /vi or /en) |
+| [apps/web](apps/web) | Next.js 16 · React 19 · Tailwind 4 · shadcn/ui · next-intl · TanStack Query/Table/Form · Zustand · Zod |
+| [apps/api](apps/api) | Spring Boot 3.5 · Java 17 · JPA + PostgreSQL · Flyway · Spring AI 1.1 · pgvector RAG · springdoc · Micrometer Tracing |
+
 # Specra
 
 One product, two apps that talk to each other:
@@ -10,6 +14,10 @@ One product, two apps that talk to each other:
 
 The point of it: **no lock-in to any one LLM vendor**. Anthropic, OpenAI, Ollama and a
 locally-run ONNX model all sit on the classpath; picking one is two lines of config.
+
+It is also bilingual end to end (Vietnamese and English), light/dark themed, and traceable:
+every response carries a request id and a trace id, and every error is an RFC 9457 problem
+document translated into the caller's language.
 
 ---
 
@@ -103,6 +111,30 @@ header.
 
 ---
 
+## Languages and theme
+
+The web app is served under a locale prefix — `/vi` and `/en` — chosen from `Accept-Language`
+on the first visit and remembered in a cookie afterwards. Switching from the header, the
+settings page or the ⌘K palette rewrites the current path rather than reloading the site, so
+the page you are on is preserved.
+
+The API is translated too. The web app forwards the active locale as `Accept-Language`, so
+validation messages and error details arrive already in the right language:
+
+```bash
+curl 'localhost:8080/api/notes/does-not-exist?lang=vi'
+# {"title":"Không tìm thấy","code":"resource-not-found", …}
+```
+
+Adding a language: a bundle in `apps/web/src/messages/`, a locale in `apps/web/src/i18n/routing.ts`,
+a `messages_xx.properties` in `apps/api/src/main/resources/i18n/`, and a constant in
+`SupportedLocale`. Tests on both sides then fail until the new bundle covers every key.
+
+Theme is light / dark / system via next-themes, applied as a class on `<html>` before paint,
+with the choice mirrored on the settings page.
+
+---
+
 ## End-to-end flow
 
 ```text
@@ -115,8 +147,9 @@ Ask (RAG)   ──POST /api/ai/ask──▶  similarity search → into the prom
 Chat        ──POST /api/ai/chat/stream──▶  SSE tokens, history in Postgres
 ```
 
-The three web pages map onto that: **Notes** (CRUD + indexing), **Chat** (streaming,
-RAG toggle), **Overview** (status).
+The workspace maps onto that: **Dashboard** (status), **Notes** (CRUD + indexing), **Chat**
+(streaming, RAG toggle), **Settings** (theme, language). A public landing page and a local
+sign-in sit outside it.
 
 ---
 
@@ -151,11 +184,12 @@ warnings show up in ordinary builds.
 ## Testing
 
 ```bash
-pnpm test:web     # Vitest — 9 tests, including the SSE parser
-pnpm test:api     # JUnit — 4 unit + 6 integration (Testcontainers with real pgvector)
+pnpm test:web     # Vitest — 12 tests: the SSE parser and the message bundles
+pnpm test:api     # JUnit — 7 unit + 17 integration (Testcontainers with real pgvector)
 pnpm typecheck
 pnpm lint
-cd apps/web && pnpm test:e2e   # Playwright
+cd apps/web && pnpm test:e2e   # Playwright — 8 tests: routing, locale, theme, palette
+                               # (builds and serves on :3100 itself)
 ```
 
 `test:api` needs Docker running: it starts a real `pgvector/pgvector:pg17` container,
@@ -168,7 +202,7 @@ runs Flyway, writes and reads vectors, and checks the SSE wire format over real 
 **SSE tokens are JSON-encoded.** The SSE spec requires a receiver to strip one space
 after `data:`. Model tokens very often begin with a space (`" world"`) and sometimes
 contain a newline — plain SSE framing corrupts both. So
-[AiController](apps/api/src/main/java/dev/specra/api/ai/AiController.java) sends each
+[AiController](apps/api/src/main/java/dev/specra/api/feature/ai/AiController.java) sends each
 token as a JSON string and the client `JSON.parse`s it. `AiStreamIT` locks that contract
 down.
 
@@ -183,6 +217,20 @@ mistaken for evidence.
 
 **Paging and sorting happen on the server.** TanStack Table runs with `manualSorting`,
 and the sorting state translates into Spring Data's `sort` parameter.
+
+**One error shape, translated at the edge.** Every non-2xx response is an RFC 9457 problem
+document built by `ProblemFactory`, carrying a stable `code` plus the `traceId` and
+`requestId` that identify the matching log line. Services throw a `BusinessException` with a
+message _key_; nothing below the controller knows which language it is running for.
+
+**No user-facing string is written in code.** Web strings live in `apps/web/src/messages/*.json`
+and API strings in `apps/api/src/main/resources/i18n/messages*.properties` — including Bean
+Validation messages, because the validator is bound to the same `MessageSource`. A key present
+in one bundle and missing from another fails the build on both sides.
+
+**The locale is in the URL.** `/vi/notes` and `/en/notes` are distinct, indexable pages, so a
+shared link keeps its language. The web app sends that locale as `Accept-Language`, which is how
+a validation error comes back already translated instead of being re-translated in the browser.
 
 ---
 

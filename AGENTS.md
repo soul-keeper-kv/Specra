@@ -2,11 +2,11 @@
 
 Monorepo: a Next.js web app and a Spring Boot API, one product.
 
-|                      |                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| `apps/web`           | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod  |
-| `apps/api`           | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector |
-| `tools/notion-clone` | Standalone script, unrelated to the two apps                                          |
+|                      |                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `apps/web`           | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod, next-intl           |
+| `apps/api`           | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector, Micrometer Tracing |
+| `tools/notion-clone` | Standalone script, unrelated to the two apps                                                              |
 
 ## Files for AI agents
 
@@ -22,9 +22,48 @@ The formats below are shared across tools, not specific to any one of them:
 
 Edit `AGENTS.md`. Do not edit the files that point at it.
 
-Available skills: `specra-api` (JPA, Flyway, MapStruct, tests) · `specra-web` (Next 16,
-TanStack v9) · `specra-ai` (Spring AI, RAG, SSE streaming) · `commit-message`
-(Conventional Commits matching this repo's commitlint).
+Available skills — **start with `specra-feature`** whenever the task touches anything a user
+sees. It holds the decisions that are already settled and the checklist that spans both apps;
+the rest are per-area reference it points into.
+
+| Skill            | Covers                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `specra-feature` | The end-to-end checklist: settled decisions, i18n both sides, errors, states, registration, done criteria |
+| `specra-api`     | JPA, Flyway, MapStruct, RFC 9457 errors, message bundles, tracing, tests                                  |
+| `specra-web`     | Next 16, next-intl, theming, TanStack v9, shadcn traps                                                    |
+| `specra-ai`      | Spring AI, provider selection, pgvector RAG, SSE streaming                                                |
+| `commit-message` | Conventional Commits matching this repo's commitlint                                                      |
+
+## Layout
+
+Both apps are organised the same way: a `core`/shared layer that knows nothing about the
+domain, and one folder per feature that owns its whole vertical slice.
+
+```text
+apps/api/src/main/java/dev/specra/api/
+├── config/          @Configuration + SpecraProperties (everything under specra.*)
+├── core/
+│   ├── error/       ErrorCode, BusinessException, ProblemFactory, GlobalExceptionHandler
+│   ├── i18n/        SupportedLocale, MessageResolver, LocalizedText, HttpLocaleResolver
+│   ├── logging/     MdcKeys, CorrelationIdFilter, RequestLoggingFilter
+│   └── web/         PageResponse
+└── feature/
+    ├── note/        entity, repository, service, controller, mapper, dto/
+    └── ai/          controller, RagService, dto/
+
+apps/web/src/
+├── app/[locale]/    (marketing) · (auth) · (app) route groups; layouts only
+├── i18n/            routing, navigation, request config
+├── messages/        en.json, vi.json
+├── features/        notes · chat · auth · settings · dashboard — api/ + components/ + schemas
+├── components/      ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
+├── lib/             api/ (client, types) · config/ (site, navigation) · utils
+├── hooks/ stores/ styles/ types/
+└── proxy.ts         locale routing at the edge
+```
+
+Pages under `app/` stay thin: resolve params, call `setRequestLocale`, render a view from
+`features/`. Logic in a page cannot be tested without a router.
 
 ## Invariants — breaking these breaks the product, it is not "cleanup"
 
@@ -53,15 +92,40 @@ TanStack v9) · `specra-ai` (Spring AI, RAG, SSE streaming) · `commit-message`
    `npm install` or `yarn` here, and never add a `package-lock.json`. Root scripts reach
    the web app with `pnpm --filter specra-web <script>`, not `npm --prefix`.
 
+8. **No user-facing string is written in a component or a Java class.** Web strings live
+   in `src/messages/*.json` and are read with `useTranslations` / `getTranslations`; API
+   strings live in `src/main/resources/i18n/messages*.properties` and are read through
+   `MessageResolver` or a Bean Validation `{key}`. Adding a key to one bundle and not the
+   other fails `MessageBundleTest` (api) and `messages.test.ts` (web).
+
+9. **Errors are RFC 9457 problem documents, built only by `ProblemFactory`.** Never
+   return an ad-hoc error body or a bare `ResponseEntity.status(...)`. Throw a
+   `BusinessException` subclass with an `ErrorCode`; the handler renders it. Clients
+   branch on `code`, never on `title`/`detail` — those are translated per request.
+
+10. **In `apps/web`, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`,
+    never from `next/link` or `next/navigation`.** The next-intl versions add and strip
+    the `/vi` · `/en` prefix. A `next/link` href sends the user out of their locale.
+    (`useParams` and `useSearchParams` still come from `next/navigation`.)
+
+11. **The edge file is `proxy.ts`, not `middleware.ts`.** Next 16 renamed the convention
+    and warns on the old name; next-intl still calls its factory `createMiddleware`.
+
+12. **Do not put `setState` in an effect.** The React Compiler lint rule is an error, not
+    a warning. Derive the value, or set it in the event handler that caused it.
+
+13. **`CorrelationIdFilter` runs first and clears the MDC in a `finally`.** Threads are
+    pooled; a leaked MDC entry attributes one user's log lines to another request.
+
 ## Common commands
 
 ```bash
 pnpm install        # whole workspace: root tooling + apps/web
 pnpm db:up          # Postgres + pgvector, host port 5432
 pnpm dev:api        # :8080
-pnpm dev:web        # :3000
-pnpm test:api       # 4 unit + 6 integration — needs Docker
-pnpm test:web       # 9 Vitest tests
+pnpm dev:web        # :3000  (redirects / to /vi)
+pnpm test:api       # 7 unit + 17 integration — needs Docker
+pnpm test:web       # 12 Vitest tests
 pnpm typecheck      # next typegen && tsc --noEmit
 
 pnpm format         # prettier: root docs + apps/web

@@ -29,6 +29,26 @@ spring:
       enabled: true
       lifecycle-management: start_only
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # Translations. messages.properties is the English fallback, messages_vi.properties
+  # the Vietnamese one; adding a language means adding a bundle beside them and a
+  # constant in SupportedLocale. fallback-to-system-locale must stay false, or a
+  # server whose OS locale is Vietnamese would answer an English request in
+  # Vietnamese whenever a key is missing from the default bundle.
+  # ─────────────────────────────────────────────────────────────────────────
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+    use-code-as-default-message: false
+    cache-duration: 1h
+
+  mvc:
+    # Unknown paths raise NoResourceFoundException, which reaches GlobalExceptionHandler
+    # and comes back as problem+json — not as the container's HTML error page.
+    problemdetails:
+      enabled: false
+
   ai:
     # ─────────────────────────────────────────────────────────────────────────
     # The only two lines that decide which vendor runs. Every starter is on the
@@ -101,13 +121,16 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
   error:
-    include-message: always
+    # The whitelabel page is unreachable anyway: every error is rendered by
+    # GlobalExceptionHandler as an RFC 9457 problem document.
+    whitelabel:
+      enabled: false
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,loggers
+        include: health,info,metrics,prometheus,loggers
   endpoint:
     health:
       show-details: when-authorized
@@ -115,11 +138,21 @@ management:
     # A missing API key should not make the whole app look unhealthy.
     defaults:
       enabled: true
+  tracing:
+    sampling:
+      # Every request is traced in development. Turn this down in production, where
+      # the point of sampling is cost rather than completeness.
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  observations:
+    key-values:
+      application: specra-api
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operationsSorter: alpha
+    tagsSorter: alpha
+    displayRequestDuration: true
   api-docs:
     path: /v3/api-docs
 
@@ -130,15 +163,28 @@ specra:
     system-prompt: >
       You are Specra's assistant. Answer concisely and concretely.
       When you are unsure, say so instead of inventing details.
+      Reply in the same language the user wrote in.
     chat-memory:
       max-messages: 40
     rag:
       chunk-size: 800
+  logging:
+    access:
+      enabled: true
+      # Above this, the access log line is a WARN rather than an INFO.
+      slow-request-millis: 1000
 
 logging:
   level:
     dev.specra: DEBUG
     org.springframework.ai.chat.client.advisor: INFO
+  pattern:
+    # Boot already prints [app,traceId,spanId] once Micrometer Tracing is on the
+    # classpath. requestId is ours, so it has to be appended here. Overriding this
+    # one property keeps every other Boot logging default intact -- which is what
+    # lets the prod profile below swap the whole console over to structured JSON
+    # without a logback-spring.xml to maintain.
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{requestId:-}] "
 
 ---
 spring:
@@ -149,6 +195,18 @@ spring:
     properties:
       hibernate:
         format_sql: false
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:0.1}
+
 logging:
   level:
     dev.specra: INFO
+  structured:
+    # Boot renders the console as ECS JSON, MDC fields included — so requestId,
+    # traceId and spanId arrive in Elasticsearch or Loki as queryable fields
+    # rather than as text inside a message. No extra dependency, no encoder.
+    format:
+      console: ecs

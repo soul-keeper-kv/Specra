@@ -7,11 +7,13 @@ cannot drift apart.
 Detailed skills are in `.claude/skills/` (Copilot scans both `.github/skills/` and
 `.claude/skills/` by default):
 
-- `specra-api` — Spring Boot, JPA, Flyway, MapStruct, tests
-- `specra-web` — Next.js 16, TanStack Table v9, Query, Form
+- `specra-feature` — **start here** for anything user-visible: the end-to-end checklist and
+  the decisions that are already settled
+- `specra-api` — Spring Boot, JPA, Flyway, MapStruct, RFC 9457 errors, i18n, tracing, tests
+- `specra-web` — Next.js 16, next-intl, theming, TanStack Table v9, Query, Form
 - `specra-ai` — Spring AI, provider selection, pgvector RAG, SSE streaming
 - `commit-message` — Conventional Commits matching this repo's commitlint
 
-The six things most likely to be got wrong are listed under **Invariants** in
+The thirteen things most likely to be got wrong are listed under **Invariants** in
 `AGENTS.md`. Read that section before touching anything in
-`apps/api/src/main/java/dev/specra/api/ai/` or `apps/web/src/components/notes/`.
+`apps/api/src/main/java/dev/specra/api/feature/ai/` or `apps/web/src/features/notes/`.

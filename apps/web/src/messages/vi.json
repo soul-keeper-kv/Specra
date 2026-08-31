@@ -1,0 +1,250 @@
+{
+  "app": {
+    "name": "Specra",
+    "tagline": "Ghi chú, trò chuyện và truy hồi ngay trên Postgres của bạn."
+  },
+  "nav": {
+    "workspace": "Không gian làm việc",
+    "dashboard": "Tổng quan",
+    "notes": "Ghi chú",
+    "chat": "Trò chuyện",
+    "settings": "Cài đặt",
+    "account": "Tài khoản",
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "toggleSidebar": "Ẩn/hiện thanh bên",
+    "openCommandPalette": "Tìm kiếm hoặc chuyển nhanh…",
+    "docs": "Tài liệu API"
+  },
+  "actions": {
+    "create": "Tạo",
+    "save": "Lưu thay đổi",
+    "cancel": "Huỷ",
+    "delete": "Xoá",
+    "edit": "Sửa",
+    "retry": "Thử lại",
+    "search": "Tìm kiếm",
+    "previous": "Trước",
+    "next": "Sau",
+    "back": "Quay lại",
+    "reset": "Đặt lại",
+    "send": "Gửi",
+    "stop": "Dừng"
+  },
+  "states": {
+    "loading": "Đang tải…",
+    "saving": "Đang lưu…",
+    "apiOffline": "API chưa chạy",
+    "apiOfflineHint": "Khởi động bằng cd apps/api && ./mvnw spring-boot:run"
+  },
+  "theme": {
+    "label": "Giao diện",
+    "description": "Sáng, tối, hoặc theo thiết lập của thiết bị này.",
+    "change": "Đổi giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Theo hệ thống"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "description": "Áp dụng cho giao diện và cho cả thông báo API trả về.",
+    "change": "Đổi ngôn ngữ"
+  },
+  "marketing": {
+    "badge": "Next.js 16 · Spring Boot 3 · pgvector",
+    "title": "Ghi chú của bạn, hỏi được.",
+    "subtitle": "Specra lưu ghi chú trong PostgreSQL, đánh chỉ mục vào pgvector, rồi trả lời câu hỏi dựa trên chúng bằng nhà cung cấp mô hình mà bạn chọn.",
+    "primaryCta": "Vào không gian làm việc",
+    "secondaryCta": "Xem tài liệu API",
+    "features": {
+      "notes": {
+        "title": "Ghi chú vẫn là của bạn",
+        "body": "CRUD qua Spring Data JPA, phân trang và sắp xếp phía máy chủ, hiển thị bằng TanStack Table."
+      },
+      "rag": {
+        "title": "Truy hồi, không phỏng đoán",
+        "body": "Đánh chỉ mục một ghi chú là nó được cắt đoạn, nhúng vector và lưu vào pgvector. Câu trả lời có trích dẫn nguồn."
+      },
+      "providers": {
+        "title": "Không nhà cung cấp nào nằm trong mã nguồn",
+        "body": "Anthropic, OpenAI và Ollama đều có sẵn trên classpath. Chạy cái nào chỉ là một biến môi trường."
+      },
+      "observability": {
+        "title": "Truy vết được ngay từ đầu",
+        "body": "Mỗi phản hồi đều mang request id và trace id, mỗi lỗi đều là một tài liệu RFC 9457."
+      }
+    },
+    "footerNote": "Đây là một stack tham chiếu, không phải sản phẩm thương mại."
+  },
+  "dashboard": {
+    "title": "Tổng quan",
+    "subtitle": "Hiện tại không gian làm việc đang có gì.",
+    "stats": {
+      "notes": "Ghi chú",
+      "notesHint": "lưu trong PostgreSQL",
+      "indexed": "Đã đánh chỉ mục ở trang này",
+      "indexedHint": "các đoạn nằm trong pgvector",
+      "provider": "Nhà cung cấp chat",
+      "providerHint": "nhúng vector: {provider} · {dimensions} chiều",
+      "providerFallback": "khởi động API để xem"
+    },
+    "cards": {
+      "notes": {
+        "title": "Ghi chú",
+        "body": "CRUD qua Spring Data JPA, phân trang và sắp xếp phía máy chủ.",
+        "cta": "Mở ghi chú"
+      },
+      "chat": {
+        "title": "Chat & RAG",
+        "body": "Trả lời theo luồng qua SSE, lịch sử lưu trong Postgres. Bật RAG để chỉ trả lời từ ghi chú đã đánh chỉ mục.",
+        "cta": "Mở trò chuyện"
+      }
+    },
+    "swapHint": "Đổi nhà cung cấp mà không sửa mã:"
+  },
+  "notes": {
+    "title": "Ghi chú",
+    "subtitle": "Lưu trong PostgreSQL. Đánh chỉ mục để pgvector truy hồi được.",
+    "searchPlaceholder": "Tìm trong tiêu đề và nội dung…",
+    "count": "{count, plural, =0 {Chưa có ghi chú} other {# ghi chú}}",
+    "pagination": "{page} trên {total}",
+    "new": {
+      "trigger": "Ghi chú mới",
+      "title": "Ghi chú mới",
+      "description": "Được Zod kiểm tra ở đây và bean validation kiểm tra ở API.",
+      "submit": "Tạo"
+    },
+    "table": {
+      "title": "Tiêu đề",
+      "tags": "Thẻ",
+      "indexed": "Chỉ mục",
+      "updated": "Cập nhật",
+      "actions": "Thao tác",
+      "empty": "Chưa có ghi chú nào.",
+      "emptyHint": "Tạo một ghi chú rồi đánh chỉ mục, sau đó hỏi về nó ở phần trò chuyện.",
+      "noTags": "—",
+      "indexRow": "Đánh chỉ mục {title}",
+      "editRow": "Sửa {title}",
+      "deleteRow": "Xoá {title}"
+    },
+    "badge": {
+      "indexed": "có trong pgvector",
+      "notIndexed": "chưa đánh chỉ mục"
+    },
+    "detail": {
+      "back": "Tất cả ghi chú",
+      "updatedAt": "Cập nhật {date}",
+      "index": "Đánh chỉ mục",
+      "reindex": "Đánh chỉ mục lại"
+    },
+    "form": {
+      "title": "Tiêu đề",
+      "titlePlaceholder": "Biên bản họp khởi động",
+      "content": "Nội dung",
+      "contentPlaceholder": "Đã xảy ra chuyện gì, quyết định gì, bước tiếp theo là gì…",
+      "tags": "Thẻ",
+      "tagsPlaceholder": "hop, q3",
+      "tagsHint": "Ngăn cách bằng dấu phẩy. Lưu ở dạng chữ thường."
+    },
+    "validation": {
+      "titleRequired": "Tiêu đề là bắt buộc",
+      "titleMax": "Tối đa 200 ký tự",
+      "contentRequired": "Nội dung là bắt buộc",
+      "tagMax": "Mỗi thẻ tối đa 64 ký tự",
+      "tagsMax": "Tối đa 20 thẻ"
+    },
+    "confirmDelete": {
+      "title": "Xoá ghi chú này?",
+      "description": "\"{title}\" và các vector nhúng của nó sẽ bị xoá. Không thể hoàn tác.",
+      "confirm": "Xoá ghi chú"
+    },
+    "toast": {
+      "created": "Đã tạo \"{title}\"",
+      "updated": "Đã lưu. Hãy đánh chỉ mục lại để RAG thấy nội dung mới.",
+      "deleted": "Đã xoá \"{title}\"",
+      "indexed": "\"{title}\" giờ đã tìm được bằng RAG",
+      "indexedShort": "Đã đưa vào pgvector"
+    }
+  },
+  "chat": {
+    "title": "Trò chuyện",
+    "subtitle": "Hội thoại thường. Lịch sử được lưu trong PostgreSQL.",
+    "subtitleRag": "Câu trả lời dựa trên các ghi chú bạn đã đánh chỉ mục vào pgvector.",
+    "rag": "RAG",
+    "stream": "Theo luồng",
+    "empty": "Hãy nhắn gì đó để bắt đầu.",
+    "emptyRag": "Hãy hỏi về nội dung bạn đã đánh chỉ mục.",
+    "placeholder": "Tin nhắn… (Enter để gửi)",
+    "placeholderRag": "Hỏi về ghi chú của bạn…",
+    "sources": "Truy hồi từ",
+    "validation": {
+      "messageRequired": "Hãy nhập nội dung trước",
+      "messageMax": "Tối đa 8000 ký tự",
+      "questionRequired": "Hãy đặt một câu hỏi",
+      "questionMax": "Tối đa 4000 ký tự"
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Tuỳ chọn cho không gian làm việc này. Lưu trong trình duyệt của bạn.",
+    "tabs": {
+      "profile": "Hồ sơ",
+      "appearance": "Hiển thị",
+      "language": "Ngôn ngữ"
+    },
+    "profile": {
+      "title": "Hồ sơ",
+      "description": "Bạn là ai trong không gian làm việc này.",
+      "name": "Tên hiển thị",
+      "email": "Email",
+      "demoNotice": "Bộ khung này chưa có backend xác thực. Các giá trị chỉ được lưu trong trình duyệt."
+    },
+    "appearance": {
+      "title": "Hiển thị",
+      "description": "Specra trông như thế nào trên thiết bị này."
+    },
+    "language": {
+      "title": "Ngôn ngữ",
+      "description": "Đổi ngôn ngữ sẽ đổi URL, nên lựa chọn được giữ nguyên khi chia sẻ liên kết.",
+      "current": "Đang đọc bằng {language}"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Đăng nhập Specra",
+      "subtitle": "Chưa cần tài khoản — bộ khung này đăng nhập cục bộ cho bạn.",
+      "name": "Tên",
+      "namePlaceholder": "Nguyễn Văn A",
+      "email": "Email",
+      "emailPlaceholder": "ban@vidu.com",
+      "submit": "Tiếp tục",
+      "notice": "Không có gì được gửi đi đâu cả. Phiên đăng nhập nằm trong trình duyệt này cho tới khi bạn đăng xuất.",
+      "backToSite": "Quay lại trang giới thiệu"
+    },
+    "validation": {
+      "nameRequired": "Hãy cho biết nên gọi bạn là gì",
+      "emailInvalid": "Địa chỉ email này trông chưa đúng"
+    }
+  },
+  "commandPalette": {
+    "open": "Mở bảng lệnh",
+    "placeholder": "Nhập lệnh hoặc từ khoá…",
+    "empty": "Không có kết quả nào khớp.",
+    "groups": {
+      "navigation": "Đi tới",
+      "theme": "Giao diện",
+      "language": "Ngôn ngữ"
+    }
+  },
+  "errors": {
+    "generic": "Đã có lỗi xảy ra",
+    "network": "Không kết nối được API. API đã chạy chưa?",
+    "title": "Thao tác không thành công",
+    "reference": "Mã tham chiếu: {id}",
+    "notFound": {
+      "title": "Không tìm thấy trang",
+      "description": "Liên kết sai, hoặc nội dung ở đây đã chuyển đi nơi khác.",
+      "cta": "Về trang tổng quan"
+    }
+  }
+}

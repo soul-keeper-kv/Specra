@@ -28,6 +28,12 @@ function makeQueryClient() {
   });
 }
 
+/**
+ * Client-side providers, mounted once under the locale layout.
+ *
+ * `NextIntlClientProvider` is deliberately not here: it belongs in the server layout, where the
+ * messages are already loaded, so they are serialised into the page rather than fetched again.
+ */
 export function Providers({ children }: { children: ReactNode }) {
   // Created in state so each browser session gets its own cache and the client
   // is never shared across requests during SSR.

@@ -1,14 +1,29 @@
 ---
 name: specra-api
-description: Work on Specra's Spring Boot backend in apps/api — adding or changing JPA entities, repositories, services, controllers, DTOs, MapStruct mappers, Flyway migrations, bean validation, error handling, or JUnit/Testcontainers tests. Use whenever touching Java, pom.xml, application.yml, or this project's PostgreSQL schema.
+description: "Work on Specra's Spring Boot backend in apps/api — adding or changing JPA entities, repositories, services, controllers, DTOs, MapStruct mappers, Flyway migrations, bean validation, RFC 9457 error handling, i18n message bundles, request tracing, or JUnit/Testcontainers tests. Use whenever touching Java, pom.xml, application.yml, or this project's PostgreSQL schema."
 ---
 
 # Specra backend (apps/api)
 
 Spring Boot 3.5.16 · Java 17 · Maven · JPA/PostgreSQL · Flyway · MapStruct · Lombok.
 
+Adding or changing something a user sees? Read `specra-feature` first — it is the
+end-to-end checklist, and it points back here for the JPA/Flyway/MapStruct detail.
+
 The AI/RAG/streaming layer has its own skill, `specra-ai` — read that instead when
-touching `ai/` or `AiConfig`.
+touching `feature/ai/` or `AiConfig`.
+
+## Package layout
+
+```text
+dev.specra.api
+├── config/       @Configuration only; SpecraProperties holds everything under specra.*
+├── core/         no domain knowledge: error/ · i18n/ · logging/ · web/
+└── feature/      one package per domain, owning its whole vertical slice: note/ · ai/
+```
+
+A class that a second feature would need belongs in `core/`, not in the feature that
+happened to need it first.
 
 ## Version constraints — read before deciding to "upgrade"
 
@@ -41,18 +56,18 @@ embedding model (transformers 384 / ollama 768 / openai 1536).
 
 ## Adding a domain — the vertical slice
 
-Follow `note/` as the reference. In order:
+Follow `feature/note/` as the reference. In order:
 
 1. `src/main/resources/db/migration/V<n>__<name>.sql` — table plus indexes
-2. `<domain>/<Name>.java` — entity with `@Getter @Setter @NoArgsConstructor`,
+2. `feature/<domain>/<Name>.java` — entity with `@Getter @Setter @NoArgsConstructor`,
    `@EntityListeners(AuditingEntityListener.class)`, `@Version` for optimistic locking
-3. `<domain>/<Name>Repository.java` — `JpaRepository<T, UUID>`
-4. `<domain>/dto/<Name>Request.java` and `Response.java` — Java records, bean validation
+3. `feature/<domain>/<Name>Repository.java` — `JpaRepository<T, UUID>`
+4. `feature/<domain>/dto/<Name>Request.java` and `Response.java` — Java records, bean validation
    on the request, `@Schema` so OpenAPI picks it up
-5. `<domain>/<Name>Mapper.java` — MapStruct, `componentModel = "spring"`
-6. `<domain>/<Name>Service.java` — `@Transactional(readOnly = true)` on the class,
+5. `feature/<domain>/<Name>Mapper.java` — MapStruct, `componentModel = "spring"`
+6. `feature/<domain>/<Name>Service.java` — `@Transactional(readOnly = true)` on the class,
    `@Transactional` on write methods
-7. `<domain>/<Name>Controller.java` — `/api/<plural>`, return `PageResponse<T>` for lists
+7. `feature/<domain>/<Name>Controller.java` — `/api/<plural>`, return `PageResponse<T>` for lists
 8. Tests: unit in `*Test.java`, integration in `*IT.java`
 
 ### MapStruct trap
@@ -68,13 +83,67 @@ than a mock, so mapping bugs surface at the unit-test level.
 
 ## HTTP conventions
 
-- Errors always come back as `ApiError` via `GlobalExceptionHandler`. Add new handlers
-  there; do not catch exceptions inside controllers.
-- Validation failure → 400 with `fieldErrors` (field → message). The web app reads that
-  map directly to render per-field errors.
-- Not found → throw `NotFoundException`, never return an empty `Optional`.
 - Lists are always wrapped in `PageResponse<T>`, never Spring's own `Page<T>` (its shape
   is unstable and Spring warns about serialising it).
+- Never catch an exception in a controller, and never build an error body by hand.
+
+## Errors — RFC 9457, one factory
+
+Every non-2xx response is an `application/problem+json` document produced by
+`ProblemFactory` and rendered by `core/error/GlobalExceptionHandler`. On top of the
+standard members it always carries `code` (the stable `ErrorCode` slug clients branch
+on), `timestamp`, `traceId` and `requestId`; validation failures add `fieldErrors`.
+
+To raise one, throw:
+
+```java
+throw new ResourceNotFoundException("resource.note", id);   // 404
+throw new ConflictException("error.conflict.detail");       // 409
+```
+
+`BusinessException` carries a **message key**, not a message: the text is resolved at the
+edge in the caller's locale, so a service never has to know which language it serves.
+
+Adding an error case:
+
+1. A constant in `ErrorCode` (status, `type` URI and message keys derive from the name).
+2. `error.<slug>.title` and `error.<slug>.detail` in **both** bundles — `MessageBundleTest`
+   fails otherwise.
+3. Either a `BusinessException` subclass, or an `@ExceptionHandler` in
+   `GlobalExceptionHandler` for a third-party exception.
+4. `ApiProblem` if you added a new extension property — it is documentation-only, and the
+   OpenAPI schema (and therefore the web app's generated types) comes from it.
+
+The handler extends `ResponseEntityExceptionHandler`, so Spring MVC's own failures land
+there too. Do not add a second `@RestControllerAdvice`.
+
+## i18n
+
+No user-facing string is written in Java. Bundles live in `src/main/resources/i18n/`:
+`messages.properties` (English fallback) and `messages_vi.properties`.
+
+- Resolve text through `MessageResolver`, never `MessageSource` directly.
+- A message argument that is itself a noun goes in as `LocalizedText("resource.note")`, so
+  the whole sentence ends up in one language.
+- Bean Validation resolves from the same bundle — `I18nConfig` replaces Boot's validator —
+  so write `@NotBlank(message = "{validation.note.title.required}")`, never a literal.
+- `MessageBundleTest` fails the build on a key present in one bundle and missing from
+  another, and on an undoubled apostrophe in a parameterised message (MessageFormat treats
+  a single quote as an escape and swallows the rest of the sentence).
+
+Locale comes from `Accept-Language`, or `?lang=` for a quick check with curl.
+
+## Logging and tracing
+
+`CorrelationIdFilter` runs first and populates the MDC (`requestId`, plus method, path,
+client IP, locale), then clears it in a `finally` — threads are pooled, and a leaked entry
+would attribute one user's lines to another request. Micrometer Tracing adds `traceId` and
+`spanId`. Both ids reach the client, in headers and in the error body.
+
+`RequestLoggingFilter` writes one access line per request and never touches the body:
+buffering it would break the SSE endpoint and put user text into the log.
+
+Measuring a method needs no timer: annotate it `@Observed` (span + timer) or `@Timed`.
 
 ## Tests
 
@@ -84,6 +153,10 @@ than a mock, so mapping bugs surface at the unit-test level.
 ```
 
 Failsafe runs `*IT`, surefire runs `*Test`. Follow that naming.
+
+`ProblemResponseIT` pins the error contract from the outside, in both languages: if the
+Vietnamese assertions ever start passing with English strings, the message bundle has
+silently stopped being wired in.
 
 Integration tests use a **real** PostgreSQL + pgvector through Testcontainers
 (`TestcontainersConfiguration`). The AI models are replaced with stubs in `support/`,
@@ -105,7 +178,8 @@ Run the app against a disposable database:
 Changing a DTO or an endpoint means updating:
 
 - `apps/web/src/lib/api/types.ts` — the hand-written types the web app actually uses
-- `apps/web/src/lib/api/{notes,ai}.ts` — the TanStack Query hooks
+- `apps/web/src/features/notes/api/notes.ts` and `apps/web/src/features/chat/api/ai.ts` — the
+  TanStack Query hooks
 
 Cross-check against the live schema (needs the API running):
 
