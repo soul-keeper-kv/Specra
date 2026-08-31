@@ -1,0 +1,2 @@
+# prettier/eslint live in apps/web, so run lint-staged from there.
+cd apps/web && npx lint-staged

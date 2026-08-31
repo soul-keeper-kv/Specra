@@ -1,0 +1,23 @@
+{
+  // Monorepo wiring only — no formatting or theme opinions.
+
+  // Without this, ESLint resolves its flat config from the repo root and
+  // reports every web file as unmatched.
+  "eslint.workingDirectories": [{ "directory": "apps/web", "changeProcessCWD": true }],
+
+  // Point the Java tooling at the one Maven project, so it does not try to
+  // import apps/web as a Java source root.
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.maven.enabled": true,
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/apps/web/**",
+    "**/tools/**"
+  ],
+
+  "files.exclude": {
+    "**/target": true,
+    "**/.next": true
+  }
+}

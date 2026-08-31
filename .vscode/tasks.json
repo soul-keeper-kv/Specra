@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // launch.json references .env, and VS Code errors on a missing envFile,
+      // so seed it from the example before anything else runs.
+      "label": "specra: ensure .env",
+      "type": "shell",
+      "windows": {
+        "command": "if (-not (Test-Path '.env')) { Copy-Item '.env.example' '.env'; 'created .env from .env.example' } else { '.env already exists' }"
+      },
+      "linux": {
+        "command": "[ -f .env ] || { cp .env.example .env && echo 'created .env from .env.example'; }"
+      },
+      "osx": {
+        "command": "[ -f .env ] || { cp .env.example .env && echo 'created .env from .env.example'; }"
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "specra: db up",
+      "type": "shell",
+      // --wait blocks until the healthcheck passes, so the API cannot start
+      // before Postgres is accepting connections.
+      "command": "docker compose up -d --wait",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "specra: ensure .env",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "specra: db down",
+      "type": "shell",
+      "command": "docker compose down",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "specra: db reset",
+      "type": "shell",
+      // Drops the volume too. Needed after changing AI_EMBEDDING_PROVIDER,
+      // because that changes the pgvector column width.
+      "command": "docker compose down -v; docker compose up -d --wait",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "api: verify (unit + integration)",
+      "type": "shell",
+      "command": "./mvnw -B verify",
+      "windows": { "command": ".\\mvnw.cmd -B verify" },
+      "options": { "cwd": "${workspaceFolder}/apps/api" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "web: check (lint + types + tests)",
+      "type": "shell",
+      "command": "npm run lint && npm run typecheck && npm run test",
+      "options": { "cwd": "${workspaceFolder}/apps/web" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "web: generate API types",
+      "type": "shell",
+      // Needs the API running: it reads the live OpenAPI schema.
+      "command": "npm run gen:api",
+      "options": { "cwd": "${workspaceFolder}/apps/web" },
+      "problemMatcher": []
+    }
+  ]
+}

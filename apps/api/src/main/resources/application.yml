@@ -1,0 +1,142 @@
+spring:
+  application:
+    name: specra-api
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:specra}
+    username: ${DB_USER:specra}
+    password: ${DB_PASSWORD:specra}
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the mapping still matches it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start_only
+
+  ai:
+    # ─────────────────────────────────────────────────────────────────────────
+    # The only two lines that decide which vendor runs. Every starter is on the
+    # classpath; Spring AI instantiates just the selected one, so switching is
+    # `AI_CHAT_PROVIDER=openai` and a restart — no code edit, no rebuild.
+    #   chat:      anthropic | openai | ollama
+    #   embedding: transformers | openai | ollama   (anthropic has no embeddings)
+    # ─────────────────────────────────────────────────────────────────────────
+    model:
+      chat: ${AI_CHAT_PROVIDER:anthropic}
+      embedding: ${AI_EMBEDDING_PROVIDER:transformers}
+
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:not-set}
+      chat:
+        options:
+          model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
+          temperature: 0.7
+          max-tokens: 2048
+
+    openai:
+      api-key: ${OPENAI_API_KEY:not-set}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o-mini}
+          temperature: 0.7
+      embedding:
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      init:
+        pull-model-strategy: ${OLLAMA_PULL:never}
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.2}
+      embedding:
+        options:
+          model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+
+    vectorstore:
+      pgvector:
+        # Left to create its own table so the vector width always follows the
+        # active embedding model (transformers 384, ollama 768, openai 1536).
+        # Change AI_EMBEDDING_PROVIDER => drop the vector_store table first.
+        initialize-schema: true
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        max-document-batch-size: 1000
+
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    # A missing API key should not make the whole app look unhealthy.
+    defaults:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+specra:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  ai:
+    system-prompt: >
+      You are Specra's assistant. Answer concisely and concretely.
+      When you are unsure, say so instead of inventing details.
+    chat-memory:
+      max-messages: 40
+    rag:
+      chunk-size: 800
+
+logging:
+  level:
+    dev.specra: DEBUG
+    org.springframework.ai.chat.client.advisor: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+logging:
+  level:
+    dev.specra: INFO

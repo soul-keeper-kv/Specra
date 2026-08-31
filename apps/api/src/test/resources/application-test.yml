@@ -1,0 +1,26 @@
+spring:
+  # Testcontainers supplies the datasource through @ServiceConnection.
+  docker:
+    compose:
+      enabled: false
+  flyway:
+    clean-disabled: false
+  ai:
+    # No vendor auto-configuration: TestAiConfiguration provides the two model beans.
+    model:
+      chat: none
+      embedding: none
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+
+logging:
+  level:
+    org.springframework.ai: WARN
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN

@@ -1,0 +1,23 @@
+# Postgres with the vector extension, shared by the API and by `mvnw verify`.
+# `npm run db:up` from the repo root, or let spring-boot-docker-compose start
+# apps/api/compose.yaml for you when you run the API.
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: specra-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-specra}
+      POSTGRES_USER: ${DB_USER:-specra}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-specra}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - specra-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-specra} -d ${DB_NAME:-specra}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  specra-pgdata:

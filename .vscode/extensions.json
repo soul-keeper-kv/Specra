@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    // Required for the "API:" launch configurations to appear at all.
+    "vscjava.vscode-java-pack",
+    "vmware.vscode-spring-boot",
+    // Web
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    // Compose file for the database
+    "ms-azuretools.vscode-docker"
+  ]
+}

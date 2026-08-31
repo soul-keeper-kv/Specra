@@ -1,0 +1,28 @@
+{
+  "name": "specra",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Next.js web app and Spring Boot 3 API with JPA/PostgreSQL and provider-agnostic Spring AI.",
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:api": "cd apps/api && mvnw.cmd spring-boot:run",
+    "build:web": "npm --prefix apps/web run build",
+    "build:api": "cd apps/api && mvnw.cmd -B package",
+    "test:web": "npm --prefix apps/web run test",
+    "test:api": "cd apps/api && mvnw.cmd -B verify",
+    "lint": "npm --prefix apps/web run lint",
+    "format": "npm --prefix apps/web run format",
+    "typecheck": "npm --prefix apps/web run typecheck",
+    "setup:web": "npm --prefix apps/web install",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  }
+}
