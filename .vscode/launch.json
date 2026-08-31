@@ -18,8 +18,21 @@
       // Creates .env from .env.example if missing, then waits for Postgres to
       // report healthy — so the API never races the database on startup.
       "preLaunchTask": "specra: db up",
+      // docker-compose.yml (root, compose project "specra") and
+      // apps/api/compose.yaml (compose project "api") both declare
+      // container_name: specra-postgres. With cwd=apps/api,
+      // spring-boot-docker-compose would `docker compose up` the second one on
+      // top of the first and Docker rejects the duplicate container name, so
+      // the app dies during startup. The database is already up by this point.
+      "vmArgs": "-Dspring.docker.compose.enabled=false",
       "envFile": "${workspaceFolder}/.env",
-      "console": "integratedTerminal"
+      // NOT integratedTerminal. That path makes the debug adapter hand the
+      // java command to a terminal and then wait for the JVM to dial back on
+      // JDWP; here the JVM never starts and the session dies with
+      // "Failed to launch debuggee in terminal ... TransportTimeoutException".
+      // internalConsole has the adapter spawn the JVM itself. Output lands in
+      // the Debug Console; neither entry point reads stdin.
+      "console": "internalConsole"
     },
     {
       "type": "java",
@@ -30,8 +43,19 @@
       "mainClass": "dev.specra.api.TestSpecraApiApplication",
       "projectName": "specra-api",
       "cwd": "${workspaceFolder}/apps/api",
+      // Same container-name clash as above: Testcontainers owns the database
+      // here, so spring-boot-docker-compose must stay out of it. (application-
+      // test.yml disables it, but only under the "test" profile, which this
+      // configuration deliberately does not activate.)
+      "vmArgs": "-Dspring.docker.compose.enabled=false",
       "envFile": "${workspaceFolder}/.env",
-      "console": "integratedTerminal"
+      // NOT integratedTerminal. That path makes the debug adapter hand the
+      // java command to a terminal and then wait for the JVM to dial back on
+      // JDWP; here the JVM never starts and the session dies with
+      // "Failed to launch debuggee in terminal ... TransportTimeoutException".
+      // internalConsole has the adapter spawn the JVM itself. Output lands in
+      // the Debug Console; neither entry point reads stdin.
+      "console": "internalConsole"
     },
     {
       "type": "java",
@@ -68,7 +92,7 @@
     },
     {
       "type": "chrome",
-      "name": "Web: client-side only (attach to running dev server)",
+      "name": "Web: browser only (needs `pnpm dev` already running)",
       "request": "launch",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/apps/web",
