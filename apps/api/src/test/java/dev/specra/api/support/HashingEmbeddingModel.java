@@ -12,9 +12,9 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 /**
  * Deterministic, offline stand-in for a real embedding model.
  *
- * <p>Hashes each word into a bucket and L2-normalises, so texts that share vocabulary really do land
- * close together under cosine distance. That makes similarity search assertions meaningful without
- * calling out to a provider or downloading an ONNX model in CI.
+ * <p>Hashes each word into a bucket and L2-normalises, so texts that share vocabulary really do
+ * land close together under cosine distance. That makes similarity search assertions meaningful
+ * without calling out to a provider or downloading an ONNX model in CI.
  */
 public class HashingEmbeddingModel implements EmbeddingModel {
 

@@ -71,7 +71,7 @@ providers needs no new migration. Switching the embedding provider does mean dro
 that table first:
 
 ```bash
-npm run db:reset      # from the repo root
+pnpm db:reset      # from the repo root
 ```
 
 ## Tests

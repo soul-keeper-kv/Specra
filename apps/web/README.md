@@ -21,14 +21,14 @@ Next.js 16 (App Router), talking to [apps/api](../api).
 ## Commands
 
 ```bash
-npm run dev          # dev server
-npm run build        # production build
-npm run lint         # eslint
-npm run format       # prettier --write
-npm run typecheck    # next typegen && tsc --noEmit
-npm run test         # vitest
-npm run test:e2e     # playwright (starts the dev server itself)
-npm run gen:api      # generate src/types/api.d.ts from the running API's OpenAPI schema
+pnpm dev          # dev server
+pnpm build        # production build
+pnpm lint         # eslint
+pnpm format       # prettier --write
+pnpm typecheck    # next typegen && tsc --noEmit
+pnpm test         # vitest
+pnpm test:e2e     # playwright (starts the dev server itself)
+pnpm gen:api      # generate src/types/api.d.ts from the running API's OpenAPI schema
 ```
 
 ## Configuration
@@ -69,7 +69,7 @@ src/
 ## Notes
 
 **Hand-written vs generated types.** `lib/api/types.ts` is what the code uses.
-`npm run gen:api` writes `types/api.d.ts` from the live schema for cross-checking —
+`pnpm gen:api` writes `types/api.d.ts` from the live schema for cross-checking —
 springdoc marks every field optional (Java records emit no `required`), so the generated
 version is looser than the hand-written one.
 

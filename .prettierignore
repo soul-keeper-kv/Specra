@@ -1,0 +1,13 @@
+# apps/web has its own prettier config (with the Tailwind plugin) and its own
+# format script, so the root run stays out of it.
+apps/web/
+
+# Java, YAML and SQL under apps/api are formatted by Spotless, not prettier.
+apps/api/
+
+node_modules/
+pnpm-lock.yaml
+.husky/_/
+
+# Generated or vendored.
+tools/notion-clone/notion-clone.mjs

@@ -1,2 +1,8 @@
-# prettier/eslint live in apps/web, so run lint-staged from there.
-cd apps/web && npx lint-staged
+# Root docs/config: prettier lives at the root now.
+pnpm exec lint-staged
+
+# Web sources: prettier + eslint, both installed in apps/web.
+cd apps/web && pnpm exec lint-staged
+
+# Java formatting is enforced by spotless:check in the Maven validate phase,
+# so it is not repeated here — `mvnw` of any kind already fails on drift.

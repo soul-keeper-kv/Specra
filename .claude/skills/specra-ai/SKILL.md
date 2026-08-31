@@ -50,15 +50,15 @@ dimensions, no API key). Do not "fix" it to match the chat provider.
 Changing the embedding provider changes the vector width, so the table has to go:
 
 ```bash
-npm run db:reset
+pnpm db:reset
 ```
 
 ## Two ChatClients, deliberately different
 
-| Bean | Advisors | Used by |
-| --- | --- | --- |
+| Bean                      | Advisors                            | Used by                        |
+| ------------------------- | ----------------------------------- | ------------------------------ |
 | `chatClient` (`@Primary`) | `MessageChatMemoryAdvisor` + logger | `/api/ai/chat`, `/chat/stream` |
-| `ragChatClient` | logger only — **no memory** | `RagService.ask` |
+| `ragChatClient`           | logger only — **no memory**         | `RagService.ask`               |
 
 RAG has no memory on purpose: with it, earlier turns bleed into the retrieved context
 and the model is liable to treat them as evidence. Do not merge the two beans.

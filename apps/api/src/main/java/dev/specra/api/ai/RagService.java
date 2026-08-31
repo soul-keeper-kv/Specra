@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
  * Retrieval-augmented generation over pgvector.
  *
  * <p>Text goes in as one logical source, is split into chunks, embedded by whichever embedding
- * model is active, and stored. Questions retrieve the closest chunks and hand them to the chat model
- * as grounding context.
+ * model is active, and stored. Questions retrieve the closest chunks and hand them to the chat
+ * model as grounding context.
  */
 @Service
 public class RagService {
@@ -97,19 +97,14 @@ public class RagService {
             .call()
             .chatClientResponse();
 
-    return new AskReply(
-        text(response), sources(response), chatProvider, model(response));
+    return new AskReply(text(response), sources(response), chatProvider, model(response));
   }
 
   /** Raw similarity search, no generation — useful for debugging what RAG actually retrieves. */
   public List<AskReply.Source> retrieve(String query, int topK, double threshold) {
     List<Document> docs =
         vectorStore.similaritySearch(
-            SearchRequest.builder()
-                .query(query)
-                .topK(topK)
-                .similarityThreshold(threshold)
-                .build());
+            SearchRequest.builder().query(query).topK(topK).similarityThreshold(threshold).build());
     return toSources(docs == null ? List.of() : docs);
   }
 

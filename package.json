@@ -3,26 +3,39 @@
   "private": true,
   "version": "0.1.0",
   "description": "Next.js web app and Spring Boot 3 API with JPA/PostgreSQL and provider-agnostic Spring AI.",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
   "scripts": {
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
-    "dev:web": "npm --prefix apps/web run dev",
+    "dev:web": "pnpm --filter specra-web dev",
     "dev:api": "cd apps/api && mvnw.cmd spring-boot:run",
-    "build:web": "npm --prefix apps/web run build",
+    "build:web": "pnpm --filter specra-web build",
     "build:api": "cd apps/api && mvnw.cmd -B package",
-    "test:web": "npm --prefix apps/web run test",
+    "test:web": "pnpm --filter specra-web test",
     "test:api": "cd apps/api && mvnw.cmd -B verify",
-    "lint": "npm --prefix apps/web run lint",
-    "format": "npm --prefix apps/web run format",
-    "typecheck": "npm --prefix apps/web run typecheck",
-    "setup:web": "npm --prefix apps/web install",
-    "prepare": "husky"
+    "lint": "pnpm --filter specra-web lint",
+    "format": "prettier --write . && pnpm --filter specra-web format",
+    "typecheck": "pnpm --filter specra-web typecheck",
+    "prepare": "husky",
+    "format:check": "prettier --check . && pnpm --filter specra-web format:check",
+    "format:api": "cd apps/api && mvnw.cmd -B spotless:apply",
+    "lint:api": "cd apps/api && mvnw.cmd -B spotless:check"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.9.6"
+  },
+  "lint-staged": {
+    "*.{md,json,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

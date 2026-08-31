@@ -27,11 +27,11 @@ curl -s https://repo.maven.apache.org/maven2/org/springframework/ai/spring-ai-st
 
 ## Who owns which table
 
-| Table | Created by |
-| --- | --- |
-| `notes`, `note_tags` | Flyway — `src/main/resources/db/migration/` |
-| `vector_store` | **Spring AI**, `initialize-schema: true` |
-| `SPRING_AI_CHAT_MEMORY` | **Spring AI**, `initialize-schema: always` |
+| Table                   | Created by                                  |
+| ----------------------- | ------------------------------------------- |
+| `notes`, `note_tags`    | Flyway — `src/main/resources/db/migration/` |
+| `vector_store`          | **Spring AI**, `initialize-schema: true`    |
+| `SPRING_AI_CHAT_MEMORY` | **Spring AI**, `initialize-schema: always`  |
 
 Hibernate runs `ddl-auto: validate`, so any entity change **must** come with a new
 migration (`V2__…sql`), or the app fails at startup — that is intentional.
@@ -110,5 +110,5 @@ Changing a DTO or an endpoint means updating:
 Cross-check against the live schema (needs the API running):
 
 ```bash
-cd apps/web && npm run gen:api    # writes src/types/api.d.ts for comparison
+cd apps/web && pnpm gen:api    # writes src/types/api.d.ts for comparison
 ```

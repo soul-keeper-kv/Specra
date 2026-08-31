@@ -32,7 +32,9 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/api/ai")
-@Tag(name = "AI", description = "Chat and RAG. The provider behind these endpoints is configuration, not code.")
+@Tag(
+    name = "AI",
+    description = "Chat and RAG. The provider behind these endpoints is configuration, not code.")
 public class AiController {
 
   /** Every provider whose starter this project puts on the classpath. */
@@ -145,7 +147,8 @@ public class AiController {
   }
 
   @GetMapping("/retrieve")
-  @Operation(summary = "Similarity search only, no generation — shows what RAG would feed the model")
+  @Operation(
+      summary = "Similarity search only, no generation — shows what RAG would feed the model")
   public List<AskReply.Source> retrieve(
       @RequestParam String q,
       @RequestParam(defaultValue = "4") int topK,

@@ -1,0 +1,45 @@
+# Read natively by VS Code, IntelliJ, Vim and others — the one style file that
+# does not depend on which editor a person uses.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# google-java-format: 2-space indent, 4-space continuation, 100 columns.
+# Spotless enforces this; the values here just stop the editor fighting it.
+[*.java]
+indent_size = 2
+continuation_indent_size = 4
+max_line_length = 100
+
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+max_line_length = 96
+
+# Two trailing spaces are a hard line break in Markdown, so leave them alone.
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.xml]
+indent_size = 2
+
+[*.sql]
+indent_size = 4
+
+[*.{bat,cmd,ps1}]
+end_of_line = crlf
+
+[Makefile]
+indent_style = tab
+
+# Maven wrapper scripts are vendored — do not reformat them.
+[{mvnw,mvnw.cmd,gradlew,gradlew.bat}]
+trim_trailing_whitespace = false
+insert_final_newline = false

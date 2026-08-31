@@ -114,11 +114,13 @@ class NoteApiIT {
                     .content(
                         body(
                             Map.of(
-                                "title", "Vector store choice",
+                                "title",
+                                "Vector store choice",
                                 "content",
-                                    "We picked pgvector because Postgres already holds the "
-                                        + "business data and HNSW indexing is good enough.",
-                                "tags", Set.of("architecture")))))
+                                "We picked pgvector because Postgres already holds the "
+                                    + "business data and HNSW indexing is good enough.",
+                                "tags",
+                                Set.of("architecture")))))
             .andExpect(status().isCreated())
             .andReturn()
             .getResponse()
@@ -179,8 +181,7 @@ class NoteApiIT {
                 .content(body(Map.of("message", "hello there", "conversationId", "it-test"))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.conversationId").value("it-test"))
-        .andExpect(
-            jsonPath("$.content", org.hamcrest.Matchers.containsString("hello there")));
+        .andExpect(jsonPath("$.content", org.hamcrest.Matchers.containsString("hello there")));
 
     mvc.perform(delete("/api/ai/chat/{id}", "it-test")).andExpect(status().isNoContent());
   }

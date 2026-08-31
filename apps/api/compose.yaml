@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USER:-specra}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-specra}
     ports:
-      - "${DB_PORT:-5433}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - specra-pgdata:/var/lib/postgresql/data
     healthcheck:

@@ -1,6 +1,6 @@
 /**
  * Mirrors the Spring Boot contract. Regenerate the authoritative version from the
- * running API with `npm run gen:api` (writes src/types/api.d.ts) and diff against this
+ * running API with `pnpm gen:api` (writes src/types/api.d.ts) and diff against this
  * file when the backend changes.
  */
 

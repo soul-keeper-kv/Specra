@@ -40,7 +40,9 @@ public class AiConfig {
         .build();
   }
 
-  /** Conversational client: remembers the thread identified by {@code ChatMemory.CONVERSATION_ID}. */
+  /**
+   * Conversational client: remembers the thread identified by {@code ChatMemory.CONVERSATION_ID}.
+   */
   @Bean
   @Primary
   public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory) {

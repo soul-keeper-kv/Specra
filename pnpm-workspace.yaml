@@ -1,0 +1,11 @@
+# One install for the whole repo: `pnpm install` at the root covers apps/web too.
+packages:
+  - apps/web
+
+# pnpm does not run a dependency's install scripts unless it is allowed here.
+allowBuilds:
+  unrs-resolver: true
+
+# lucide-react 1.38.0 is newer than pnpm's default minimum release age gate.
+minimumReleaseAgeExclude:
+  - lucide-react@1.38.0

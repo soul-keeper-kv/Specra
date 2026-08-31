@@ -13,7 +13,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
-    // Playwright specs are driven by `npm run test:e2e`, not by Vitest.
+    // Playwright specs are driven by `pnpm test:e2e`, not by Vitest.
     exclude: ["node_modules/**", ".next/**", "e2e/**"],
   },
 });

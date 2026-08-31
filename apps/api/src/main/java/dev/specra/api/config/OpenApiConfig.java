@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The web app generates its TypeScript types from the schema this exposes
- * (`npm run gen:api` in apps/web), so the two sides cannot drift.
+ * The web app generates its TypeScript types from the schema this exposes (`npm run gen:api` in
+ * apps/web), so the two sides cannot drift.
  */
 @Configuration
 public class OpenApiConfig {

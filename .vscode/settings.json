@@ -1,6 +1,5 @@
 {
-  // Monorepo wiring only — no formatting or theme opinions.
-
+  // ── monorepo wiring ──────────────────────────────────────────────────────
   // Without this, ESLint resolves its flat config from the repo root and
   // reports every web file as unmatched.
   "eslint.workingDirectories": [{ "directory": "apps/web", "changeProcessCWD": true }],
@@ -16,8 +15,64 @@
     "**/tools/**"
   ],
 
+  // ── editor ───────────────────────────────────────────────────────────────
+  // Cascadia Code ships with VS Code and Windows Terminal and has ligatures;
+  // Consolas is the fallback everywhere else.
+  "editor.fontFamily": "'Cascadia Code', 'Cascadia Mono', Consolas, monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 13,
+  "editor.lineHeight": 1.6,
+  "editor.rulers": [100],
+  "editor.renderWhitespace": "boundary",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+
+  // .editorconfig is the source of truth for indent/EOL/charset, shared with
+  // anyone using IntelliJ or Vim.
+  "editorconfig.generateAuto": false,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+
+  // ── formatting ───────────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[yaml]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  // Java is formatted by Spotless (google-java-format) via `./mvnw
+  // spotless:apply`. The Red Hat formatter is pointed at the same style so
+  // format-on-save does not fight the build.
+  "[java]": { "editor.defaultFormatter": "redhat.java" },
+  "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
+  "java.format.settings.profile": "GoogleStyle",
+  "java.saveActions.organizeImports": true,
+
+  // Prettier is installed in apps/web, not at the repo root.
+  "prettier.prettierPath": "apps/web/node_modules/prettier",
+
+  // ── noise reduction ──────────────────────────────────────────────────────
   "files.exclude": {
     "**/target": true,
     "**/.next": true
-  }
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/target": true,
+    "**/.next": true,
+    "**/pnpm-lock.yaml": true,
+    "apps/web/src/types/api.d.ts": true
+  },
+  "typescript.tsdk": "apps/web/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

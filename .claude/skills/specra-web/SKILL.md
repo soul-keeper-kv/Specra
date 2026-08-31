@@ -44,7 +44,7 @@ Full reference implementation: `src/components/notes/notes-table.tsx`.
 
 ```tsx
 export default function Page(props: PageProps<"/notes/[id]">) {
-  const { id } = use(props.params);   // client component
+  const { id } = use(props.params); // client component
 }
 ```
 
@@ -52,7 +52,7 @@ export default function Page(props: PageProps<"/notes/[id]">) {
 reports `does not satisfy the constraint '"/"'`, run:
 
 ```bash
-npm run typecheck    # already includes next typegen
+pnpm typecheck    # already includes next typegen
 ```
 
 ### Zod 4 with TanStack Form
@@ -60,7 +60,7 @@ npm run typecheck    # already includes next typegen
 Zod 4 implements Standard Schema, so TanStack Form consumes it directly:
 
 ```tsx
-useForm({ defaultValues, validators: { onSubmit: noteSchema }, onSubmit })
+useForm({ defaultValues, validators: { onSubmit: noteSchema }, onSubmit });
 ```
 
 ## Server state vs client state
@@ -95,7 +95,7 @@ writing loose arrays.
 ### API types
 
 `src/lib/api/types.ts` holds the **hand-written** types the code actually uses.
-`src/types/api.d.ts` is generated (`npm run gen:api`, needs the API running) and exists
+`src/types/api.d.ts` is generated (`pnpm gen:api`, needs the API running) and exists
 only for cross-checking — springdoc marks every field optional because Java records emit
 no `required`, so the generated version is looser. Do not import from the generated file.
 
@@ -104,7 +104,7 @@ no `required`, so the generated version is looser. Do not import from the genera
 Configured in `components.json`: base `radix`, style `radix-nova`, icon library `lucide`.
 
 ```bash
-npx shadcn@latest add <component>
+pnpm dlx shadcn@latest add <component>
 ```
 
 Components land in `src/components/ui/` — edit them freely, they are project code.
@@ -125,8 +125,8 @@ ESLint 9 flat config, including React 19's `react-hooks` rules. Two frequent fai
 ## Tests
 
 ```bash
-npm run test         # Vitest, jsdom
-npm run test:e2e     # Playwright, starts the dev server itself
+pnpm test         # Vitest, jsdom
+pnpm test:e2e     # Playwright, starts the dev server itself
 ```
 
 The Vitest config is `vitest.config.mts` (the `.mts` extension is what makes Vite load
@@ -139,5 +139,5 @@ that depend on backend data.
 ## Before reporting work as done
 
 ```bash
-npm run lint && npm run typecheck && npm run test && npm run build
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```

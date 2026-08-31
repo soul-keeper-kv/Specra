@@ -2,11 +2,11 @@
 
 One product, two apps that talk to each other:
 
-| Folder | Contents |
-| --- | --- |
-| [apps/web](apps/web) | Next.js 16 · React 19 · Tailwind 4 · shadcn/ui · lucide · TanStack Query/Table/Form · Zustand · Zod |
-| [apps/api](apps/api) | Spring Boot 3.5 · Java 17 · JPA + PostgreSQL · Flyway · Spring AI 1.1 · pgvector RAG · springdoc |
-| [tools/notion-clone](tools/notion-clone) | Script that clones an entire Notion workspace to Markdown |
+| Folder                                   | Contents                                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [apps/web](apps/web)                     | Next.js 16 · React 19 · Tailwind 4 · shadcn/ui · lucide · TanStack Query/Table/Form · Zustand · Zod |
+| [apps/api](apps/api)                     | Spring Boot 3.5 · Java 17 · JPA + PostgreSQL · Flyway · Spring AI 1.1 · pgvector RAG · springdoc    |
+| [tools/notion-clone](tools/notion-clone) | Script that clones an entire Notion workspace to Markdown                                           |
 
 The point of it: **no lock-in to any one LLM vendor**. Anthropic, OpenAI, Ollama and a
 locally-run ONNX model all sit on the classpath; picking one is two lines of config.
@@ -15,26 +15,30 @@ locally-run ONNX model all sit on the classpath; picking one is two lines of con
 
 ## Quick start
 
-Needs Docker, JDK 17+, Node 20+.
+Needs Docker, JDK 17+, Node 20+ and [pnpm](https://pnpm.io/installation) 10+
+(`npm install -g pnpm`).
 
 ```bash
-cp .env.example .env          # add a key if you want a real LLM
-npm install                   # root tooling (husky, commitlint, lint-staged)
-npm run setup:web             # install the web app's dependencies
+cp .env.example .env    # add a key if you want a real LLM
+pnpm install            # one install for the whole workspace: root tooling + apps/web
 
-npm run db:up                 # Postgres + pgvector (host port 5433)
-npm run dev:api               # http://localhost:8080
-npm run dev:web               # http://localhost:3000
+pnpm db:up              # Postgres + pgvector (host port 5432)
+pnpm dev:api            # http://localhost:8080
+pnpm dev:web            # http://localhost:3000
 ```
+
+This is a **pnpm workspace** ([pnpm-workspace.yaml](pnpm-workspace.yaml)) — a single
+`pnpm-lock.yaml` at the root covers both the root tooling and `apps/web`. Do not run
+`npm install` in either package; it would write a competing lockfile.
 
 The first API run downloads the ONNX embedding model (~90 MB) into a cache — once only.
 
-| Address | |
-| --- | --- |
-| <http://localhost:3000> | Web |
-| <http://localhost:8080/swagger-ui.html> | API docs |
-| <http://localhost:8080/v3/api-docs> | OpenAPI schema |
-| <http://localhost:8080/actuator/health> | Health |
+| Address                                 |                |
+| --------------------------------------- | -------------- |
+| <http://localhost:3000>                 | Web            |
+| <http://localhost:8080/swagger-ui.html> | API docs       |
+| <http://localhost:8080/v3/api-docs>     | OpenAPI schema |
+| <http://localhost:8080/actuator/health> | Health         |
 
 ---
 
@@ -43,14 +47,14 @@ The first API run downloads the ONNX embedding model (~90 MB) into a cache — o
 [.vscode/launch.json](.vscode/launch.json) is already set up. Open **Run and Debug** and
 pick:
 
-| Configuration | What it does |
-| --- | --- |
-| **Full stack (API + Web)** | Runs both, bringing Postgres up first |
-| **Full stack (throwaway database)** | Same, but the API uses a disposable Testcontainers database |
-| API: Spring Boot | API only, with breakpoints in Java |
-| API: attach to :5005 | Attaches to an already-running process |
-| Web: full stack | Breakpoints in both server and client components in one session |
-| Web: Vitest / Playwright | Runs tests from the editor |
+| Configuration                       | What it does                                                    |
+| ----------------------------------- | --------------------------------------------------------------- |
+| **Full stack (API + Web)**          | Runs both, bringing Postgres up first                           |
+| **Full stack (throwaway database)** | Same, but the API uses a disposable Testcontainers database     |
+| API: Spring Boot                    | API only, with breakpoints in Java                              |
+| API: attach to :5005                | Attaches to an already-running process                          |
+| Web: full stack                     | Breakpoints in both server and client components in one session |
+| Web: Vitest / Playwright            | Runs tests from the editor                                      |
 
 The API configuration has a `preLaunchTask` that runs `docker compose up -d --wait`,
 which **blocks until Postgres reports healthy** — so the API never starts before the
@@ -61,11 +65,11 @@ Java needs the **Extension Pack for Java**; see
 
 ---
 
-## Why Postgres runs on port 5433
+## Postgres port
 
-Port 5432 is very often already taken by another Postgres on a dev machine. Specra
-therefore maps to **5433** so it collides with nothing. To change it, set `DB_PORT` in
-`.env` — both `docker-compose.yml` and `application.yml` read that variable.
+Specra maps Postgres to the default **5432**. That port is often already taken by another
+Postgres on a dev machine — if `pnpm db:up` cannot bind it, set `DB_PORT` in `.env` to a
+free port (`5433`, say); both `docker-compose.yml` and `application.yml` read that variable.
 
 ```bash
 docker ps --filter publish=5432    # see what is holding 5432
@@ -95,7 +99,7 @@ header.
 > **Anthropic has no embedding model.** That is why `AI_EMBEDDING_PROVIDER` defaults to
 > `transformers` (local ONNX, 384 dimensions, no API key). Switching to `openai` (1536)
 > or `ollama` (768) changes the vector width, so the `vector_store` table has to be
-> dropped first: `npm run db:reset`.
+> dropped first: `pnpm db:reset`.
 
 ---
 
@@ -116,14 +120,42 @@ RAG toggle), **Overview** (status).
 
 ---
 
+## Code style
+
+Formatting is decided by tools, not by review comments.
+
+| Scope                             | Tool                                             | Config                                                 |
+| --------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| Java, plus api `.yml`/`.sql`      | Spotless + google-java-format (GOOGLE, 100 cols) | [apps/api/pom.xml](apps/api/pom.xml)                   |
+| Web sources                       | Prettier + Tailwind plugin, ESLint 9             | [apps/web/.prettierrc.json](apps/web/.prettierrc.json) |
+| Root docs and config              | Prettier                                         | [.prettierrc.json](.prettierrc.json)                   |
+| Indent, EOL, charset (any editor) | EditorConfig                                     | [.editorconfig](.editorconfig)                         |
+| Line endings stored in git        | gitattributes (`eol=lf`)                         | [.gitattributes](.gitattributes)                       |
+| Editor font, format-on-save       | VS Code workspace settings                       | [.vscode/settings.json](.vscode/settings.json)         |
+
+```bash
+pnpm format        # prettier: root docs + apps/web
+pnpm format:api    # spotless:apply over apps/api
+pnpm lint          # eslint
+pnpm lint:api      # spotless:check
+```
+
+`spotless:check` is bound to Maven's `validate` phase, so **any** `./mvnw` command fails
+on unformatted Java — including `./mvnw test`. Fix it with `./mvnw spotless:apply`.
+
+javac runs with `-Xlint:all` (minus the noisy `processing` and `serial`), so compiler
+warnings show up in ordinary builds.
+
+---
+
 ## Testing
 
 ```bash
-npm run test:web     # Vitest — 9 tests, including the SSE parser
-npm run test:api     # JUnit — 4 unit + 6 integration (Testcontainers with real pgvector)
-npm run typecheck
-npm run lint
-cd apps/web && npm run test:e2e   # Playwright
+pnpm test:web     # Vitest — 9 tests, including the SSE parser
+pnpm test:api     # JUnit — 4 unit + 6 integration (Testcontainers with real pgvector)
+pnpm typecheck
+pnpm lint
+cd apps/web && pnpm test:e2e   # Playwright
 ```
 
 `test:api` needs Docker running: it starts a real `pgvector/pgvector:pg17` container,

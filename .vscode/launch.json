@@ -49,7 +49,7 @@
       "type": "node-terminal",
       "name": "Web: full stack (server + browser)",
       "request": "launch",
-      "command": "npm run dev",
+      "command": "pnpm dev",
       "cwd": "${workspaceFolder}/apps/web",
       // Opens Chrome once Next prints its URL, so breakpoints in server
       // components and in client components both bind in one session.
@@ -63,7 +63,7 @@
       "type": "node-terminal",
       "name": "Web: server-side only",
       "request": "launch",
-      "command": "npm run dev",
+      "command": "pnpm dev",
       "cwd": "${workspaceFolder}/apps/web"
     },
     {
@@ -84,21 +84,21 @@
       "name": "Web: Vitest (current file)",
       "request": "launch",
       // Vitest treats bare arguments as path filters, so the basename is enough.
-      "command": "npx vitest run ${fileBasenameNoExtension}",
+      "command": "pnpm exec vitest run ${fileBasenameNoExtension}",
       "cwd": "${workspaceFolder}/apps/web"
     },
     {
       "type": "node-terminal",
       "name": "Web: Vitest (all)",
       "request": "launch",
-      "command": "npx vitest run",
+      "command": "pnpm exec vitest run",
       "cwd": "${workspaceFolder}/apps/web"
     },
     {
       "type": "node-terminal",
       "name": "Web: Playwright (headed)",
       "request": "launch",
-      "command": "npx playwright test --headed",
+      "command": "pnpm exec playwright test --headed",
       "cwd": "${workspaceFolder}/apps/web"
     }
   ],

@@ -22,7 +22,8 @@ public class StubChatModel implements ChatModel {
 
   @Override
   public ChatResponse call(Prompt prompt) {
-    return new ChatResponse(List.of(new Generation(new AssistantMessage(PREFIX + lastText(prompt)))));
+    return new ChatResponse(
+        List.of(new Generation(new AssistantMessage(PREFIX + lastText(prompt)))));
   }
 
   @Override

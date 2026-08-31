@@ -57,16 +57,15 @@ public class GlobalExceptionHandler {
       org.springframework.ai.retry.NonTransientAiException ex, HttpServletRequest req) {
     log.warn("AI provider rejected the request: {}", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-        .body(ApiError.of(502, "Bad Gateway", "AI provider error: " + ex.getMessage(),
-            req.getRequestURI()));
+        .body(
+            ApiError.of(
+                502, "Bad Gateway", "AI provider error: " + ex.getMessage(), req.getRequestURI()));
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiError> handleAnythingElse(Exception ex, HttpServletRequest req) {
     log.error("Unhandled exception on {}", req.getRequestURI(), ex);
     return ResponseEntity.internalServerError()
-        .body(
-            ApiError.of(
-                500, "Internal Server Error", "Unexpected error", req.getRequestURI()));
+        .body(ApiError.of(500, "Internal Server Error", "Unexpected error", req.getRequestURI()));
   }
 }

@@ -58,7 +58,7 @@
     {
       "label": "web: check (lint + types + tests)",
       "type": "shell",
-      "command": "npm run lint && npm run typecheck && npm run test",
+      "command": "pnpm lint && pnpm typecheck && pnpm test",
       "options": { "cwd": "${workspaceFolder}/apps/web" },
       "group": "test",
       "problemMatcher": []
@@ -67,7 +67,7 @@
       "label": "web: generate API types",
       "type": "shell",
       // Needs the API running: it reads the live OpenAPI schema.
-      "command": "npm run gen:api",
+      "command": "pnpm gen:api",
       "options": { "cwd": "${workspaceFolder}/apps/web" },
       "problemMatcher": []
     }

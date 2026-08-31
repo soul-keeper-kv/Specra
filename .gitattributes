@@ -1,0 +1,36 @@
+# The repo decides line endings, not each developer's core.autocrlf.
+# Without this, a Windows clone stores CRLF and every diff looks rewritten.
+* text=auto eol=lf
+
+# Windows-only launchers must stay CRLF or cmd.exe mis-parses them.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Shell scripts and the Maven wrapper must stay LF even on Windows.
+*.sh    text eol=lf
+mvnw    text eol=lf
+gradlew text eol=lf
+
+# Never touched, never diffed as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.jar   binary
+*.zip   binary
+
+# Generated: keep it out of diffs and out of language stats.
+package-lock.json  linguist-generated=true -diff
+apps/web/src/types/api.d.ts linguist-generated=true
+
+# Let GitHub report this as the polyglot project it is.
+*.java  linguist-language=Java
+*.mjs   linguist-language=JavaScript
