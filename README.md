@@ -1,23 +1,41 @@
-| <http://localhost:3000> | Web (redirects to /vi or /en) |
-| [apps/web](apps/web) | Next.js 16 · React 19 · Tailwind 4 · shadcn/ui · next-intl · TanStack Query/Table/Form · Zustand · Zod |
-| [apps/api](apps/api) | Spring Boot 3.5 · Java 17 · JPA + PostgreSQL · Flyway · Spring AI 1.1 · pgvector RAG · springdoc · Micrometer Tracing |
-
 # Specra
 
-One product, two apps that talk to each other:
+**An AI test automation IDE.** It turns a manual QA test case into an executable automation
+test — while Git stays the source of truth for the code and Playwright stays the execution
+engine.
+
+```text
+manual test case ──► AI ──► Test Model / IR ──► Playwright code ──► Git ──► run ──► result
+                                                                                     │
+                                   fix proposal ◄── AI failure analysis ◄────────────┘
+```
+
+It is built for manual QA/QC people who have the test cases and the business knowledge but do
+not write automation — and the output is real, reviewable source code, because an automation
+engineer maintains it afterwards. Clone the repository it writes to, `pnpm install`,
+`npx playwright test`, and the suite runs with no reference to Specra at all.
+
+The architecture is written down before it is built:
+[docs/architecture](docs/architecture/README.md) — start with
+[the product](docs/architecture/00-product.md) and
+[the Test Model / IR](docs/architecture/02-test-model-ir.md).
+[The roadmap](docs/architecture/09-roadmap.md) says what exists today and what is next.
 
 | Folder                                   | Contents                                                                                            |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [apps/web](apps/web)                     | Next.js 16 · React 19 · Tailwind 4 · shadcn/ui · lucide · TanStack Query/Table/Form · Zustand · Zod |
 | [apps/api](apps/api)                     | Spring Boot 3.5 · Java 17 · JPA + PostgreSQL · Flyway · Spring AI 1.1 · pgvector RAG · springdoc    |
+| [tests/e2e](tests/e2e)                   | Playwright suite that drives Specra itself                                                          |
 | [tools/notion-clone](tools/notion-clone) | Script that clones an entire Notion workspace to Markdown                                           |
 
-The point of it: **no lock-in to any one LLM vendor**. Anthropic, OpenAI, Ollama and a
-locally-run ONNX model all sit on the classpath; picking one is two lines of config.
+Two properties the stack keeps throughout: **no lock-in to any one LLM vendor** — Anthropic,
+OpenAI, Ollama and a locally-run ONNX model all sit on the classpath, and picking one is two
+lines of config — and **no lock-in to one execution engine**, because intent is captured as an
+engine-independent Test Model and Playwright is one adapter behind it.
 
-It is also bilingual end to end (Vietnamese and English), light/dark themed, and traceable:
-every response carries a request id and a trace id, and every error is an RFC 9457 problem
-document translated into the caller's language.
+It is bilingual end to end (Vietnamese and English), light/dark themed, and traceable: every
+response carries a request id and a trace id, and every error is an RFC 9457 problem document
+translated into the caller's language.
 
 ---
 

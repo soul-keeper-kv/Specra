@@ -24,6 +24,20 @@ change).
 | `tests/e2e`          | Playwright suite             | pnpm workspace package `specra-e2e`     |
 | `docker-compose.yml` | Postgres + pgvector, `:5432` | —                                       |
 
+Two more are planned, and are described before they exist so nothing gets built in the wrong
+place — [`docs/architecture/03-module-boundaries.md`](../../../docs/architecture/03-module-boundaries.md):
+
+| Path                  | What it is                                      | Rule                                                     |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------- |
+| `packages/test-model` | The IR contract: schema, types, fixtures        | No runtime dependencies. Imports nothing in this repo.   |
+| `services/runner`     | Node worker: adapter, codegen, inspect, execute | Stateless. Owns no database. Imports nothing in `apps/`. |
+
+**The split rule between the two runtimes is one question: does the job need the
+Node/Playwright toolchain?** If yes, `services/runner`. If no, `apps/api`. Not "it feels more
+like TypeScript". Codegen, DOM inspection and execution are on the Node side because the
+output has to be typechecked with the real compiler and Playwright is Node-only; tenancy,
+persistence, prompting and Git are on the Java side because that plumbing is already there.
+
 `pnpm-workspace.yaml` lists `apps/web` and `tests/e2e`, so one root `pnpm install` covers
 both and there is one lockfile. Root scripts reach the app with
 `pnpm --filter specra-web <script>`.
@@ -167,6 +181,14 @@ with a feature.
    with an `ErrorCode`. Never an ad-hoc body, never a bare `ResponseEntity.status(…)`.
 5. **`Link`, `useRouter`, `usePathname` come from `@/i18n/navigation`**, never from
    `next/link` or `next/navigation`.
+6. **No execution engine is named outside the adapter.** Playwright vocabulary — `page`,
+   `locator`, `getByRole`, `@playwright/test` — belongs in
+   `services/runner/src/adapters/playwright/` and in `tests/e2e`. Never in the IR, never in
+   `apps/api`, never in `apps/web`. Same containment idea as the vendor rule above, enforced
+   by ArchUnit on the Java side and an eslint restricted-import rule on the Node side.
+7. **Git holds the automation source code; the database holds metadata.** Content hash and
+   commit sha, not file bodies. See
+   [`docs/architecture/07-git.md`](../../../docs/architecture/07-git.md).
 
 ## Adding a whole new area
 
@@ -179,3 +201,9 @@ with a feature.
   `package.json` and `tsconfig.json`, and decide deliberately which direction may import
   which — `tests/e2e` is the worked example of a package that depends on the app without the
   app depending on it.
+- **Anything to do with the IR, the adapter or the runner**: the `specra-testmodel` skill,
+  and do not start by writing code — the schema is the contract three consumers share.
+
+**`tests/e2e` and `services/runner` are not related.** One drives Specra, the other drives the
+user's application under test. They both use Playwright and they share no code; a helper that
+looks useful to both belongs to neither.
