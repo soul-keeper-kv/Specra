@@ -1,4 +1,4 @@
-import { ArrowRight, Cpu, Database, NotebookPen, Radar } from "lucide-react";
+import { ArrowRight, Cpu, Database, ClipboardList, Radar } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { Link } from "@/i18n/navigation";
 import { site } from "@/lib/config/site";
 
 const FEATURES = [
-  { key: "notes", icon: NotebookPen },
+  { key: "testcases", icon: ClipboardList },
   { key: "rag", icon: Database },
   { key: "providers", icon: Cpu },
   { key: "observability", icon: Radar },

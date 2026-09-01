@@ -12,8 +12,9 @@ import org.springframework.web.servlet.LocaleResolver;
  *
  * <p>The bundle itself is configured in {@code application.yml} ({@code spring.messages.basename}).
  * What has to be done in code is the pair below: choosing the locale per request, and pointing Bean
- * Validation at the same bundle so {@code @NotBlank(message = "{validation.note.title.required}")}
- * resolves from {@code messages_vi.properties} instead of Hibernate Validator's English defaults.
+ * Validation at the same bundle so {@code @NotBlank(message =
+ * "{validation.testcase.title.required}")} resolves from {@code messages_vi.properties} instead of
+ * Hibernate Validator's English defaults.
  */
 @Configuration(proxyBeanMethods = false)
 public class I18nConfig {

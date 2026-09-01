@@ -4,23 +4,6 @@
  * file when the backend changes.
  */
 
-export type Note = {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  /** Set once the note's chunks are in pgvector; null means the index is stale. */
-  indexedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type NoteInput = {
-  title: string;
-  content: string;
-  tags: string[];
-};
-
 export type PageResponse<T> = {
   content: T[];
   page: number;
@@ -64,7 +47,8 @@ export type ChatReply = {
 
 export type Source = {
   title: string;
-  noteId: string;
+  /** Id of the document the chunk came from — a test case id today. */
+  sourceId: string;
   excerpt: string;
   score: number | null;
 };
@@ -85,10 +69,137 @@ export type ProviderInfo = {
   availableProviders: string[];
 };
 
-export type NoteQuery = {
+// ── M1: tenancy, projects, test cases ─────────────────────────────────────────
+
+export type Workspace = {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkspaceInput = {
+  name: string;
+  slug?: string;
+};
+
+export type AutomationEngine = "PLAYWRIGHT";
+
+export type Project = {
+  id: string;
+  workspaceId: string;
+  /** Short human handle, e.g. "ACME"; immutable once created. */
+  key: string;
+  name: string;
+  description: string | null;
+  engine: AutomationEngine;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectInput = {
+  name: string;
+  /** Left out, the API derives it from the name. */
+  key?: string;
+  description?: string;
+  engine?: AutomationEngine;
+};
+
+export type ProjectPatch = {
+  name?: string;
+  description?: string;
+};
+
+export type ProjectQuery = {
   q?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+};
+
+export type TestCasePriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
+export type AutomationStatus = "NOT_AUTOMATED" | "MODELLED" | "GENERATED" | "COMMITTED";
+
+export type TestCaseStep = {
+  position: number;
+  action: string;
+  expected: string | null;
+};
+
+export type TestCase = {
+  id: string;
+  projectId: string;
+  /** e.g. "TC-104" — minted by the API, stable for the life of the case. */
+  reference: string;
+  title: string;
+  description: string | null;
+  preconditions: string | null;
+  expectedResult: string | null;
+  priority: TestCasePriority;
+  automationStatus: AutomationStatus;
+  /** True when the case was edited after its IR was generated. */
+  outOfDate: boolean;
+  steps: TestCaseStep[];
+  tags: string[];
+  indexedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TestCaseSummary = {
+  id: string;
+  projectId: string;
+  reference: string;
+  title: string;
+  priority: TestCasePriority;
+  automationStatus: AutomationStatus;
+  outOfDate: boolean;
+  tags: string[];
+  updatedAt: string;
+};
+
+export type TestCaseStepInput = {
+  action: string;
+  expected?: string;
+};
+
+export type TestCaseInput = {
+  title: string;
+  description?: string;
+  preconditions?: string;
+  expectedResult?: string;
+  priority?: TestCasePriority;
+  steps: TestCaseStepInput[];
+  tags: string[];
+};
+
+export type TestCaseQuery = {
+  q?: string;
+  status?: AutomationStatus;
   tag?: string;
   page?: number;
   size?: number;
   sort?: string;
+};
+
+export type AiAccount = {
+  workspaceId: string;
+  provider: string;
+  chatModel: string | null;
+  embeddingModel: string | null;
+  monthlyBudgetUsd: number | null;
+  /** Whether a key is stored; the key itself never crosses the wire outward. */
+  keySet: boolean;
+  updatedAt: string;
+};
+
+export type AiAccountInput = {
+  provider: string;
+  /** Omitted keeps the stored key, "" clears it, a value replaces it. */
+  apiKey?: string;
+  chatModel?: string;
+  embeddingModel?: string;
+  monthlyBudgetUsd?: number;
 };

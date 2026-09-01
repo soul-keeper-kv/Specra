@@ -1,7 +1,7 @@
 import {
+  FolderKanban,
   LayoutDashboard,
   MessagesSquare,
-  NotebookPen,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -16,7 +16,7 @@ import {
  */
 export type NavItem = {
   href: string;
-  labelKey: "dashboard" | "notes" | "chat" | "settings";
+  labelKey: "dashboard" | "projects" | "chat" | "settings";
   icon: LucideIcon;
   /** Match this href only exactly; otherwise a prefix match marks the item active. */
   exact?: boolean;
@@ -24,7 +24,7 @@ export type NavItem = {
 
 export const WORKSPACE_NAV: readonly NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
-  { href: "/notes", labelKey: "notes", icon: NotebookPen },
+  { href: "/projects", labelKey: "projects", icon: FolderKanban },
   { href: "/chat", labelKey: "chat", icon: MessagesSquare },
   { href: "/settings", labelKey: "settings", icon: Settings },
 ];

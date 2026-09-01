@@ -7,9 +7,9 @@ import java.util.Set;
 /**
  * The port every kind of user content is reached through.
  *
- * <p>Today the only implementation is backed by the {@code notes} table. Tomorrow it might be
+ * <p>Today the only implementation is backed by the {@code test_cases} table. Tomorrow it might be
  * uploaded files, a wiki, or a third-party workspace — and nothing above this interface has to
- * change, because callers hold a {@code ContentStore}, never a {@code NoteService}. That is the
+ * change, because callers hold a {@code ContentStore}, never a {@code TestCaseService}. That is the
  * whole point: the AI tools in particular must not know where content lives, or adding a second
  * storage backend means rewriting the prompts and the tools with it.
  *

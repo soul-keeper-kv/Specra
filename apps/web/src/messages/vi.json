@@ -1,12 +1,11 @@
 {
   "app": {
     "name": "Specra",
-    "tagline": "Ghi chú, trò chuyện và truy hồi ngay trên Postgres của bạn."
+    "tagline": "Biến ca kiểm thử thủ công thành tự động hóa Playwright."
   },
   "nav": {
     "workspace": "Không gian làm việc",
     "dashboard": "Tổng quan",
-    "notes": "Ghi chú",
     "chat": "Trò chuyện",
     "settings": "Cài đặt",
     "account": "Tài khoản",
@@ -14,7 +13,8 @@
     "signOut": "Đăng xuất",
     "toggleSidebar": "Ẩn/hiện thanh bên",
     "openCommandPalette": "Tìm kiếm hoặc chuyển nhanh…",
-    "docs": "Tài liệu API"
+    "docs": "Tài liệu API",
+    "projects": "Dự án"
   },
   "actions": {
     "create": "Tạo",
@@ -52,18 +52,18 @@
   },
   "marketing": {
     "badge": "Next.js 16 · Spring Boot 3 · pgvector",
-    "title": "Ghi chú của bạn, hỏi được.",
-    "subtitle": "Specra lưu ghi chú trong PostgreSQL, đánh chỉ mục vào pgvector, rồi trả lời câu hỏi dựa trên chúng bằng nhà cung cấp mô hình mà bạn chọn.",
+    "title": "Ca kiểm thử thủ công, được tự động hóa.",
+    "subtitle": "Specra biến những ca kiểm thử QA vẫn viết thành mã Playwright thật, xem xét được — nằm trong kho Git của chính bạn, chạy với bằng chứng thật, và được sửa với con người trong vòng phê duyệt.",
     "primaryCta": "Vào không gian làm việc",
     "secondaryCta": "Xem tài liệu API",
     "features": {
-      "notes": {
-        "title": "Ghi chú vẫn là của bạn",
-        "body": "CRUD qua Spring Data JPA, phân trang và sắp xếp phía máy chủ, hiển thị bằng TanStack Table."
+      "testcases": {
+        "title": "Ca kiểm thử trước tiên",
+        "body": "Soạn ca kiểm thử thủ công với các bước bằng lời của bạn — tiếng Việt hoặc tiếng Anh — lưu trong PostgreSQL, sẵn sàng để mô hình hóa."
       },
       "rag": {
-        "title": "Truy hồi, không phỏng đoán",
-        "body": "Đánh chỉ mục một ghi chú là nó được cắt đoạn, nhúng vector và lưu vào pgvector. Câu trả lời có trích dẫn nguồn."
+        "title": "Truy hồi, không đoán mò",
+        "body": "Lập chỉ mục một ca kiểm thử là nó được chia đoạn, nhúng và lưu vào pgvector. Trợ lý trích dẫn đúng những ca nó dựa vào."
       },
       "providers": {
         "title": "Không nhà cung cấp nào nằm trong mã nguồn",
@@ -74,96 +74,189 @@
         "body": "Mỗi phản hồi đều mang request id và trace id, mỗi lỗi đều là một tài liệu RFC 9457."
       }
     },
-    "footerNote": "Đây là một stack tham chiếu, không phải sản phẩm thương mại."
+    "footerNote": "Bản dựng sớm — golden path hoàn thiện theo từng cột mốc."
   },
   "dashboard": {
     "title": "Tổng quan",
     "subtitle": "Hiện tại không gian làm việc đang có gì.",
     "stats": {
-      "notes": "Ghi chú",
-      "notesHint": "lưu trong PostgreSQL",
-      "indexed": "Đã đánh chỉ mục ở trang này",
-      "indexedHint": "các đoạn nằm trong pgvector",
+      "workspace": "Không gian làm việc",
+      "workspaceHint": "mọi thứ đều nằm trong nó",
+      "projects": "Dự án",
+      "projectsHint": "mỗi dự án một kho Git",
       "provider": "Nhà cung cấp chat",
-      "providerHint": "nhúng vector: {provider} · {dimensions} chiều",
+      "providerHint": "embedding: {provider} · {dimensions}d",
       "providerFallback": "khởi động API để xem"
     },
     "cards": {
-      "notes": {
-        "title": "Ghi chú",
-        "body": "CRUD qua Spring Data JPA, phân trang và sắp xếp phía máy chủ.",
-        "cta": "Mở ghi chú"
+      "projects": {
+        "title": "Dự án",
+        "body": "Tạo dự án và soạn các ca kiểm thử thủ công — nền móng cho phần tự động hóa sau này.",
+        "cta": "Mở dự án"
       },
       "chat": {
         "title": "Chat & RAG",
-        "body": "Trả lời theo luồng qua SSE, lịch sử lưu trong Postgres. Bật RAG để chỉ trả lời từ ghi chú đã đánh chỉ mục.",
-        "cta": "Mở trò chuyện"
+        "body": "Trả lời streaming qua SSE, lịch sử lưu trong Postgres. Bật RAG để trả lời đúng theo các ca kiểm thử đã lập chỉ mục.",
+        "cta": "Mở chat"
       }
     },
     "swapHint": "Đổi nhà cung cấp mà không sửa mã:"
   },
-  "notes": {
-    "title": "Ghi chú",
-    "subtitle": "Lưu trong PostgreSQL. Đánh chỉ mục để pgvector truy hồi được.",
-    "searchPlaceholder": "Tìm trong tiêu đề và nội dung…",
-    "count": "{count, plural, =0 {Chưa có ghi chú} other {# ghi chú}}",
-    "pagination": "{page} trên {total}",
+  "workspaces": {
+    "empty": {
+      "title": "Tạo không gian làm việc",
+      "description": "Mọi thứ trong Specra nằm trong một không gian làm việc — mỗi nhóm một cái là đủ. Dự án, ca kiểm thử và cài đặt đều thuộc về nó."
+    },
+    "create": {
+      "name": "Tên không gian làm việc",
+      "namePlaceholder": "Acme QA",
+      "submit": "Tạo không gian"
+    },
+    "toast": {
+      "created": "Không gian làm việc “{name}” đã sẵn sàng"
+    }
+  },
+  "projects": {
+    "title": "Dự án",
+    "subtitle": "Mỗi dự án là một kho Git chứa mã tự động hóa.",
+    "searchPlaceholder": "Tìm theo tên hoặc mã…",
+    "count": "{count, plural, =0 {Chưa có dự án} other {# dự án}}",
     "new": {
-      "trigger": "Ghi chú mới",
-      "title": "Ghi chú mới",
-      "description": "Được Zod kiểm tra ở đây và bean validation kiểm tra ở API.",
-      "submit": "Tạo"
+      "trigger": "Dự án mới",
+      "title": "Tạo dự án",
+      "description": "Đặt tên theo ứng dụng cần kiểm thử. Mã dự án là định danh ngắn xuất hiện trong các tham chiếu như ACME.",
+      "submit": "Tạo dự án"
     },
-    "table": {
-      "title": "Tiêu đề",
-      "tags": "Thẻ",
-      "indexed": "Chỉ mục",
-      "updated": "Cập nhật",
-      "actions": "Thao tác",
-      "empty": "Chưa có ghi chú nào.",
-      "emptyHint": "Tạo một ghi chú rồi đánh chỉ mục, sau đó hỏi về nó ở phần trò chuyện.",
-      "noTags": "—",
-      "indexRow": "Đánh chỉ mục {title}",
-      "editRow": "Sửa {title}",
-      "deleteRow": "Xoá {title}"
+    "form": {
+      "name": "Tên",
+      "namePlaceholder": "Cửa hàng Acme",
+      "key": "Mã",
+      "keyPlaceholder": "ACME",
+      "keyHint": "Không bắt buộc — để trống sẽ được suy ra từ tên. Tạo xong sẽ không đổi được.",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Các luồng thanh toán và tài khoản của cửa hàng."
     },
-    "badge": {
-      "indexed": "có trong pgvector",
-      "notIndexed": "chưa đánh chỉ mục"
+    "validation": {
+      "nameRequired": "Tên là bắt buộc",
+      "nameMax": "Tối đa 120 ký tự",
+      "keyMax": "Tối đa 16 ký tự",
+      "keyFormat": "Chỉ gồm chữ và số, bắt đầu bằng một chữ cái",
+      "descriptionMax": "Tối đa 2000 ký tự"
+    },
+    "empty": {
+      "title": "Chưa có dự án nào",
+      "hint": "Tạo dự án đầu tiên để bắt đầu biến ca kiểm thử thủ công thành tự động hóa."
+    },
+    "card": {
+      "noDescription": "Chưa có mô tả"
+    },
+    "toast": {
+      "created": "Đã tạo dự án “{name}”",
+      "deleted": "Đã xóa dự án “{name}”"
+    },
+    "confirmDelete": {
+      "title": "Xóa dự án này?",
+      "description": "“{name}” cùng toàn bộ ca kiểm thử trong đó sẽ mất. Kho Git thì không bị đụng tới.",
+      "confirm": "Xóa dự án"
     },
     "detail": {
-      "back": "Tất cả ghi chú",
-      "updatedAt": "Cập nhật {date}",
-      "index": "Đánh chỉ mục",
-      "reindex": "Đánh chỉ mục lại"
+      "back": "Tất cả dự án"
+    }
+  },
+  "testcases": {
+    "title": "Ca kiểm thử",
+    "searchPlaceholder": "Tìm theo tiêu đề hoặc mã tham chiếu…",
+    "count": "{count, plural, =0 {Chưa có ca kiểm thử} other {# ca kiểm thử}}",
+    "pagination": "Trang {page} / {total}",
+    "filter": {
+      "status": "Lọc theo trạng thái",
+      "allStatuses": "Mọi trạng thái"
+    },
+    "status": {
+      "NOT_AUTOMATED": "Chưa tự động hóa",
+      "MODELLED": "Đã mô hình hóa",
+      "GENERATED": "Đã sinh mã",
+      "COMMITTED": "Đã commit",
+      "outOfDate": "Cần cập nhật"
+    },
+    "priority": {
+      "LOW": "Thấp",
+      "MEDIUM": "Trung bình",
+      "HIGH": "Cao",
+      "CRITICAL": "Nghiêm trọng"
+    },
+    "table": {
+      "reference": "Mã",
+      "title": "Tiêu đề",
+      "priority": "Độ ưu tiên",
+      "status": "Trạng thái",
+      "tags": "Thẻ",
+      "noTags": "—",
+      "updated": "Cập nhật",
+      "actions": "Thao tác",
+      "deleteRow": "Xóa {title}",
+      "empty": "Chưa có ca kiểm thử nào",
+      "emptyHint": "Viết ca đầu tiên đúng như cách bạn vẫn viết — các bước bằng lời của bạn.",
+      "noMatch": "Không có kết quả phù hợp",
+      "noMatchHint": "Thử từ khóa khác hoặc bỏ bộ lọc trạng thái."
+    },
+    "new": {
+      "trigger": "Ca kiểm thử mới",
+      "title": "Tạo ca kiểm thử",
+      "description": "Đặt tiêu đề trước; các bước sẽ thêm trong trình soạn mở ra ngay sau đó.",
+      "submit": "Tạo và mở"
     },
     "form": {
       "title": "Tiêu đề",
-      "titlePlaceholder": "Biên bản họp khởi động",
-      "content": "Nội dung",
-      "contentPlaceholder": "Đã xảy ra chuyện gì, quyết định gì, bước tiếp theo là gì…",
+      "titlePlaceholder": "Đăng nhập với tài khoản hợp lệ",
+      "priority": "Độ ưu tiên",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Ca này chứng minh điều gì, một hai câu là đủ.",
+      "preconditions": "Điều kiện tiên quyết",
+      "preconditionsPlaceholder": "Tài khoản, dữ liệu hoặc trạng thái phải có trước bước 1.",
+      "steps": "Các bước",
+      "addStep": "Thêm bước",
+      "noSteps": "Chưa có bước nào — thêm bước đầu tiên.",
+      "stepAction": "Bước {position}: thao tác",
+      "stepActionPlaceholder": "Người kiểm thử làm gì…",
+      "stepExpected": "Bước {position}: kết quả mong đợi",
+      "stepExpectedPlaceholder": "Điều họ sẽ thấy (không bắt buộc)…",
+      "moveStepUp": "Chuyển bước {position} lên",
+      "moveStepDown": "Chuyển bước {position} xuống",
+      "removeStep": "Xóa bước {position}",
+      "expectedResult": "Kết quả mong đợi",
+      "expectedResultPlaceholder": "Cả ca kết thúc thế nào khi ứng dụng chạy đúng.",
       "tags": "Thẻ",
-      "tagsPlaceholder": "hop, q3",
-      "tagsHint": "Ngăn cách bằng dấu phẩy. Lưu ở dạng chữ thường."
+      "tagsPlaceholder": "smoke, auth",
+      "tagsHint": "Phân tách bằng dấu phẩy; dùng để lọc."
     },
     "validation": {
       "titleRequired": "Tiêu đề là bắt buộc",
       "titleMax": "Tối đa 200 ký tự",
-      "contentRequired": "Nội dung là bắt buộc",
+      "descriptionMax": "Tối đa 10000 ký tự",
+      "preconditionsMax": "Tối đa 10000 ký tự",
+      "expectedResultMax": "Tối đa 10000 ký tự",
+      "stepActionRequired": "Bước cần có nội dung thao tác",
+      "stepActionMax": "Tối đa 2000 ký tự",
+      "stepExpectedMax": "Tối đa 2000 ký tự",
+      "stepsMax": "Tối đa 100 bước",
       "tagMax": "Mỗi thẻ tối đa 64 ký tự",
       "tagsMax": "Tối đa 20 thẻ"
     },
-    "confirmDelete": {
-      "title": "Xoá ghi chú này?",
-      "description": "\"{title}\" và các vector nhúng của nó sẽ bị xoá. Không thể hoàn tác.",
-      "confirm": "Xoá ghi chú"
+    "editor": {
+      "title": "Ca kiểm thử",
+      "back": "Tất cả ca kiểm thử",
+      "updated": "Cập nhật {when}"
     },
     "toast": {
-      "created": "Đã tạo \"{title}\"",
-      "updated": "Đã lưu. Hãy đánh chỉ mục lại để RAG thấy nội dung mới.",
-      "deleted": "Đã xoá \"{title}\"",
-      "indexed": "\"{title}\" giờ đã tìm được bằng RAG",
-      "indexedShort": "Đã đưa vào pgvector"
+      "created": "Đã tạo {reference}",
+      "saved": "Đã lưu {reference}",
+      "deleted": "Đã xóa {reference}"
+    },
+    "confirmDelete": {
+      "title": "Xóa ca kiểm thử này?",
+      "description": "{reference} — “{title}” sẽ mất, kèm mọi dữ liệu đã lập chỉ mục từ nó.",
+      "confirm": "Xóa ca kiểm thử"
     }
   },
   "chat": {
@@ -190,7 +283,8 @@
     "tabs": {
       "profile": "Hồ sơ",
       "appearance": "Hiển thị",
-      "language": "Ngôn ngữ"
+      "language": "Ngôn ngữ",
+      "ai": "Trợ lý AI"
     },
     "profile": {
       "title": "Hồ sơ",
@@ -207,6 +301,42 @@
       "title": "Ngôn ngữ",
       "description": "Đổi ngôn ngữ sẽ đổi URL, nên lựa chọn được giữ nguyên khi chia sẻ liên kết.",
       "current": "Đang đọc bằng {language}"
+    },
+    "ai": {
+      "title": "Trợ lý AI",
+      "description": "Không gian làm việc này dùng nhà cung cấp mô hình nào — với key, mô hình và ngân sách riêng. Dùng key của bạn, hoặc chạy theo mặc định của nền tảng.",
+      "platformDefault": "Không gian làm việc này đang chạy theo cấu hình nhà cung cấp của nền tảng.",
+      "provider": "Nhà cung cấp",
+      "providerPlaceholder": "Chọn nhà cung cấp",
+      "apiKey": "API key",
+      "apiKeyStored": "đã lưu",
+      "apiKeyPlaceholder": "sk-…",
+      "apiKeyKeepPlaceholder": "Để trống để giữ key đã lưu",
+      "apiKeySetHint": "Đã lưu ở dạng mã hóa; sẽ không hiển thị lại. Nhập key mới để thay thế.",
+      "apiKeyUnsetHint": "Được mã hóa trên máy chủ và không bao giờ hiển thị lại.",
+      "chatModel": "Mô hình chat",
+      "chatModelPlaceholder": "claude-sonnet-4-5",
+      "embeddingModel": "Mô hình embedding",
+      "embeddingModelPlaceholder": "text-embedding-3-small",
+      "budget": "Ngân sách tháng (USD)",
+      "budgetHint": "Mức trần mềm. Việc kiểm soát chi tiêu sẽ có khi các lượt sinh được ghi lại.",
+      "removeKey": "Xóa key đã lưu",
+      "useDefault": "Dùng mặc định nền tảng",
+      "confirmUseDefault": {
+        "title": "Quay về mặc định của nền tảng?",
+        "description": "Key đã lưu và các cài đặt sẽ bị xóa; không gian làm việc dùng theo cấu hình chung của hệ thống.",
+        "confirm": "Dùng mặc định nền tảng"
+      },
+      "toast": {
+        "saved": "Đã lưu cài đặt AI",
+        "keyRemoved": "Đã xóa key đã lưu",
+        "cleared": "Đã quay về mặc định nền tảng"
+      },
+      "noWorkspace": {
+        "title": "Chưa có không gian làm việc",
+        "description": "Tài khoản AI thuộc về một không gian làm việc — hãy tạo trước.",
+        "cta": "Mở dự án"
+      }
     }
   },
   "auth": {

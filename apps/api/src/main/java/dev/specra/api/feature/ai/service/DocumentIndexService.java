@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
  * The write side of the vector store: text in, chunks stored.
  *
  * <p>Split out of {@link RagService} so a feature that only needs to keep its rows indexed — the
- * note feature does — depends on chunking and storage alone, and not on the chat client, the
+ * testcase feature does — depends on chunking and storage alone, and not on the chat client, the
  * retrieval advisor or anything else answering a question needs.
  */
 @Service

@@ -28,7 +28,7 @@ import { site } from "@/lib/config/site";
  */
 export function AppSidebar() {
   const t = useTranslations("nav");
-  // Locale-stripped, so "/notes" matches under both /vi and /en.
+  // Locale-stripped, so "/projects" matches under both /vi and /en.
   const pathname = usePathname();
 
   return (

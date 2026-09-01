@@ -48,7 +48,7 @@ export function MessageBubble({
           <div className="mt-3 grid gap-1.5 border-t pt-2.5">
             <span className="text-xs font-medium text-muted-foreground">{sourcesLabel}</span>
             {message.sources.map((source, index) => (
-              <div key={`${source.noteId}-${index}`} className="flex gap-2 text-xs">
+              <div key={`${source.sourceId}-${index}`} className="flex gap-2 text-xs">
                 <Badge variant="outline" className="shrink-0 font-normal">
                   {source.title}
                 </Badge>

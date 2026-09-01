@@ -99,8 +99,8 @@ spring:
           model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
           temperature: 0.7
           # Bumped from 2048 now that the assistant has tools: an answer that quotes retrieved
-          # note bodies runs long, and a truncated answer looks like a model failure rather
-          # than a limit. Thinking, if it were ever enabled, must stay below this number.
+          # test case bodies runs long, and a truncated answer looks like a model failure
+          # rather than a limit. Thinking, if it were ever enabled, must stay below this number.
           max-tokens: ${ANTHROPIC_MAX_TOKENS:8192}
 
     openai:
@@ -185,7 +185,13 @@ specra:
     # Which ContentStore the assistant's tools act on when a call does not name one.
     # Must match a ContentStore bean's kind(); ContentStoreRegistry checks that at
     # startup, so a typo fails the boot instead of the first tool call.
-    default-kind: ${CONTENT_DEFAULT_KIND:note}
+    default-kind: ${CONTENT_DEFAULT_KIND:testcase}
+  security:
+    # AES key (base64 → 16/24/32 bytes) that SecretsCipher encrypts stored secrets with —
+    # a workspace's own provider API key today, environment secrets later. Optional in
+    # development: left unset, everything runs and only *storing* a secret is refused with
+    # an error naming this variable. Generate one:  openssl rand -base64 32
+    encryption-key: ${SPECRA_ENCRYPTION_KEY:}
   ai:
     system-prompt: >
       You are Specra's assistant. Answer concisely and concretely.
@@ -199,6 +205,28 @@ specra:
       max-messages: 40
     rag:
       chunk-size: 800
+    # ─────────────────────────────────────────────────────────────────────────
+    # A one-token generation against the active chat provider, on a timer, so the
+    # product can answer "is the assistant working" before a user's question is the
+    # thing that discovers it is not. GET /api/ai/health serves the last result from
+    # memory and never calls a provider on the request thread.
+    #
+    # The durations are ISO-8601 because @Scheduled reads `interval` straight from the
+    # environment and parses only that form — `5m` binds here and then fails at startup.
+    #
+    # A metered provider bills every probe, so the interval is the cost dial: PT5M is
+    # ~288 one-token calls a day. Set AI_HEALTH_ENABLED=false to stop probing entirely;
+    # ?refresh=true keeps working, so a "test connection" button still does.
+    # ─────────────────────────────────────────────────────────────────────────
+    health:
+      enabled: ${AI_HEALTH_ENABLED:true}
+      interval: ${AI_HEALTH_INTERVAL:PT5M}
+      # Long enough that the probe does not compete with the rest of startup.
+      initial-delay: PT10S
+      # A provider that has not answered by now is not up, whatever it does later.
+      timeout: ${AI_HEALTH_TIMEOUT:PT10S}
+      # Floor between two forced (?refresh=true) probes — the endpoint has no auth yet.
+      min-refresh-interval: PT10S
   logging:
     access:
       enabled: true

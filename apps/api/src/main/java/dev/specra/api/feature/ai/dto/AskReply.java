@@ -11,8 +11,8 @@ public record AskReply(
     String model) {
 
   public record Source(
-      @Schema(example = "Kickoff notes") String title,
-      @Schema(description = "Id of the note this chunk came from") String noteId,
+      @Schema(example = "TC-4 — Đăng nhập hợp lệ") String title,
+      @Schema(description = "Id of the document this chunk came from") String sourceId,
       @Schema(description = "The retrieved chunk, truncated for display") String excerpt,
       @Schema(example = "0.83") Double score) {}
 }

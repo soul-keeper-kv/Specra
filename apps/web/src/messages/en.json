@@ -1,12 +1,11 @@
 {
   "app": {
     "name": "Specra",
-    "tagline": "Notes, chat and retrieval on your own Postgres."
+    "tagline": "Turn manual test cases into Playwright automation."
   },
   "nav": {
     "workspace": "Workspace",
     "dashboard": "Dashboard",
-    "notes": "Notes",
     "chat": "Chat",
     "settings": "Settings",
     "account": "Account",
@@ -14,7 +13,8 @@
     "signOut": "Sign out",
     "toggleSidebar": "Toggle sidebar",
     "openCommandPalette": "Search or jump to…",
-    "docs": "API docs"
+    "docs": "API docs",
+    "projects": "Projects"
   },
   "actions": {
     "create": "Create",
@@ -52,18 +52,18 @@
   },
   "marketing": {
     "badge": "Next.js 16 · Spring Boot 3 · pgvector",
-    "title": "Your notes, answerable.",
-    "subtitle": "Specra keeps notes in PostgreSQL, indexes them into pgvector, and answers questions from them with whichever model provider you point it at.",
+    "title": "Manual test cases, automated.",
+    "subtitle": "Specra turns the test cases QA already writes into real, reviewable Playwright code — kept in your own Git repository, run with real evidence, and repaired with a human in the loop.",
     "primaryCta": "Open the workspace",
     "secondaryCta": "Read the API docs",
     "features": {
-      "notes": {
-        "title": "Notes that stay yours",
-        "body": "CRUD through Spring Data JPA, paged and sorted on the server, rendered with TanStack Table."
+      "testcases": {
+        "title": "Test cases first",
+        "body": "Author manual cases with steps in your own words — Vietnamese or English — stored in PostgreSQL, ready to be modelled."
       },
       "rag": {
         "title": "Retrieval, not guesswork",
-        "body": "Index a note and it is chunked, embedded and stored in pgvector. Answers cite the notes they came from."
+        "body": "Index a test case and it is chunked, embedded and stored in pgvector. The assistant cites the cases it relied on."
       },
       "providers": {
         "title": "No vendor in the code",
@@ -74,96 +74,189 @@
         "body": "Every response carries a request id and a trace id, and every error is an RFC 9457 problem document."
       }
     },
-    "footerNote": "A reference stack, not a product."
+    "footerNote": "An early build — the golden path lands milestone by milestone."
   },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "What is in the workspace right now.",
     "stats": {
-      "notes": "Notes",
-      "notesHint": "stored in PostgreSQL",
-      "indexed": "Indexed on this page",
-      "indexedHint": "chunks live in pgvector",
+      "workspace": "Workspace",
+      "workspaceHint": "everything lives inside it",
+      "projects": "Projects",
+      "projectsHint": "one per Git repository",
       "provider": "Chat provider",
       "providerHint": "embeddings: {provider} · {dimensions}d",
       "providerFallback": "start the API to see this"
     },
     "cards": {
-      "notes": {
-        "title": "Notes",
-        "body": "CRUD through Spring Data JPA, paged and sorted on the server.",
-        "cta": "Open notes"
+      "projects": {
+        "title": "Projects",
+        "body": "Create a project and author the manual test cases your automation will grow from.",
+        "cta": "Open projects"
       },
       "chat": {
         "title": "Chat & RAG",
-        "body": "Streaming answers over SSE, with history in Postgres. Flip on RAG to answer strictly from indexed notes.",
+        "body": "Streaming answers over SSE, with history in Postgres. Flip on RAG to answer strictly from indexed test cases.",
         "cta": "Open chat"
       }
     },
     "swapHint": "Swap providers without touching code:"
   },
-  "notes": {
-    "title": "Notes",
-    "subtitle": "Stored in PostgreSQL. Index one to make it retrievable from pgvector.",
-    "searchPlaceholder": "Search title and content…",
-    "count": "{count, plural, =0 {No notes} one {# note} other {# notes}}",
-    "pagination": "{page} of {total}",
+  "workspaces": {
+    "empty": {
+      "title": "Create your workspace",
+      "description": "Everything in Specra lives in a workspace — one per team is plenty. Projects, test cases and settings all hang off it."
+    },
+    "create": {
+      "name": "Workspace name",
+      "namePlaceholder": "Acme QA",
+      "submit": "Create workspace"
+    },
+    "toast": {
+      "created": "Workspace “{name}” is ready"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "One project is one Git repository of automation code.",
+    "searchPlaceholder": "Search by name or key…",
+    "count": "{count, plural, =0 {No projects} one {# project} other {# projects}}",
     "new": {
-      "trigger": "New note",
-      "title": "New note",
-      "description": "Validated by Zod here and by bean validation on the API.",
-      "submit": "Create"
+      "trigger": "New project",
+      "title": "Create project",
+      "description": "Name it after the application under test. The key is the short handle quoted in references like ACME.",
+      "submit": "Create project"
     },
-    "table": {
-      "title": "Title",
-      "tags": "Tags",
-      "indexed": "Indexed",
-      "updated": "Updated",
-      "actions": "Actions",
-      "empty": "No notes yet.",
-      "emptyHint": "Create one and index it, then ask about it in chat.",
-      "noTags": "—",
-      "indexRow": "Index {title}",
-      "editRow": "Edit {title}",
-      "deleteRow": "Delete {title}"
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Acme storefront",
+      "key": "Key",
+      "keyPlaceholder": "ACME",
+      "keyHint": "Optional — derived from the name when left empty. Once created it never changes.",
+      "description": "Description",
+      "descriptionPlaceholder": "Checkout and account journeys for the public storefront."
     },
-    "badge": {
-      "indexed": "in pgvector",
-      "notIndexed": "not indexed"
+    "validation": {
+      "nameRequired": "Name is required",
+      "nameMax": "Max 120 characters",
+      "keyMax": "Max 16 characters",
+      "keyFormat": "Letters and digits only, starting with a letter",
+      "descriptionMax": "Max 2000 characters"
+    },
+    "empty": {
+      "title": "No projects yet",
+      "hint": "Create the first project to start turning manual test cases into automation."
+    },
+    "card": {
+      "noDescription": "No description"
+    },
+    "toast": {
+      "created": "Project “{name}” created",
+      "deleted": "Project “{name}” deleted"
+    },
+    "confirmDelete": {
+      "title": "Delete this project?",
+      "description": "“{name}” and every test case in it will be gone. The Git repository itself is not touched.",
+      "confirm": "Delete project"
     },
     "detail": {
-      "back": "All notes",
-      "updatedAt": "Updated {date}",
-      "index": "Index",
-      "reindex": "Re-index"
+      "back": "All projects"
+    }
+  },
+  "testcases": {
+    "title": "Test cases",
+    "searchPlaceholder": "Search by title or reference…",
+    "count": "{count, plural, =0 {No test cases} one {# test case} other {# test cases}}",
+    "pagination": "Page {page} of {total}",
+    "filter": {
+      "status": "Filter by status",
+      "allStatuses": "All statuses"
+    },
+    "status": {
+      "NOT_AUTOMATED": "Not automated",
+      "MODELLED": "Modelled",
+      "GENERATED": "Generated",
+      "COMMITTED": "Committed",
+      "outOfDate": "Out of date"
+    },
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
+    },
+    "table": {
+      "reference": "Ref",
+      "title": "Title",
+      "priority": "Priority",
+      "status": "Status",
+      "tags": "Tags",
+      "noTags": "—",
+      "updated": "Updated",
+      "actions": "Actions",
+      "deleteRow": "Delete {title}",
+      "empty": "No test cases yet",
+      "emptyHint": "Write the first one the way you already write them — steps in your own words.",
+      "noMatch": "Nothing matches",
+      "noMatchHint": "Try a different search or clear the status filter."
+    },
+    "new": {
+      "trigger": "New test case",
+      "title": "Create test case",
+      "description": "Give it a title; you add the steps in the editor that opens next.",
+      "submit": "Create and open"
     },
     "form": {
       "title": "Title",
-      "titlePlaceholder": "Kickoff notes",
-      "content": "Content",
-      "contentPlaceholder": "What happened, what was decided, what comes next…",
+      "titlePlaceholder": "Sign in with a valid account",
+      "priority": "Priority",
+      "description": "Description",
+      "descriptionPlaceholder": "What this case proves, in a sentence or two.",
+      "preconditions": "Preconditions",
+      "preconditionsPlaceholder": "Accounts, data or state that must exist before step 1.",
+      "steps": "Steps",
+      "addStep": "Add step",
+      "noSteps": "No steps yet — add the first one.",
+      "stepAction": "Step {position}: action",
+      "stepActionPlaceholder": "What the tester does…",
+      "stepExpected": "Step {position}: expected",
+      "stepExpectedPlaceholder": "What they should see (optional)…",
+      "moveStepUp": "Move step {position} up",
+      "moveStepDown": "Move step {position} down",
+      "removeStep": "Remove step {position}",
+      "expectedResult": "Expected result",
+      "expectedResultPlaceholder": "How the whole case ends when the application behaves.",
       "tags": "Tags",
-      "tagsPlaceholder": "meeting, q3",
-      "tagsHint": "Comma separated. Stored lowercase."
+      "tagsPlaceholder": "smoke, auth",
+      "tagsHint": "Comma-separated; used for filtering."
     },
     "validation": {
       "titleRequired": "Title is required",
       "titleMax": "Max 200 characters",
-      "contentRequired": "Content is required",
+      "descriptionMax": "Max 10000 characters",
+      "preconditionsMax": "Max 10000 characters",
+      "expectedResultMax": "Max 10000 characters",
+      "stepActionRequired": "A step needs an action",
+      "stepActionMax": "Max 2000 characters",
+      "stepExpectedMax": "Max 2000 characters",
+      "stepsMax": "At most 100 steps",
       "tagMax": "Tags are limited to 64 characters",
       "tagsMax": "At most 20 tags"
     },
-    "confirmDelete": {
-      "title": "Delete this note?",
-      "description": "\"{title}\" and its embeddings are removed. This cannot be undone.",
-      "confirm": "Delete note"
+    "editor": {
+      "title": "Test case",
+      "back": "All test cases",
+      "updated": "Updated {when}"
     },
     "toast": {
-      "created": "Created \"{title}\"",
-      "updated": "Saved. Re-index to refresh what RAG sees.",
-      "deleted": "Deleted \"{title}\"",
-      "indexed": "\"{title}\" is now searchable by RAG",
-      "indexedShort": "Indexed into pgvector"
+      "created": "{reference} created",
+      "saved": "{reference} saved",
+      "deleted": "{reference} deleted"
+    },
+    "confirmDelete": {
+      "title": "Delete this test case?",
+      "description": "{reference} — “{title}” will be gone, along with anything indexed from it.",
+      "confirm": "Delete test case"
     }
   },
   "chat": {
@@ -190,7 +283,8 @@
     "tabs": {
       "profile": "Profile",
       "appearance": "Appearance",
-      "language": "Language"
+      "language": "Language",
+      "ai": "AI assistant"
     },
     "profile": {
       "title": "Profile",
@@ -207,6 +301,42 @@
       "title": "Language",
       "description": "Changing this rewrites the URL, so the choice survives a shared link.",
       "current": "Currently reading {language}"
+    },
+    "ai": {
+      "title": "AI assistant",
+      "description": "Which model provider this workspace uses — with its own key, models and budget. Bring your own key, or run on the platform default.",
+      "platformDefault": "This workspace currently runs on the platform's provider configuration.",
+      "provider": "Provider",
+      "providerPlaceholder": "Choose a provider",
+      "apiKey": "API key",
+      "apiKeyStored": "stored",
+      "apiKeyPlaceholder": "sk-…",
+      "apiKeyKeepPlaceholder": "Leave blank to keep the stored key",
+      "apiKeySetHint": "Stored encrypted; it is never shown again. Type a new one to replace it.",
+      "apiKeyUnsetHint": "Stored encrypted on the server and never shown again.",
+      "chatModel": "Chat model",
+      "chatModelPlaceholder": "claude-sonnet-4-5",
+      "embeddingModel": "Embedding model",
+      "embeddingModelPlaceholder": "text-embedding-3-small",
+      "budget": "Monthly budget (USD)",
+      "budgetHint": "A soft ceiling. Enforcement arrives once generations are recorded.",
+      "removeKey": "Remove stored key",
+      "useDefault": "Use platform default",
+      "confirmUseDefault": {
+        "title": "Back to the platform default?",
+        "description": "The stored key and settings are deleted, and this workspace uses whatever the installation is configured with.",
+        "confirm": "Use platform default"
+      },
+      "toast": {
+        "saved": "AI settings saved",
+        "keyRemoved": "Stored key removed",
+        "cleared": "Back to the platform default"
+      },
+      "noWorkspace": {
+        "title": "No workspace yet",
+        "description": "The AI account belongs to a workspace — create one first.",
+        "cta": "Open projects"
+      }
     }
   },
   "auth": {

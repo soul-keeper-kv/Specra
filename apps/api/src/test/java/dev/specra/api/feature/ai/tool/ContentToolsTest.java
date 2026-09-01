@@ -3,13 +3,13 @@ package dev.specra.api.feature.ai.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.specra.api.config.SpecraProperties;
 import dev.specra.api.core.content.ContentCapability;
 import dev.specra.api.core.content.ContentQuery;
 import dev.specra.api.core.content.ContentStoreRegistry;
 import dev.specra.api.core.content.UnsupportedContentOperationException;
 import dev.specra.api.core.error.ResourceNotFoundException;
 import dev.specra.api.support.FakeContentStore;
+import dev.specra.api.support.TestProperties;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.support.ToolCallbacks;
@@ -85,13 +85,6 @@ class ContentToolsTest {
   }
 
   private static ContentStoreRegistry registry(FakeContentStore store, String defaultKind) {
-    return new ContentStoreRegistry(
-        List.of(store),
-        new SpecraProperties(
-            new SpecraProperties.Cors(List.of("http://localhost:3000")),
-            new SpecraProperties.Ai(
-                "prompt", new SpecraProperties.Ai.ChatMemory(40), new SpecraProperties.Ai.Rag(800)),
-            new SpecraProperties.Content(defaultKind),
-            new SpecraProperties.Logging(new SpecraProperties.Logging.Access(true, 1000))));
+    return new ContentStoreRegistry(List.of(store), TestProperties.withContentKind(defaultKind));
   }
 }

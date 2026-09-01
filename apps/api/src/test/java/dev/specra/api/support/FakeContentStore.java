@@ -75,7 +75,7 @@ public class FakeContentStore implements ContentStore {
     return documents.stream()
         .filter(d -> d.id().equals(id))
         .findFirst()
-        .orElseThrow(() -> new ResourceNotFoundException("resource.note", id));
+        .orElseThrow(() -> new ResourceNotFoundException("resource.testcase", id));
   }
 
   private static boolean matches(ContentDocument document, ContentQuery query) {

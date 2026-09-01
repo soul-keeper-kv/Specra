@@ -51,9 +51,9 @@ test("the workspace navigates between its sections", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: en.dashboard.title, level: 1 })).toBeVisible();
 
-  await page.getByRole("link", { name: en.nav.notes, exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/notes$/);
-  await expect(page.getByRole("heading", { name: en.notes.title, level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: en.nav.projects, exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/projects$/);
+  await expect(page.getByRole("heading", { name: en.projects.title, level: 1 })).toBeVisible();
 
   await page.getByRole("link", { name: en.nav.chat, exact: true }).click();
   await expect(page).toHaveURL(/\/en\/chat$/);
@@ -61,13 +61,13 @@ test("the workspace navigates between its sections", async ({ page }) => {
 });
 
 test("switching language rewrites the path and keeps the page", async ({ page }) => {
-  await page.goto("/en/notes");
+  await page.goto("/en/projects");
 
   await page.getByRole("button", { name: en.language.change }).click();
   await page.getByRole("menuitem", { name: "Tiếng Việt" }).click();
 
-  await expect(page).toHaveURL(/\/vi\/notes$/);
-  await expect(page.getByRole("heading", { name: vi.notes.title, level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/vi\/projects$/);
+  await expect(page.getByRole("heading", { name: vi.projects.title, level: 1 })).toBeVisible();
 });
 
 test("the theme choice reaches the html element", async ({ page }) => {
@@ -90,16 +90,15 @@ test("the command palette opens on the keyboard and navigates", async ({ page })
   await expect(page).toHaveURL(/\/en\/chat$/);
 });
 
-test("the new-note dialog validates before it will submit", async ({ page }) => {
-  await page.goto("/en/notes");
+test("the sign-in form validates before it will submit", async ({ page }) => {
+  await page.goto("/en/sign-in");
 
-  await page.getByRole("button", { name: en.notes.new.trigger }).first().click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
+  // Both fields left empty on purpose: a non-empty invalid email would be swallowed by the
+  // browser's native type="email" validation before the zod messages ever render.
+  await page.getByRole("button", { name: en.auth.signIn.submit }).click();
 
-  await dialog.getByRole("button", { name: en.notes.new.submit }).click();
-  await expect(dialog.getByText(en.notes.validation.titleRequired)).toBeVisible();
-  await expect(dialog.getByText(en.notes.validation.contentRequired)).toBeVisible();
+  await expect(page.getByText(en.auth.validation.nameRequired)).toBeVisible();
+  await expect(page.getByText(en.auth.validation.emailInvalid)).toBeVisible();
 });
 
 test("the chat toggles swap the description text", async ({ page }) => {

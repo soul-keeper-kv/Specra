@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.specra.api.config.SpecraProperties;
 import dev.specra.api.support.FakeContentStore;
+import dev.specra.api.support.TestProperties;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -80,11 +81,6 @@ class ContentStoreRegistryTest {
   }
 
   private static SpecraProperties properties(String defaultKind) {
-    return new SpecraProperties(
-        new SpecraProperties.Cors(List.of("http://localhost:3000")),
-        new SpecraProperties.Ai(
-            "prompt", new SpecraProperties.Ai.ChatMemory(40), new SpecraProperties.Ai.Rag(800)),
-        new SpecraProperties.Content(defaultKind),
-        new SpecraProperties.Logging(new SpecraProperties.Logging.Access(true, 1000)));
+    return TestProperties.withContentKind(defaultKind);
   }
 }

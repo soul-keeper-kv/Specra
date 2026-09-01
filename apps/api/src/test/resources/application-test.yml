@@ -24,3 +24,15 @@ logging:
     org.springframework.ai: WARN
     org.testcontainers: WARN
     com.github.dockerjava: WARN
+
+specra:
+  ai:
+    health:
+      # No probe on a timer here. The stub model answers instantly and always, so a
+      # scheduled probe proves nothing and only adds a task firing in the middle of
+      # every other test. AiHealthServiceTest drives the probe directly instead.
+      enabled: false
+  security:
+    # A fixed test key ("0123456789abcdef0123456789abcdef", base64) so the BYOK flow can be
+    # exercised end to end. Worthless outside tests by construction.
+    encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=

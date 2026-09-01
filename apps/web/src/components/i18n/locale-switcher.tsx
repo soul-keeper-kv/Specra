@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
  * Switches language by re-navigating to the same route under a different prefix.
  *
  * `usePathname` from `@/i18n/navigation` returns the path with the locale already stripped, so
- * `/vi/notes/abc` comes back as `/notes/abc` and can be pushed under the new locale unchanged.
+ * `/vi/projects/abc` comes back as `/projects/abc` and can be pushed under the new locale unchanged.
  * Dynamic segments are passed back through `params` because the stripped pathname still contains
  * the placeholder names, not the values.
  */

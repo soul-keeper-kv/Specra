@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Cpu, Database, MessagesSquare, NotebookPen } from "lucide-react";
+import { ArrowRight, Building2, Cpu, FolderKanban, MessagesSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LucideIcon } from "lucide-react";
 
@@ -16,16 +16,25 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProviders } from "@/features/chat/api/ai";
-import { useNotes } from "@/features/notes/api/notes";
+import { useProjects } from "@/features/projects/api/projects";
+import { useActiveWorkspace } from "@/features/workspaces/api/workspaces";
 import { Link } from "@/i18n/navigation";
 
 /** Overview of the workspace. A client component because every number on it is a live query. */
 export function DashboardView() {
   const t = useTranslations("dashboard");
-  const notes = useNotes({ size: 5 });
+  const active = useActiveWorkspace();
+  // One row is enough: the tile only reads totalElements.
+  const projects = useProjects(active.workspace?.id, { size: 1 });
   const providers = useProviders();
 
-  const indexed = notes.data?.content.filter((note) => note.indexedAt).length ?? 0;
+  const projectCount = active.isPending
+    ? undefined
+    : active.workspace === null
+      ? "0"
+      : projects.isPending
+        ? undefined
+        : String(projects.data?.totalElements ?? 0);
 
   return (
     <div className="grid gap-8">
@@ -33,16 +42,16 @@ export function DashboardView() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat
-          icon={NotebookPen}
-          label={t("stats.notes")}
-          value={notes.isPending ? undefined : String(notes.data?.totalElements ?? 0)}
-          hint={t("stats.notesHint")}
+          icon={Building2}
+          label={t("stats.workspace")}
+          value={active.isPending ? undefined : (active.workspace?.name ?? "—")}
+          hint={t("stats.workspaceHint")}
         />
         <Stat
-          icon={Database}
-          label={t("stats.indexed")}
-          value={notes.isPending ? undefined : String(indexed)}
-          hint={t("stats.indexedHint")}
+          icon={FolderKanban}
+          label={t("stats.projects")}
+          value={projectCount}
+          hint={t("stats.projectsHint")}
         />
         <Stat
           icon={Cpu}
@@ -61,11 +70,11 @@ export function DashboardView() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <ShortcutCard
-          icon={NotebookPen}
-          title={t("cards.notes.title")}
-          body={t("cards.notes.body")}
-          cta={t("cards.notes.cta")}
-          href="/notes"
+          icon={FolderKanban}
+          title={t("cards.projects.title")}
+          body={t("cards.projects.body")}
+          cta={t("cards.projects.cta")}
+          href="/projects"
         />
         <ShortcutCard
           icon={MessagesSquare}
@@ -112,7 +121,9 @@ function Stat({
         {value === undefined ? (
           <Skeleton className="h-8 w-20" />
         ) : (
-          <div className="font-heading text-2xl font-semibold tabular-nums">{value}</div>
+          <div className="truncate font-heading text-2xl font-semibold tabular-nums">
+            {value}
+          </div>
         )}
         <p className="text-xs text-muted-foreground">{hint}</p>
       </CardContent>

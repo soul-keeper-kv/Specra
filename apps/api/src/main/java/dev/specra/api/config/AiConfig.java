@@ -63,7 +63,7 @@ public class AiConfig {
         .defaultSystem(
             """
             Answer strictly from the supplied context. If the context does not contain the answer, \
-            say you do not know rather than guessing. Cite the note titles you relied on. \
+            say you do not know rather than guessing. Cite the titles of the documents you relied on. \
             Answer in the same language the question was asked in.
             """)
         .defaultAdvisors(new SimpleLoggerAdvisor())
