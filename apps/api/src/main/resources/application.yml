@@ -24,6 +24,13 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  # The repo's .env, if there is one. Without this, `pnpm dev:api` sees none of it and a key
+  # put there silently does nothing — only the VS Code launch configurations picked it up,
+  # through their own envFile. `optional:` means a checkout without the file still boots, and
+  # real environment variables still win, so nothing changes for CI or production.
+  config:
+    import: optional:file:../../.env[.properties]
+
   # Running the API brings the database up if it is not already running. It points at
   # the repo's one compose file rather than a copy beside this module: two files both
   # declaring container_name specra-postgres are two compose projects fighting over one

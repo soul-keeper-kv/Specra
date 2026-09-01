@@ -27,14 +27,17 @@ public class RagService {
   private final VectorStore vectorStore;
   private final ChatClient ragChatClient;
   private final AiProviders providers;
+  private final AiFailures failures;
 
   public RagService(
       VectorStore vectorStore,
       @Qualifier("ragChatClient") ChatClient ragChatClient,
-      AiProviders providers) {
+      AiProviders providers,
+      AiFailures failures) {
     this.vectorStore = vectorStore;
     this.ragChatClient = ragChatClient;
     this.providers = providers;
+    this.failures = failures;
   }
 
   public AskReply ask(AskRequest request) {
@@ -46,12 +49,15 @@ public class RagService {
             .build();
 
     ChatClientResponse response =
-        ragChatClient
-            .prompt()
-            .advisors(QuestionAnswerAdvisor.builder(vectorStore).searchRequest(search).build())
-            .user(request.question())
-            .call()
-            .chatClientResponse();
+        failures.guard(
+            () ->
+                ragChatClient
+                    .prompt()
+                    .advisors(
+                        QuestionAnswerAdvisor.builder(vectorStore).searchRequest(search).build())
+                    .user(request.question())
+                    .call()
+                    .chatClientResponse());
 
     return new AskReply(text(response), sources(response), providers.chat(), model(response));
   }

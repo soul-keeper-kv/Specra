@@ -2,6 +2,9 @@ package dev.specra.api.feature.ai.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.specra.api.core.error.BusinessException;
+import dev.specra.api.core.error.ErrorCode;
+import dev.specra.api.core.error.ProblemFactory;
 import dev.specra.api.feature.ai.dto.AskReply;
 import dev.specra.api.feature.ai.dto.AskRequest;
 import dev.specra.api.feature.ai.dto.ChatReply;
@@ -20,6 +23,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.validation.annotation.Validated;
@@ -48,16 +52,19 @@ public class AiController {
   private final ChatService chatService;
   private final RagService ragService;
   private final AiProviders providers;
+  private final ProblemFactory problems;
   private final ObjectMapper objectMapper;
 
   public AiController(
       ChatService chatService,
       RagService ragService,
       AiProviders providers,
+      ProblemFactory problems,
       ObjectMapper objectMapper) {
     this.chatService = chatService;
     this.ragService = ragService;
     this.providers = providers;
+    this.problems = problems;
     this.objectMapper = objectMapper;
   }
 
@@ -82,7 +89,41 @@ public class AiController {
     return chatService
         .streamTokens(request)
         .map(token -> ServerSentEvent.builder(asJson(token)).event("token").build())
-        .concatWithValues(ServerSentEvent.<String>builder("\"\"").event("done").build());
+        .concatWithValues(ServerSentEvent.<String>builder("\"\"").event("done").build())
+        .onErrorResume(failure -> Flux.just(errorEvent(failure)));
+  }
+
+  /**
+   * A stream that has already sent its first byte cannot be given a problem document: the status
+   * line and headers are long gone, and throwing here would leave the client with a truncated
+   * stream and no reason for it. So the failure becomes a final {@code error} event whose payload
+   * is the same RFC 9457 document the non-streaming endpoints return — the client branches on
+   * {@code code} exactly as it does everywhere else.
+   *
+   * <p>A failure raised <em>before</em> the first token never reaches here: {@code
+   * AiFailures.guardStream} checks credentials eagerly, so an unconfigured provider fails while the
+   * response is still uncommitted and is rendered as an ordinary problem document with its own
+   * status.
+   */
+  private ServerSentEvent<String> errorEvent(Throwable failure) {
+    ErrorCode code =
+        failure instanceof BusinessException business
+            ? business.errorCode()
+            : ErrorCode.AI_PROVIDER_ERROR;
+    ProblemDetail problem =
+        failure instanceof BusinessException business
+            ? problems.of(business.errorCode(), business.messageKey(), business.messageArgs())
+            : problems.of(code, code.detailKey(), providers.chat());
+    return ServerSentEvent.builder(write(problem)).event("error").build();
+  }
+
+  private String write(ProblemDetail problem) {
+    try {
+      return objectMapper.writeValueAsString(problem);
+    } catch (JsonProcessingException e) {
+      // The stream is already open; a bare code keeps the client on the documented shape.
+      return "{\"code\":\"" + ErrorCode.INTERNAL_ERROR.slug() + "\"}";
+    }
   }
 
   /**

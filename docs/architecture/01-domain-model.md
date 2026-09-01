@@ -5,6 +5,7 @@
 ```text
 Workspace                       tenant boundary — every query is scoped by it
  ├── WorkspaceMember            user × workspace × role
+ ├── AiAccount                  the workspace's own provider, key and budget (BYOK)
  └── Project                    one automation project = one Git repository
       ├── GitRepository         provider, remote, default branch, credential ref
       ├── Environment           baseUrl + variables + secrets (DEV / STAGING / PROD)
@@ -36,6 +37,12 @@ Workspace                       tenant boundary — every query is scoped by it
   of in every spec. This is what makes fixes small.
 - **TestRun is the request; TestResult is the outcome per matrix cell.** One run over three
   browsers and one environment is one `TestRun` and three `TestResult`s.
+- **AiAccount hangs off the workspace, not the project.** A key and a budget belong to
+  whoever pays, and that is the account. It holds the provider, the encrypted key, an optional
+  model preference and a spending ceiling; a workspace without one falls back to the
+  platform's, and a workspace with neither is _unconfigured_ — a state the product reports and
+  offers to fix, never a failure. `AiCredentials` in `apps/api` is already the single place
+  that answers "can we call a model", so this lands there and nowhere else.
 - **AiGeneration is an audit record and a proposal, in one row.** Every model call that
   could change the repository is recorded before anything is applied, with the prompt
   fingerprint, the model, the token cost, the produced artefact, and the user's decision.

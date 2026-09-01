@@ -20,16 +20,20 @@ public class ChatService {
   private final ChatClient chatClient;
   private final ChatMemory chatMemory;
   private final AiProviders providers;
+  private final AiFailures failures;
 
-  public ChatService(ChatClient chatClient, ChatMemory chatMemory, AiProviders providers) {
+  public ChatService(
+      ChatClient chatClient, ChatMemory chatMemory, AiProviders providers, AiFailures failures) {
     this.chatClient = chatClient;
     this.chatMemory = chatMemory;
     this.providers = providers;
+    this.failures = failures;
   }
 
   public ChatReply answer(ChatRequest request) {
     String conversationId = request.conversationIdOrDefault();
-    ChatResponse response = prompt(request, conversationId).call().chatResponse();
+    ChatResponse response =
+        failures.guard(() -> prompt(request, conversationId).call().chatResponse());
 
     String content =
         response == null || response.getResult() == null
@@ -44,7 +48,8 @@ public class ChatService {
    * the job of the controller — this returns the text of the model and nothing else.
    */
   public Flux<String> streamTokens(ChatRequest request) {
-    return prompt(request, request.conversationIdOrDefault()).stream().content();
+    return failures.guardStream(
+        () -> prompt(request, request.conversationIdOrDefault()).stream().content());
   }
 
   public void clear(String conversationId) {

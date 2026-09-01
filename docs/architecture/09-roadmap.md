@@ -40,6 +40,11 @@ holds the cases, schema-valid on purpose, so the layer has its target before it 
 - Web: projects list, project shell, test case list and editor.
 - **Delete `feature/note` and `features/notes`** once `testcase` covers the same ground.
   `NoteContentStore` becomes `TestCaseContentStore` so the assistant keeps working.
+- **`AiAccount`: the workspace's own provider, key and budget.** `AiCredentials` already
+  answers "can we call a model" for every caller, so this is a change inside that class plus a
+  settings screen — bring-your-own-key needs a tenant to belong to, which is why it waits for
+  this milestone and not longer. Task-based model routing follows once generations are being
+  recorded (M5), because routing without the cost data to judge it is guesswork.
 
 **Done when** a user can create a project and author a test case, in both languages, with the
 error and navigation conventions the `specra-feature` skill requires.

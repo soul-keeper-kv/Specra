@@ -34,6 +34,16 @@ public enum ErrorCode {
   AI_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
   /** The model provider could not be reached at all, or timed out. */
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+  /**
+   * Nobody has given this installation usable credentials for the active model provider, so there
+   * is nothing to call. Distinct from {@link #AI_PROVIDER_ERROR} on purpose: that one means the
+   * provider said no, this one means we never got as far as asking. The client can act on it — the
+   * fix is to add a key — so the UI offers that instead of reporting a failure.
+   *
+   * <p>Declared after {@link #AI_PROVIDER_UNAVAILABLE} deliberately: both are 503, and {@link
+   * #forStatus} returns the first match, which must stay the general one.
+   */
+  AI_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE),
   /** The store or backend named by the request exists, but cannot perform this operation. */
   UNSUPPORTED_OPERATION(HttpStatus.NOT_IMPLEMENTED),
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);

@@ -24,6 +24,68 @@ class names a vendor** — no `@Qualifier("anthropic")`, no `new OpenAiChatModel
 roles may use different models (a cheap model for understanding, a stronger one for
 analysis); that is configuration, not a branch.
 
+## Which model answers a call
+
+One installation-wide provider is the MVP's simplification, not the destination. Three
+things decide the model, and each is data resolved per call — never a branch in code:
+
+```text
+        workspace credentials        the account's own key, its own provider, its own budget
+                 +
+             the role               understand · model · plan · generate · analyse
+                 +
+          the task's demands        how hard is this one, actually
+                 │
+                 ▼
+        the model for this call
+```
+
+**Bring your own key.** A workspace holds its own provider credentials, so each account runs
+on its own quota and its own bill. The platform key is the fallback for accounts that have
+not set one, and an account with neither is not broken — it is _unconfigured_, which is a
+state the product reports and offers to fix. `AiCredentials` is the resolution point today,
+answering from configuration; when workspaces exist it asks the workspace first, and no
+caller changes.
+
+**Routing by task.** A role gives a floor — locator planning wants a cheap fast model,
+failure analysis wants a strong one — and the task can raise it: a twelve-step case with
+ambiguous wording is not the same job as a two-step login. The decision is a small,
+inspectable function of (role, signals, budget, what the workspace can pay for), and its
+choice is recorded on the `AiGeneration` row alongside the token counts, so "was the cheap
+model good enough here" becomes a query rather than an argument.
+
+A budget is a constraint on that function, not an exception path: when a workspace is near
+its ceiling, routing prefers a cheaper model, and when it is over, calls fail with a distinct
+code the UI can explain — never with a generic error, and never by silently doing nothing.
+
+**None of this loosens the vendor rule; it depends on it.** Per-workspace providers are only
+possible because no class names one. The routing input is data; the code stays vendor-blind.
+
+## Failure is a reported state, never a crash
+
+The assistant being unavailable must never take anything else down with it, and must never
+surface as "something went wrong on our side".
+
+| Situation                         | Code                      | Status |
+| --------------------------------- | ------------------------- | ------ |
+| No usable credentials             | `ai-not-configured`       | 503    |
+| Provider refused (bad key, quota) | `ai-provider-error`       | 502    |
+| Provider unreachable or timed out | `ai-provider-unavailable` | 503    |
+| Provider rate-limited us          | `rate-limited`            | 429    |
+
+Three rules hold these up:
+
+- **The application boots without any key.** Every non-AI feature works; a warning at startup
+  says the assistant is off and why. A missing key is a configuration state, not a failed
+  boot.
+- **Translation happens at the model-call boundary**, in `AiFailures` — the one place that
+  knows a provider was being called. Letting a provider exception reach the global handler is
+  what produced the generic 500 in the first place.
+- **A stream that has already started cannot send a problem document.** It ends with an
+  `error` event carrying the same RFC 9457 body instead, so a client branches on `code`
+  identically either way. Credential checks run _before_ the stream opens, so the common case
+  is still an ordinary status.
+
 ## 1 — Understanding
 
 Reads the test case the way a senior QA would: what is being verified, what state is assumed,
