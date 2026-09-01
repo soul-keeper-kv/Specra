@@ -1,4 +1,4 @@
-package dev.specra.api.feature.ai;
+package dev.specra.api.feature.ai.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

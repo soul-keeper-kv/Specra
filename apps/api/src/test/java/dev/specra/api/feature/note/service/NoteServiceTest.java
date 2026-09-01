@@ -1,4 +1,4 @@
-package dev.specra.api.feature.note;
+package dev.specra.api.feature.note.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -6,7 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.feature.note.domain.Note;
+import dev.specra.api.feature.note.domain.NoteRepository;
 import dev.specra.api.feature.note.dto.NoteRequest;
+import dev.specra.api.feature.note.mapper.NoteMapperImpl;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -21,12 +26,15 @@ class NoteServiceTest {
 
   @Mock NoteRepository repository;
 
+  /** Recorded rather than mocked: the assertions are about what was announced, not how. */
+  final List<Object> published = new ArrayList<>();
+
   NoteService service;
 
   @BeforeEach
   void setUp() {
     // The generated MapStruct implementation, not a mock: mapping bugs should fail here.
-    service = new NoteService(repository, new NoteMapperImpl());
+    service = new NoteService(repository, new NoteMapperImpl(), published::add);
   }
 
   @Test
@@ -55,6 +63,36 @@ class NoteServiceTest {
 
     assertThat(response.title()).isEqualTo("New");
     assertThat(response.indexedAt()).isNull();
+  }
+
+  /**
+   * Clearing {@code indexedAt} only makes the flag honest; the chunks embedded from the old text
+   * are still in the vector store until someone drops them, and this event is what asks for that.
+   */
+  @Test
+  void updateAnnouncesThatAnythingEmbeddedIsNowStale() {
+    Note existing = new Note();
+    existing.setTitle("Old");
+    existing.setContent("Old body");
+    UUID id = UUID.randomUUID();
+
+    when(repository.findById(id)).thenReturn(Optional.of(existing));
+    when(repository.save(any(Note.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    service.update(id, new NoteRequest("New", "New body", Set.of("x")));
+
+    assertThat(published).containsExactly(new NoteEvents.NoteContentChanged(id));
+  }
+
+  @Test
+  void deleteAnnouncesTheNoteIsGoneSoItsEmbeddingsCanFollow() {
+    Note existing = new Note();
+    UUID id = UUID.randomUUID();
+    when(repository.findById(id)).thenReturn(Optional.of(existing));
+
+    service.delete(id);
+
+    assertThat(published).containsExactly(new NoteEvents.NoteDeleted(id));
   }
 
   @Test

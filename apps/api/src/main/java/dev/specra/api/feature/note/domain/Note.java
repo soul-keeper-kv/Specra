@@ -1,4 +1,4 @@
-package dev.specra.api.feature.note;
+package dev.specra.api.feature.note.domain;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

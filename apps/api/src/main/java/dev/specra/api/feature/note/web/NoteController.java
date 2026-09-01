@@ -1,8 +1,10 @@
-package dev.specra.api.feature.note;
+package dev.specra.api.feature.note.web;
 
 import dev.specra.api.core.web.PageResponse;
 import dev.specra.api.feature.note.dto.NoteRequest;
 import dev.specra.api.feature.note.dto.NoteResponse;
+import dev.specra.api.feature.note.service.NoteIndexService;
+import dev.specra.api.feature.note.service.NoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,9 +70,8 @@ public class NoteController {
   }
 
   @DeleteMapping("/{id}")
-  @Operation(summary = "Delete a note and drop its embeddings")
+  @Operation(summary = "Delete a note; its embeddings are dropped once the delete has committed")
   public ResponseEntity<Void> delete(@PathVariable UUID id) {
-    indexService.removeFromIndex(id);
     service.delete(id);
     return ResponseEntity.noContent().build();
   }

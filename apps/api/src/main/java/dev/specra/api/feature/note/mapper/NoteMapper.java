@@ -1,5 +1,6 @@
-package dev.specra.api.feature.note;
+package dev.specra.api.feature.note.mapper;
 
+import dev.specra.api.feature.note.domain.Note;
 import dev.specra.api.feature.note.dto.NoteRequest;
 import dev.specra.api.feature.note.dto.NoteResponse;
 import org.mapstruct.Mapper;
