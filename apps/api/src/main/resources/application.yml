@@ -192,6 +192,26 @@ specra:
     # development: left unset, everything runs and only *storing* a secret is refused with
     # an error naming this variable. Generate one:  openssl rand -base64 32
     encryption-key: ${SPECRA_ENCRYPTION_KEY:}
+    # Anyone who knows this string can mint an access token for any account, so the
+    # default below is a development convenience and nothing else — SecurityConfig
+    # logs a warning while it is in use, and the prod profile at the foot of this file
+    # drops the default so a deployment that forgets the variable fails to start
+    # rather than coming up insecure. Generate one:  openssl rand -base64 48
+    jwt:
+      secret: ${SPECRA_JWT_SECRET:dev-only-secret-not-for-anything-that-matters}
+      issuer: ${SPECRA_JWT_ISSUER:specra}
+      # An access token is verified by signature alone and never looked up, so revoking
+      # a session takes effect at the next refresh: this number is that delay.
+      access-minutes: ${SPECRA_JWT_ACCESS_MINUTES:15}
+      refresh-days: ${SPECRA_JWT_REFRESH_DAYS:30}
+    # Password guessing, throttled per account. The lock expires on its own; a permanent
+    # one would turn an attack on a user into a support ticket from that user.
+    lockout:
+      max-attempts: ${SPECRA_LOCKOUT_MAX_ATTEMPTS:5}
+      duration: ${SPECRA_LOCKOUT_DURATION:PT15M}
+    # Set false once the installation has its people: sign-up closes, and accounts are
+    # created by inviting an address into a workspace instead.
+    registration-open: ${SPECRA_REGISTRATION_OPEN:true}
   ai:
     system-prompt: >
       You are Specra's assistant. Answer concisely and concretely.
@@ -232,6 +252,16 @@ specra:
       enabled: true
       # Above this, the access log line is a WARN rather than an INFO.
       slow-request-millis: 1000
+  git:
+    # Working copies, one directory per (project, branch). A cache by contract: safe to
+    # delete at any time, re-cloned on demand, never pointed into by the database. The
+    # relative default lands under apps/api/data/, which is gitignored.
+    repos-dir: ${SPECRA_GIT_REPOS_DIR:data/repos}
+    # The committer on every commit Specra publishes. The *author* is the signed-in user —
+    # attribution belongs to whoever approved the change — and this is the tool that wrote
+    # it out, the same split rebase and cherry-pick record.
+    committer-name: ${SPECRA_GIT_COMMITTER_NAME:Specra}
+    committer-email: ${SPECRA_GIT_COMMITTER_EMAIL:bot@specra.dev}
 
 logging:
   level:
@@ -254,6 +284,14 @@ spring:
     properties:
       hibernate:
         format_sql: false
+
+specra:
+  security:
+    jwt:
+      # No default: an unresolvable placeholder stops the boot, which is the intended
+      # behaviour. A production instance signing tokens with the development secret is
+      # not authenticated at all, and it would look identical from the outside.
+      secret: ${SPECRA_JWT_SECRET}
 
 management:
   tracing:

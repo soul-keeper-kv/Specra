@@ -2,6 +2,7 @@ package dev.specra.api.feature.project.service;
 
 import dev.specra.api.core.error.ConflictException;
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.core.security.Permission;
 import dev.specra.api.core.text.Slugs;
 import dev.specra.api.core.web.PageResponse;
 import dev.specra.api.feature.project.domain.AutomationEngine;
@@ -47,24 +48,26 @@ public class ProjectService {
   }
 
   public PageResponse<ProjectResponse> search(UUID workspaceId, String q, Pageable pageable) {
-    workspaces.requireExists(workspaceId);
+    workspaces.requireAccess(workspaceId, Permission.CONTENT_VIEW);
     String query = StringUtils.hasText(q) ? q.trim() : null;
     return PageResponse.from(repository.search(workspaceId, query, pageable), mapper::toResponse);
   }
 
   public ProjectResponse get(UUID id) {
-    return mapper.toResponse(require(id));
+    return mapper.toResponse(requireVisible(id, Permission.CONTENT_VIEW));
   }
 
   /**
-   * The one throw site for a project that is not there. Public because every feature below a
+   * The one throw site for a project the caller may not have. Public because every feature below a
    * project — test cases first — has to check its parent, and a second lookup written by hand is a
    * second 404 sentence to keep translated.
+   *
+   * <p>Existence and access are answered together on purpose: a project in somebody else{'}s
+   * workspace has to be indistinguishable from one that was never created, or a caller can map the
+   * installation by guessing ids.
    */
-  public void requireExists(UUID id) {
-    if (!repository.existsById(id)) {
-      throw new ResourceNotFoundException("resource.project", id);
-    }
+  public void requireAccess(UUID id, Permission permission) {
+    requireVisible(id, permission);
   }
 
   /** The workspace a project belongs to, for the {@code workspace_id} its children also carry. */
@@ -89,7 +92,7 @@ public class ProjectService {
 
   @Transactional
   public ProjectResponse create(UUID workspaceId, ProjectRequest request) {
-    workspaces.requireExists(workspaceId);
+    workspaces.requireAccess(workspaceId, Permission.CONTENT_EDIT);
 
     Project project = new Project();
     project.setWorkspaceId(workspaceId);
@@ -102,7 +105,7 @@ public class ProjectService {
 
   @Transactional
   public ProjectResponse update(UUID id, ProjectPatchRequest request) {
-    Project project = require(id);
+    Project project = requireVisible(id, Permission.CONTENT_EDIT);
     if (request.name() != null) {
       project.setName(request.name().trim());
     }
@@ -114,7 +117,14 @@ public class ProjectService {
 
   @Transactional
   public void delete(UUID id) {
-    repository.delete(require(id));
+    repository.delete(requireVisible(id, Permission.CONTENT_DELETE));
+  }
+
+  /** Loads a project only if the caller belongs to its workspace and may do this there. */
+  private Project requireVisible(UUID id, Permission permission) {
+    Project project = require(id);
+    workspaces.requireAccess(project.getWorkspaceId(), permission);
+    return project;
   }
 
   private Project require(UUID id) {

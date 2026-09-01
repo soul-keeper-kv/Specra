@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.Duration;
 import java.util.List;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -26,7 +27,8 @@ public record SpecraProperties(
     @DefaultValue Ai ai,
     @DefaultValue Content content,
     @DefaultValue Logging logging,
-    @DefaultValue Security security) {
+    @DefaultValue Security security,
+    @DefaultValue Git git) {
 
   /** Origins allowed to call {@code /api/**} from a browser. */
   public record Cors(
@@ -83,5 +85,55 @@ public record SpecraProperties(
    *     encrypts stored secrets with. Optional: without it the application runs and only storing a
    *     secret is refused. Generate one with {@code openssl rand -base64 32}.
    */
-  public record Security(@DefaultValue("") String encryptionKey) {}
+  public record Security(
+      @DefaultValue("") String encryptionKey,
+      @DefaultValue Jwt jwt,
+      @DefaultValue Lockout lockout,
+      @DefaultValue("true") boolean registrationOpen) {
+
+    /**
+     * The access token this API signs and verifies itself.
+     *
+     * <p>{@code secret} has no default on purpose. HS256 with a guessable key is not authentication
+     * — anyone who knows the string mints tokens for any account — so a deployment that forgets to
+     * set {@code SPECRA_JWT_SECRET} must fail to start rather than come up insecure. The 32-byte
+     * floor is what HS256 needs to be worth using; generate one with {@code openssl rand -base64
+     * 48}.
+     *
+     * <p>The access lifetime is short because an access token is never checked against the
+     * database: revoking a session takes effect at the next refresh, so the window is the lifetime.
+     * Fifteen minutes keeps that window small without making refreshes constant.
+     */
+    public record Jwt(
+        @NotBlank @Size(min = 32, message = "specra.security.jwt.secret must be at least 32 characters") String secret,
+        @NotBlank @DefaultValue("specra") String issuer,
+        @Min(1) @Max(1440) @DefaultValue("15") int accessMinutes,
+        @Min(1) @Max(365) @DefaultValue("30") int refreshDays) {}
+
+    /**
+     * Throttles password guessing. The lock is on the account and it expires on its own: a
+     * permanent lock turns a guessing attempt into a denial of service against the real user, and a
+     * support ticket for every one.
+     */
+    public record Lockout(
+        @Min(1) @Max(100) @DefaultValue("5") int maxAttempts,
+        @NotNull @DurationMin(seconds = 1) @DefaultValue("PT15M") Duration duration) {}
+  }
+
+  /**
+   * Working copies and commit identity for the git feature.
+   *
+   * @param reposDir where working copies live, one directory per (project, branch). A cache by
+   *     contract (07-git.md): deletable at any time, re-cloned on demand, never pointed into by the
+   *     database. Relative paths resolve against the API's working directory.
+   * @param committerName who the committer is on every commit Specra publishes. The author is the
+   *     signed-in user — attribution belongs to the person who approved the change — and the
+   *     committer is the tool, which is exactly how {@code git rebase} and friends record it.
+   * @param committerEmail pairs with {@code committerName}; also the author fallback when no user
+   *     is signed in, which outside tests should never happen.
+   */
+  public record Git(
+      @NotBlank @DefaultValue("data/repos") String reposDir,
+      @NotBlank @DefaultValue("Specra") String committerName,
+      @NotBlank @DefaultValue("bot@specra.dev") String committerEmail) {}
 }

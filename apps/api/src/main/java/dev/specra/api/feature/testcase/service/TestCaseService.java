@@ -3,6 +3,7 @@ package dev.specra.api.feature.testcase.service;
 import dev.specra.api.core.error.BusinessException;
 import dev.specra.api.core.error.ErrorCode;
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.core.security.Permission;
 import dev.specra.api.core.web.PageResponse;
 import dev.specra.api.feature.project.service.ProjectService;
 import dev.specra.api.feature.testcase.domain.AutomationStatus;
@@ -14,12 +15,14 @@ import dev.specra.api.feature.testcase.dto.TestCaseResponse;
 import dev.specra.api.feature.testcase.dto.TestCaseStepRequest;
 import dev.specra.api.feature.testcase.dto.TestCaseSummaryResponse;
 import dev.specra.api.feature.testcase.mapper.TestCaseMapper;
+import dev.specra.api.feature.workspace.service.WorkspaceService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,22 +42,25 @@ public class TestCaseService {
   private final TestCaseRepository repository;
   private final TestCaseMapper mapper;
   private final ProjectService projects;
+  private final WorkspaceService workspaces;
   private final ApplicationEventPublisher events;
 
   public TestCaseService(
       TestCaseRepository repository,
       TestCaseMapper mapper,
       ProjectService projects,
+      WorkspaceService workspaces,
       ApplicationEventPublisher events) {
     this.repository = repository;
     this.mapper = mapper;
     this.projects = projects;
+    this.workspaces = workspaces;
     this.events = events;
   }
 
   public PageResponse<TestCaseSummaryResponse> search(
       UUID projectId, String q, String status, String tag, Pageable pageable) {
-    projects.requireExists(projectId);
+    projects.requireAccess(projectId, Permission.CONTENT_VIEW);
     String query = StringUtils.hasText(q) ? q.trim() : null;
     String tagFilter = StringUtils.hasText(tag) ? tag.trim().toLowerCase() : null;
     return PageResponse.from(
@@ -78,21 +84,46 @@ public class TestCaseService {
     }
   }
 
-  /** Cross-project search for the content port; the UI always scopes by project instead. */
+  /**
+   * Cross-project search for the content port; the UI always scopes by project instead.
+   *
+   * <p>Cross-project, never cross-tenant. This is the query the assistant runs on the user's
+   * behalf, so it is narrowed to the workspaces that user belongs to — a retrieval step that
+   * ignored tenancy would put somebody else's test cases into a prompt, and the answer would look
+   * entirely plausible.
+   */
   public PageResponse<TestCaseResponse> searchAll(String q, String tag, Pageable pageable) {
+    List<UUID> visible = workspaces.visibleWorkspaceIds();
+    if (visible.isEmpty()) {
+      return PageResponse.from(Page.empty(pageable), mapper::toResponse);
+    }
     String query = StringUtils.hasText(q) ? q.trim() : null;
     String tagFilter = StringUtils.hasText(tag) ? tag.trim().toLowerCase() : null;
     return PageResponse.from(
-        repository.search(null, query, null, tagFilter, pageable), mapper::toResponse);
+        repository.searchInWorkspaces(visible, query, tagFilter, pageable), mapper::toResponse);
   }
 
   public TestCaseResponse get(UUID id) {
-    return mapper.toResponse(require(id));
+    return mapper.toResponse(requireVisible(id, Permission.CONTENT_VIEW));
+  }
+
+  /**
+   * Loads a case only if the caller belongs to its workspace and may do this there.
+   *
+   * <p>The row carries {@code workspace_id} directly, so the check is one lookup and does not
+   * depend on joining back up through the project — which is the reason V2 puts the column on every
+   * table under a workspace in the first place.
+   */
+  private TestCase requireVisible(UUID id, Permission permission) {
+    TestCase testCase = require(id);
+    workspaces.requireAccess(testCase.getWorkspaceId(), permission);
+    return testCase;
   }
 
   /**
    * The one throw site for a missing case. Package-private and returning the entity: it is for the
-   * other services in this feature, never for the web layer.
+   * other services in this feature, never for the web layer — and it deliberately does not check
+   * access, because its other callers run after commit, on behalf of nobody.
    */
   TestCase require(UUID id) {
     return repository
@@ -102,6 +133,8 @@ public class TestCaseService {
 
   @Transactional
   public TestCaseResponse create(UUID projectId, TestCaseRequest request) {
+    projects.requireAccess(projectId, Permission.CONTENT_EDIT);
+
     TestCase testCase = new TestCase();
     testCase.setWorkspaceId(projects.workspaceOf(projectId));
     testCase.setProjectId(projectId);
@@ -112,7 +145,7 @@ public class TestCaseService {
 
   @Transactional
   public TestCaseResponse update(UUID id, TestCaseRequest request) {
-    TestCase testCase = require(id);
+    TestCase testCase = requireVisible(id, Permission.CONTENT_EDIT);
     apply(testCase, request);
     // The intent changed after an IR was derived from it, so that IR is now behind the text.
     // A flag rather than a status: the case does not forget how far it had already got.
@@ -127,7 +160,7 @@ public class TestCaseService {
 
   @Transactional
   public void delete(UUID id) {
-    repository.delete(require(id));
+    repository.delete(requireVisible(id, Permission.CONTENT_DELETE));
     events.publishEvent(new TestCaseEvents.TestCaseDeleted(id));
   }
 

@@ -1,5 +1,6 @@
 package dev.specra.api.feature.testcase.domain;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,28 @@ public interface TestCaseRepository extends JpaRepository<TestCase, UUID> {
       @Param("projectId") UUID projectId,
       @Param("q") String q,
       @Param("status") AutomationStatus status,
+      @Param("tag") String tag,
+      Pageable pageable);
+
+  /**
+   * The same search, narrowed to a set of workspaces rather than to one project.
+   *
+   * <p>What the assistant retrieves through. A cross-project query on a multi-tenant table has to
+   * name the tenants it may see, and the caller passes a non-empty set — an empty one means the
+   * user is in no workspace at all, which the service answers without a query.
+   */
+  @Query(
+      """
+      select distinct tc from TestCase tc
+      left join tc.tags t
+      where tc.workspaceId in :workspaceIds
+        and (:q is null or lower(tc.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(tc.reference) like lower(concat('%', cast(:q as string), '%')))
+        and (:tag is null or t = :tag)
+      """)
+  Page<TestCase> searchInWorkspaces(
+      @Param("workspaceIds") Collection<UUID> workspaceIds,
+      @Param("q") String q,
       @Param("tag") String tag,
       Pageable pageable);
 }

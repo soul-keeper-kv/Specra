@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.specra.api.core.logging.MdcKeys;
 import dev.specra.api.support.TestAiConfiguration;
+import dev.specra.api.support.TestAuthConfiguration;
 import dev.specra.api.support.TestcontainersConfiguration;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -36,7 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestcontainersConfiguration.class, TestAiConfiguration.class})
+@Import({TestcontainersConfiguration.class, TestAiConfiguration.class, TestAuthConfiguration.class})
 class ProblemResponseIT {
 
   private static final String PROBLEM_JSON = "application/problem+json";
@@ -97,10 +98,10 @@ class ProblemResponseIT {
   }
 
   @Test
-  void theLangQueryParameterWorksWithoutAHeader() throws Exception {
+  void theLangQueryParameterIsIgnoredBecauseTheHeaderIsTheOnlyChannel() throws Exception {
     mvc.perform(get("/api/v1/test-cases/{id}", UUID.randomUUID()).param("lang", "vi"))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.title").value("Không tìm thấy"));
+        .andExpect(jsonPath("$.title").value("Not found"));
   }
 
   @Test

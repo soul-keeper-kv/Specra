@@ -126,10 +126,39 @@ calls `replaceDocument`, and drops chunks on `NoteEvents.NoteDeleted` /
 Chunking uses `TokenTextSplitter` (its builder methods carry a `with…` prefix:
 `withChunkSize`, `withMinChunkSizeChars`, `withKeepSeparator`).
 
+## Is the provider actually up
+
+`AiHealthService` sends one throwaway token to the active chat model every
+`specra.ai.health.interval` and keeps the answer in memory. `GET /api/ai/health` serves
+that cached reading — it never calls a provider on the request thread.
+
+Four statuses, and they are the contract clients branch on: `UP`, `DOWN` (with the
+`ErrorCode` slug in `code`), `NOT_CONFIGURED` (no key, so nothing was sent), `UNKNOWN` (no
+probe has completed). Always HTTP 200 — this reports a state rather than failing in one.
+
+- The probe is a real generation, not a TCP ping: a revoked key, an exhausted quota, a
+  missing model and an Ollama daemon that never pulled its model all accept a connection
+  happily. It asks for **one token**, and `AiHealthServiceTest` asserts that — the ceiling
+  is what makes probing every five minutes free of consequence.
+- It runs on its own executor under `specra.ai.health.timeout`, never on the scheduler
+  thread. A provider that accepts the socket and then goes quiet must not take the
+  application's other scheduled work down with it.
+- `?refresh=true` probes on demand for a "test connection" button, debounced by
+  `min-refresh-interval` because the endpoint has no auth and the call behind it is
+  billable. `AI_HEALTH_ENABLED=false` stops only the timer; refresh keeps working.
+- The reading is also a Micrometer gauge, `specra.ai.provider.up`, tagged by provider —
+  the actuator's Prometheus endpoint is already exposed.
+
+Durations everywhere here are ISO-8601 (`PT5M`), because `@Scheduled` reads `interval`
+straight from the environment and parses no other form. `5m` binds fine and then fails at
+startup.
+
 ## Quick checks
 
 ```bash
 curl -s localhost:8080/api/ai/providers            # which provider is live
+curl -s localhost:8080/api/ai/health               # last probe of the chat provider
+curl -s 'localhost:8080/api/ai/health?refresh=true'            # probe now
 curl -s 'localhost:8080/api/ai/retrieve?q=...&threshold=0.1'   # what RAG retrieves
 ```
 

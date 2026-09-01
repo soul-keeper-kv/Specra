@@ -109,7 +109,6 @@ back in the same shape rather than as an HTML error page.
 
 ```bash
 curl localhost:8080/api/notes/00000000-0000-0000-0000-000000000000 -H 'Accept-Language: vi'
-curl 'localhost:8080/api/notes/00000000-0000-0000-0000-000000000000?lang=vi'
 ```
 
 Bundles live in `src/main/resources/i18n/`: `messages.properties` is the English fallback,

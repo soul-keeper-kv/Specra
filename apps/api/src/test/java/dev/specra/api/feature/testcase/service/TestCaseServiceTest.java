@@ -11,6 +11,7 @@ import dev.specra.api.feature.testcase.domain.TestCaseRepository;
 import dev.specra.api.feature.testcase.dto.TestCaseRequest;
 import dev.specra.api.feature.testcase.dto.TestCaseStepRequest;
 import dev.specra.api.feature.testcase.mapper.TestCaseMapperImpl;
+import dev.specra.api.feature.workspace.service.WorkspaceService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ class TestCaseServiceTest {
 
   @Mock TestCaseRepository repository;
   @Mock ProjectService projects;
+  @Mock WorkspaceService workspaces;
 
   /** Recorded rather than mocked: the assertions are about what was announced, not how. */
   final List<Object> published = new ArrayList<>();
@@ -39,7 +41,9 @@ class TestCaseServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new TestCaseService(repository, new TestCaseMapperImpl(), projects, published::add);
+    service =
+        new TestCaseService(
+            repository, new TestCaseMapperImpl(), projects, workspaces, published::add);
   }
 
   @Test

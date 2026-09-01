@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.function.Function;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Spring's {@code Page} serialises to an unstable shape and warns about it. This is the flat,
@@ -18,6 +19,18 @@ public record PageResponse<T>(
     @Schema(example = "7") int totalPages,
     boolean first,
     boolean last) {
+
+  /**
+   * A page assembled by hand, for a source that is not a Spring {@code Page} — git history is
+   * walked from a working copy, so there is no repository to hand back a {@code Page}.
+   */
+  public static <T> PageResponse<T> of(List<T> content, Pageable pageable, long totalElements) {
+    int size = Math.max(1, pageable.getPageSize());
+    int totalPages = (int) Math.ceil((double) totalElements / size);
+    int number = pageable.getPageNumber();
+    return new PageResponse<>(
+        content, number, size, totalElements, totalPages, number == 0, number >= totalPages - 1);
+  }
 
   public static <E, T> PageResponse<T> from(Page<E> page, Function<E, T> mapper) {
     return new PageResponse<>(

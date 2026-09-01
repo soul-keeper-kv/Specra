@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.specra.api.core.error.ConflictException;
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.core.security.Permission;
 import dev.specra.api.feature.project.domain.AutomationEngine;
 import dev.specra.api.feature.project.domain.Project;
 import dev.specra.api.feature.project.domain.ProjectRepository;
@@ -72,14 +73,16 @@ class ProjectServiceTest {
   }
 
   /**
-   * The parent is checked through the workspace feature's service rather than its repository, so
-   * the 404 is worded once. Nothing is written when it fails.
+   * The parent is checked through the workspace feature{'}s service rather than its repository, so
+   * the 404 is worded once. A workspace the caller is not a member of is reported the same way as
+   * one that does not exist, which is what stops ids from being guessable. Nothing is written when
+   * it fails.
    */
   @Test
-  void refusesToCreateAProjectInAWorkspaceThatDoesNotExist() {
+  void refusesToCreateAProjectInAWorkspaceTheCallerCannotReach() {
     doThrow(new ResourceNotFoundException("resource.workspace", WORKSPACE))
         .when(workspaces)
-        .requireExists(WORKSPACE);
+        .requireAccess(WORKSPACE, Permission.CONTENT_EDIT);
 
     assertThatThrownBy(
             () -> service.create(WORKSPACE, new ProjectRequest("Acme shop", null, null, null)))

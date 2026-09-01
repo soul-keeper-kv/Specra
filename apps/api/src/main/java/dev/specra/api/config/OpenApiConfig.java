@@ -59,7 +59,8 @@ public class OpenApiConfig {
                     on the `code` field — `title` and `detail` are translated and will differ \
                     between callers.
 
-                    **Languages**: send `Accept-Language: vi` or append `?lang=vi` to any request.
+                    **Languages**: send `Accept-Language: vi` on any request. There is no `?lang=` \
+                    query parameter — the language is content negotiation, not part of the URL.
 
                     **Tracing**: every response carries `X-Request-Id`, and `X-Trace-Id` when \
                     tracing is enabled. Both appear in the error body and in the server log.
@@ -146,7 +147,7 @@ public class OpenApiConfig {
         .description(
             "Language for error messages and validation text. Supported: "
                 + String.join(", ", SupportedLocale.tags())
-                + ". Also settable as ?lang=. Responses echo "
+                + ". Responses echo "
                 + MdcKeys.REQUEST_ID_HEADER
                 + ".")
         .required(false)

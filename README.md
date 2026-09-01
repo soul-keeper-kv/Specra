@@ -140,7 +140,7 @@ The API is translated too. The web app forwards the active locale as `Accept-Lan
 validation messages and error details arrive already in the right language:
 
 ```bash
-curl 'localhost:8080/api/notes/does-not-exist?lang=vi'
+curl localhost:8080/api/notes/does-not-exist -H 'Accept-Language: vi'
 # {"title":"Không tìm thấy","code":"resource-not-found", …}
 ```
 

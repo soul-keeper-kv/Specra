@@ -23,15 +23,52 @@ public enum ErrorCode {
   INVALID_PARAMETER(HttpStatus.BAD_REQUEST),
   UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
   FORBIDDEN(HttpStatus.FORBIDDEN),
+  /**
+   * Wrong email or wrong password — deliberately one code for both, so the response cannot be used
+   * to find out which addresses have accounts. Declared after {@link #UNAUTHORIZED} because both
+   * are 401 and {@link #forStatus} must keep returning the general one.
+   */
+  INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
+  /**
+   * The access or refresh token is missing, expired, malformed, or has been revoked. The web app
+   * branches on this to attempt one refresh before it gives up and sends the user to sign in.
+   */
+  INVALID_TOKEN(HttpStatus.UNAUTHORIZED),
+  /** Too many failed sign-in attempts; the account unlocks itself after a cooling-off period. */
+  ACCOUNT_LOCKED(HttpStatus.LOCKED),
+  /** An administrator suspended this account. Waiting will not help; a person has to act. */
+  ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN),
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND),
   ENDPOINT_NOT_FOUND(HttpStatus.NOT_FOUND),
   METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED),
   CONFLICT(HttpStatus.CONFLICT),
+  /**
+   * Registration hit an address that already has an account. A distinct code because the sign-up
+   * form points at its own email field and offers "sign in instead", which a generic conflict
+   * cannot do. After {@link #CONFLICT} for the same reason as above.
+   */
+  EMAIL_ALREADY_USED(HttpStatus.CONFLICT),
+  /**
+   * The remote refused a non-fast-forward push. Resolved by the user pulling and retrying — never
+   * by a force push or a background rebase they did not ask for. After {@link #CONFLICT} so {@link
+   * #forStatus} keeps returning the general 409.
+   */
+  GIT_PUSH_REJECTED(HttpStatus.CONFLICT),
+  /** A write wants the working copy, but uncommitted edits are sitting in it. */
+  WORKING_COPY_DIRTY(HttpStatus.CONFLICT),
+  /** A git operation on a project that has no repository connected yet. */
+  REPOSITORY_NOT_CONNECTED(HttpStatus.CONFLICT),
   UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE),
   PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE),
   RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
   /** The model provider answered, but refused the request (bad key, quota, unknown model). */
   AI_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
+  /**
+   * The Git remote rejected our credentials. 502, not 401: the caller is authenticated with Specra
+   * — it is Specra whose stored credential the remote turned away. Declared after {@link
+   * #AI_PROVIDER_ERROR} so {@link #forStatus} keeps the general 502.
+   */
+  GIT_AUTH_FAILED(HttpStatus.BAD_GATEWAY),
   /** The model provider could not be reached at all, or timed out. */
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   /**

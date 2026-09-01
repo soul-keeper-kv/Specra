@@ -27,3 +27,6 @@ notion-export/
 !.vscode/extensions.json
 !.vscode/settings.json
 *.log
+
+# Git working copies the API manages (specra.git.repos-dir) — a cache, never source.
+apps/api/data/

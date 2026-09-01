@@ -26,6 +26,7 @@
     <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     <archunit.version>1.4.1</archunit.version>
     <json-schema-validator.version>1.5.6</json-schema-validator.version>
+    <jgit.version>7.3.0.202506031305-r</jgit.version>
     <!-- The IR contract lives outside this module on purpose; see core/testmodel. -->
     <test-model.dir>${project.basedir}/../../packages/test-model</test-model.dir>
     <spotless.version>3.10.1</spotless.version>
@@ -67,6 +68,21 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+
+    <!-- ── security ─────────────────────────────────────────────────────
+         Specra issues its own access tokens, so the resource-server starter is
+         here for its JWT plumbing — Nimbus encoder and decoder — not because an
+         external authorization server exists. Moving to one later is a change
+         of JwtDecoder in SecurityConfig, not a change to every controller. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+
     <!-- Needed by the @Observed / @Timed aspects in ObservabilityConfig. -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -166,6 +182,17 @@
       <version>${json-schema-validator.version}</version>
     </dependency>
 
+    <!-- ── Git ────────────────────────────────────────────────────────── -->
+    <!-- Local mechanics only: clone, status, diff, commit, push against working copies.
+         The provider abstraction (feature/git + core/git) owns authentication and remotes;
+         JGit types never leak past GithubGitProvider, the same containment rule the LLM
+         vendors and the execution engines live under. -->
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <version>${jgit.version}</version>
+    </dependency>
+
     <!-- ── codegen ────────────────────────────────────────────────────── -->
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -202,6 +229,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- @WithSpecraUser needs @WithSecurityContext, and MockMvc needs the
+         springSecurity() setup this brings with it. -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

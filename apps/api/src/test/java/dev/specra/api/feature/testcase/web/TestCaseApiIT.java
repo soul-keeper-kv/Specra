@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.specra.api.support.TestAiConfiguration;
+import dev.specra.api.support.TestAuthConfiguration;
 import dev.specra.api.support.TestcontainersConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestcontainersConfiguration.class, TestAiConfiguration.class})
+@Import({TestcontainersConfiguration.class, TestAiConfiguration.class, TestAuthConfiguration.class})
 class TestCaseApiIT {
 
   @Autowired MockMvc mvc;

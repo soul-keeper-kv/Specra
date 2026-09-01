@@ -189,7 +189,8 @@ No user-facing string is written in Java. Bundles live in `src/main/resources/i1
   another, and on an undoubled apostrophe in a parameterised message (MessageFormat treats
   a single quote as an escape and swallows the rest of the sentence).
 
-Locale comes from `Accept-Language`, or `?lang=` for a quick check with curl.
+Locale comes from `Accept-Language`, and only from there — no `?lang=` parameter. For a quick
+check with curl: `-H 'Accept-Language: vi'`.
 
 ## Logging and tracing
 

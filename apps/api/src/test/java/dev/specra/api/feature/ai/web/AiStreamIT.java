@@ -8,6 +8,9 @@ import dev.specra.api.support.TestAiConfiguration;
 import dev.specra.api.support.TestcontainersConfiguration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,15 +41,45 @@ class AiStreamIT {
 
   @LocalServerPort int port;
 
+  /**
+   * Signed in over HTTP rather than through a mocked security context: this test drives a real
+   * port, so the token has to be one the running filter chain would actually accept.
+   */
+  private String accessToken;
+
+  @BeforeEach
+  void signIn() throws Exception {
+    String email = "stream-it-" + UUID.randomUUID() + "@specra.dev";
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    ResponseEntity<String> registered =
+        rest.exchange(
+            url("/api/v1/auth/register"),
+            HttpMethod.POST,
+            new HttpEntity<>(
+                json.writeValueAsString(
+                    Map.of(
+                        "email", email,
+                        "displayName", "Stream IT",
+                        "password", "correct horse battery staple")),
+                headers),
+            String.class);
+
+    assertThat(registered.getStatusCode().is2xxSuccessful()).isTrue();
+    accessToken = json.readTree(registered.getBody()).get("accessToken").asText();
+  }
+
   @Test
   void streamsEachTokenAsAJsonStringAndEndsWithADoneEvent() throws Exception {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     headers.setAccept(List.of(MediaType.TEXT_EVENT_STREAM));
+    headers.setBearerAuth(accessToken);
 
     ResponseEntity<String> response =
         rest.exchange(
-            "http://localhost:" + port + "/api/ai/chat/stream",
+            url("/api/ai/chat/stream"),
             HttpMethod.POST,
             new HttpEntity<>("{\"message\":\"hi\",\"conversationId\":\"stream-it\"}", headers),
             String.class);
@@ -62,6 +95,10 @@ class AiStreamIT {
 
     // And decoding the stream the way the web client does must rebuild the text exactly.
     assertThat(decodeTokens(body)).isEqualTo(String.join("", StubChatModel.STREAM_TOKENS));
+  }
+
+  private String url(String path) {
+    return "http://localhost:" + port + path;
   }
 
   /** Mirrors apps/web/src/features/chat/api/ai.ts: read data lines, JSON.parse each one. */

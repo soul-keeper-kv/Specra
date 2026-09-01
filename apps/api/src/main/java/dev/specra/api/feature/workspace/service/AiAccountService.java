@@ -2,6 +2,7 @@ package dev.specra.api.feature.workspace.service;
 
 import dev.specra.api.core.error.ConflictException;
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.core.security.Permission;
 import dev.specra.api.core.security.SecretsCipher;
 import dev.specra.api.feature.workspace.domain.AiAccount;
 import dev.specra.api.feature.workspace.domain.AiAccountRepository;
@@ -38,13 +39,13 @@ public class AiAccountService {
   }
 
   public AiAccountResponse get(UUID workspaceId) {
-    workspaces.requireExists(workspaceId);
+    workspaces.requireAccess(workspaceId, Permission.WORKSPACE_VIEW);
     return toResponse(require(workspaceId));
   }
 
   @Transactional
   public AiAccountResponse put(UUID workspaceId, AiAccountRequest request) {
-    workspaces.requireExists(workspaceId);
+    workspaces.requireAccess(workspaceId, Permission.WORKSPACE_UPDATE);
 
     AiAccount account =
         repository
@@ -68,7 +69,7 @@ public class AiAccountService {
   /** Removes the override entirely; the workspace falls back to the installation's provider. */
   @Transactional
   public void delete(UUID workspaceId) {
-    workspaces.requireExists(workspaceId);
+    workspaces.requireAccess(workspaceId, Permission.WORKSPACE_UPDATE);
     repository.delete(require(workspaceId));
   }
 

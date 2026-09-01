@@ -158,6 +158,24 @@ class ArchitectureTest {
                   + " services/runner: a browser driver on this classpath means the control plane"
                   + " has started doing the runner's job, and the second engine just got harder");
 
+  /**
+   * The same containment rule as the model vendors and the browser drivers, for the Git library.
+   * {@code core.git} is the port; one class implements it. A JGit import anywhere else means a
+   * caller has started depending on the mechanics instead of the port, and the second host —
+   * GitLab, Bitbucket — becomes a rewrite rather than a bean.
+   */
+  @ArchTest
+  static final ArchRule jgitStaysBehindTheGitProvider =
+      noClasses()
+          .that()
+          .resideOutsideOfPackage("dev.specra.api.feature.git.service..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAnyPackage("org.eclipse.jgit..")
+          .because(
+              "core/git is the port and GithubGitProvider is the only implementation: JGit types"
+                  + " reaching any other package turn a configuration change back into a rewrite");
+
   @ArchTest
   static final ArchRule dependenciesArriveThroughTheConstructor =
       fields()

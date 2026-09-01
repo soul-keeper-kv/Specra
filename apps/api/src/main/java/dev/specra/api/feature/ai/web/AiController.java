@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.specra.api.core.error.BusinessException;
 import dev.specra.api.core.error.ErrorCode;
 import dev.specra.api.core.error.ProblemFactory;
+import dev.specra.api.feature.ai.dto.AiHealth;
 import dev.specra.api.feature.ai.dto.AskReply;
 import dev.specra.api.feature.ai.dto.AskRequest;
 import dev.specra.api.feature.ai.dto.ChatReply;
 import dev.specra.api.feature.ai.dto.ChatRequest;
 import dev.specra.api.feature.ai.dto.ProviderInfo;
+import dev.specra.api.feature.ai.service.AiHealthService;
 import dev.specra.api.feature.ai.service.AiProviders;
 import dev.specra.api.feature.ai.service.ChatService;
 import dev.specra.api.feature.ai.service.RagService;
@@ -52,6 +54,7 @@ public class AiController {
   private final ChatService chatService;
   private final RagService ragService;
   private final AiProviders providers;
+  private final AiHealthService health;
   private final ProblemFactory problems;
   private final ObjectMapper objectMapper;
 
@@ -59,11 +62,13 @@ public class AiController {
       ChatService chatService,
       RagService ragService,
       AiProviders providers,
+      AiHealthService health,
       ProblemFactory problems,
       ObjectMapper objectMapper) {
     this.chatService = chatService;
     this.ragService = ragService;
     this.providers = providers;
+    this.health = health;
     this.problems = problems;
     this.objectMapper = objectMapper;
   }
@@ -72,6 +77,22 @@ public class AiController {
   @Operation(summary = "Report the active chat and embedding providers")
   public ProviderInfo providers() {
     return providers.info();
+  }
+
+  /**
+   * Always 200, including when the provider is down: this reports a state, it does not fail in one.
+   * A 503 here would be indistinguishable from this endpoint itself being broken, and every client
+   * would have to read an error body to learn something it asked for on purpose. Clients branch on
+   * {@code status}.
+   */
+  @GetMapping("/health")
+  @Operation(
+      summary = "Result of the periodic chat-provider probe",
+      description =
+          "Served from cache — the probe runs on a timer, not on this request. `refresh=true` asks"
+              + " for a fresh probe and is debounced, so it may still answer from cache.")
+  public AiHealth health(@RequestParam(defaultValue = "false") boolean refresh) {
+    return refresh ? health.refresh() : health.current();
   }
 
   @PostMapping("/chat")
