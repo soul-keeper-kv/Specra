@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiError, apiFetch } from "@/lib/api/client";
+import { ApiError, http } from "@/lib/api/client";
 import type { AiAccount, AiAccountInput } from "@/lib/api/types";
 
 export const aiAccountKeys = {
@@ -17,9 +17,11 @@ export const aiAccountKeys = {
 export function useAiAccount(workspaceId: string | undefined) {
   return useQuery({
     queryKey: aiAccountKeys.detail(workspaceId ?? ""),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        return await apiFetch<AiAccount>(`/api/v1/workspaces/${workspaceId}/ai-account`);
+        return await http.get<AiAccount>(`/api/v1/workspaces/${workspaceId}/ai-account`, {
+          signal,
+        });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return null;
@@ -35,10 +37,7 @@ export function useSaveAiAccount(workspaceId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: AiAccountInput) =>
-      apiFetch<AiAccount>(`/api/v1/workspaces/${workspaceId}/ai-account`, {
-        method: "PUT",
-        body: input,
-      }),
+      http.put<AiAccount>(`/api/v1/workspaces/${workspaceId}/ai-account`, input),
     onSuccess: (account) => {
       qc.setQueryData(aiAccountKeys.detail(account.workspaceId), account);
     },
@@ -48,8 +47,7 @@ export function useSaveAiAccount(workspaceId: string | undefined) {
 export function useDeleteAiAccount(workspaceId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      apiFetch<void>(`/api/v1/workspaces/${workspaceId}/ai-account`, { method: "DELETE" }),
+    mutationFn: () => http.delete(`/api/v1/workspaces/${workspaceId}/ai-account`),
     onSuccess: () => {
       qc.setQueryData(aiAccountKeys.detail(workspaceId ?? ""), null);
     },

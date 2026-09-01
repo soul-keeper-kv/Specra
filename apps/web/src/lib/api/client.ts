@@ -1,10 +1,23 @@
-import type { ApiProblem } from "./types";
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
+
+import { clearSession, getSession, sessionFromTokens, setSession } from "./session";
+import type { ApiProblem, AuthTokens } from "./types";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
 
 /** Header the API reads, sanitises, echoes back, and stamps onto every log line of the request. */
 export const REQUEST_ID_HEADER = "X-Request-Id";
+
+export const REFRESH_PATH = "/api/v1/auth/refresh";
+
+/** The API's code for "this token no longer verifies", which is the one worth a retry. */
+const INVALID_TOKEN = "invalid-token";
 
 /**
  * Carries the API's RFC 9457 problem document.
@@ -44,52 +57,186 @@ export class ApiError extends Error {
   }
 }
 
-type RequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
+/** Marks the one retry a request is allowed after its access token was refreshed. */
+type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
-export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, headers, ...rest } = options;
-  const requestId = newRequestId();
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...rest,
-      headers: {
-        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-        ...localeHeader(),
-        [REQUEST_ID_HEADER]: requestId,
-        ...headers,
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch (cause) {
-    throw new ApiError(
+/**
+ * Stamps the credential, the language and the correlation id onto every request.
+ *
+ * They are attached here rather than at the call sites so a hook cannot forget one: a missing
+ * `Accept-Language` shows a Vietnamese user an English validation message, and a missing request
+ * id makes an error report unsearchable in the API log.
+ */
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getSession()?.accessToken;
+  if (token) config.headers.set("Authorization", `Bearer ${token}`);
+
+  const locale = documentLocale();
+  if (locale) config.headers.set("Accept-Language", locale);
+
+  if (!config.headers.has(REQUEST_ID_HEADER)) {
+    config.headers.set(REQUEST_ID_HEADER, newRequestId());
+  }
+  return config;
+});
+
+/**
+ * Turns every failure into an `ApiError`, refreshing the access token once when that is what the
+ * failure means.
+ *
+ * The retry is what stops a fifteen-minute token from being visible to the user. A 401 carrying
+ * `invalid-token` means the credential was presented and did not verify, so exchanging the refresh
+ * token and repeating the call is the right move; a 401 carrying anything else means there was no
+ * credential at all, and retrying would loop. `_retried` bounds it to a single attempt.
+ */
+api.interceptors.response.use(
+  (response) => response,
+  async (error: unknown) => {
+    if (!axios.isAxiosError(error)) throw error;
+
+    const config = error.config as RetriableConfig | undefined;
+    const problem = problemOf(error);
+
+    const refreshable =
+      config !== undefined &&
+      !config._retried &&
+      problem?.code === INVALID_TOKEN &&
+      config.url !== REFRESH_PATH &&
+      Boolean(getSession()?.refreshToken);
+
+    if (refreshable && (await refreshSession())) {
+      config._retried = true;
+      return api.request(config);
+    }
+
+    throw toApiError(error, problem);
+  },
+);
+
+function problemOf(error: AxiosError): ApiProblem | undefined {
+  const data = error.response?.data;
+  return data !== null && typeof data === "object" ? (data as ApiProblem) : undefined;
+}
+
+function toApiError(error: AxiosError, problem?: ApiProblem): ApiError {
+  const response = error.response;
+  const requestId = headerOf(response, REQUEST_ID_HEADER) ?? requestIdOf(error.config);
+
+  if (!response) {
+    // No status at all: DNS, a refused connection, CORS, or an abort.
+    return new ApiError(
       0,
       `Cannot reach the API at ${API_URL}. Is it running? (cd apps/api && ./mvnw spring-boot:run)`,
       undefined,
       requestId,
-      cause,
+      error,
     );
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  return new ApiError(
+    response.status,
+    problem?.detail ?? problem?.title ?? `${response.status} ${response.statusText}`,
+    problem,
+    requestId,
+    error,
+  );
+}
 
-  const text = await response.text();
-  const parsed = text ? safeJson(text) : undefined;
+function headerOf(response: AxiosResponse | undefined, name: string): string | undefined {
+  const value: unknown = response?.headers?.[name.toLowerCase()];
+  return typeof value === "string" ? value : undefined;
+}
 
-  if (!response.ok) {
-    const problem = parsed as ApiProblem | undefined;
-    throw new ApiError(
-      response.status,
-      problem?.detail ?? problem?.title ?? `${response.status} ${response.statusText}`,
-      problem,
-      response.headers.get(REQUEST_ID_HEADER) ?? requestId,
+function requestIdOf(config: AxiosRequestConfig | undefined): string | undefined {
+  const value: unknown = config?.headers?.[REQUEST_ID_HEADER];
+  return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * In flight, if a refresh is already running.
+ *
+ * Single-flight is not an optimisation here, it is correctness: the refresh token is rotated by the
+ * call that uses it, so two concurrent queries each exchanging the same one would have the second
+ * present a token the server has already retired — which it reads, correctly, as a replay, and
+ * answers by signing every device out.
+ */
+let refreshing: Promise<boolean> | null = null;
+
+function refreshSession(): Promise<boolean> {
+  refreshing ??= exchangeRefreshToken().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
+async function exchangeRefreshToken(): Promise<boolean> {
+  const refreshToken = getSession()?.refreshToken;
+  if (!refreshToken) return false;
+
+  try {
+    // A bare axios call, not the instance: the exchange must not re-enter the response
+    // interceptor that triggered it.
+    const { data } = await axios.post<AuthTokens>(
+      `${API_URL}${REFRESH_PATH}`,
+      { refreshToken },
+      { headers: { "Content-Type": "application/json", [REQUEST_ID_HEADER]: newRequestId() } },
     );
+    setSession(sessionFromTokens(data));
+    return true;
+  } catch {
+    // Expired, revoked, or replayed. Clearing the session is all this layer does; the redirect
+    // belongs to the route guard, which knows whether the current page even needs an account.
+    clearSession();
+    return false;
   }
+}
 
-  return parsed as T;
+/**
+ * The verbs, already unwrapped.
+ *
+ * Hooks want the body, not an `AxiosResponse`, and they pass React Query's `signal` so a query
+ * whose component has gone stops occupying a connection. Keeping the unwrap here means no call
+ * site has to remember `.then((r) => r.data)`.
+ */
+export const http = {
+  get: <T>(url: string, config?: AxiosRequestConfig) => api.get<T>(url, config).then(unwrap),
+  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) =>
+    api.post<T>(url, body, config).then(unwrap),
+  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) =>
+    api.put<T>(url, body, config).then(unwrap),
+  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) =>
+    api.patch<T>(url, body, config).then(unwrap),
+  delete: <T = void>(url: string, config?: AxiosRequestConfig) =>
+    api.delete<T>(url, config).then(unwrap),
+};
+
+function unwrap<T>(response: AxiosResponse<T>): T {
+  return response.data;
+}
+
+/**
+ * Headers for the one request that cannot go through axios.
+ *
+ * The SSE stream in `features/chat/api/ai.ts` reads tokens as they arrive, and the browser
+ * adapters buffer a whole body before resolving — so that call stays on `fetch` and a
+ * `ReadableStream`. It still has to carry the same credential and language, which is what this
+ * hands it.
+ */
+export function streamHeaders(): Record<string, string> {
+  const token = getSession()?.accessToken;
+  const locale = documentLocale();
+  return {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+    [REQUEST_ID_HEADER]: newRequestId(),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(locale ? { "Accept-Language": locale } : {}),
+  };
 }
 
 /**
@@ -100,38 +247,18 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
  * locale argument through every hook, and it cannot drift from what the user is looking at. On the
  * server there is no document, and the header is simply omitted.
  */
-function localeHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const lang = document.documentElement.lang;
-  return lang ? { "Accept-Language": lang } : {};
+function documentLocale(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  return document.documentElement.lang || undefined;
 }
 
 /**
  * Generated here rather than on the server so the id exists even when the request never arrives —
- * a failed fetch can still be reported with something to search for.
+ * a failed call can still be reported with something to search for.
  */
 function newRequestId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
   return `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function safeJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-export function buildQuery(params: Record<string, string | number | undefined | null>) {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== "") {
-      search.set(key, String(value));
-    }
-  }
-  const qs = search.toString();
-  return qs ? `?${qs}` : "";
 }

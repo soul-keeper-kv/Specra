@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { RequireSession } from "@/features/auth/components/require-session";
 
 /**
  * The signed-in shell: collapsible sidebar, sticky header, command palette.
@@ -16,13 +17,15 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
   setRequestLocale(locale);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="min-w-0">
-        <AppHeader />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">{children}</main>
-      </SidebarInset>
-      <CommandPalette />
-    </SidebarProvider>
+    <RequireSession>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="min-w-0">
+          <AppHeader />
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">{children}</main>
+        </SidebarInset>
+        <CommandPalette />
+      </SidebarProvider>
+    </RequireSession>
   );
 }

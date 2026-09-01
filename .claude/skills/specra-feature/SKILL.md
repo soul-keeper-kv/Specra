@@ -79,7 +79,9 @@ this is the order and the parts that cross concerns.
 Reference: `features/notes/`.
 
 1. `features/<name>/` — `api/` (Query hooks + a `<name>Keys` object), `components/`,
-   `schemas.ts` if it has a form.
+   `schemas.ts` if it has a form. Hooks call `http.*` from `lib/api/client.ts` and nothing
+   else — the axios instance, the interceptors and the hook shape are the `specra-web-api`
+   skill.
 2. `app/[locale]/(app)/<name>/page.tsx` stays thin:
    ```tsx
    export default async function ProjectsPage({ params }: PageProps<"/[locale]/projects">) {

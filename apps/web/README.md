@@ -116,6 +116,6 @@ sorting state becomes Spring Data's `sort` parameter (`updatedAt,desc`).
 `ReadableStream` directly and splits frames itself. The API sends each token as a JSON string —
 see the explanation in the [root README](../../README.md#decisions-worth-knowing-about).
 
-**Errors carry a reference.** `apiFetch` sends an `X-Request-Id`, the API echoes it and repeats
+**Errors carry a reference.** The axios request interceptor sends an `X-Request-Id`, the API echoes it and repeats
 it in the problem document, and `ErrorState` shows it — so a screenshot is enough to find the
 matching server log line.

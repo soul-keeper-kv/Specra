@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiFetch, buildQuery } from "@/lib/api/client";
+import { http } from "@/lib/api/client";
 import type {
   PageResponse,
   TestCase,
@@ -23,17 +23,20 @@ export const testCaseKeys = {
 export function useTestCases(projectId: string, query: TestCaseQuery) {
   return useQuery({
     queryKey: testCaseKeys.list(projectId, query),
-    queryFn: () =>
-      apiFetch<PageResponse<TestCaseSummary>>(
-        `/api/v1/projects/${projectId}/test-cases${buildQuery({
-          q: query.q,
-          status: query.status,
-          tag: query.tag,
+    queryFn: ({ signal }) =>
+      http.get<PageResponse<TestCaseSummary>>(`/api/v1/projects/${projectId}/test-cases`, {
+        signal,
+        // An unset filter is left off the query string entirely — axios drops an `undefined`
+        // param, and the API reads a blank one as "match nothing".
+        params: {
+          q: query.q || undefined,
+          status: query.status || undefined,
+          tag: query.tag || undefined,
           page: query.page ?? 0,
           size: query.size ?? 20,
           sort: query.sort ?? "updatedAt,desc",
-        })}`,
-      ),
+        },
+      }),
     placeholderData: (previous) => previous, // keeps the table from flashing while paging
   });
 }
@@ -41,7 +44,7 @@ export function useTestCases(projectId: string, query: TestCaseQuery) {
 export function useTestCase(id: string | undefined) {
   return useQuery({
     queryKey: testCaseKeys.detail(id ?? ""),
-    queryFn: () => apiFetch<TestCase>(`/api/v1/test-cases/${id}`),
+    queryFn: ({ signal }) => http.get<TestCase>(`/api/v1/test-cases/${id}`, { signal }),
     enabled: Boolean(id),
   });
 }
@@ -50,10 +53,7 @@ export function useCreateTestCase(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: TestCaseInput) =>
-      apiFetch<TestCase>(`/api/v1/projects/${projectId}/test-cases`, {
-        method: "POST",
-        body: input,
-      }),
+      http.post<TestCase>(`/api/v1/projects/${projectId}/test-cases`, input),
     onSuccess: (testCase) => {
       qc.setQueryData(testCaseKeys.detail(testCase.id), testCase);
       void qc.invalidateQueries({ queryKey: testCaseKeys.lists() });
@@ -64,8 +64,7 @@ export function useCreateTestCase(projectId: string) {
 export function useUpdateTestCase(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: TestCaseInput) =>
-      apiFetch<TestCase>(`/api/v1/test-cases/${id}`, { method: "PUT", body: input }),
+    mutationFn: (input: TestCaseInput) => http.put<TestCase>(`/api/v1/test-cases/${id}`, input),
     onSuccess: (testCase) => {
       qc.setQueryData(testCaseKeys.detail(testCase.id), testCase);
       void qc.invalidateQueries({ queryKey: testCaseKeys.lists() });
@@ -76,8 +75,7 @@ export function useUpdateTestCase(id: string) {
 export function useDeleteTestCase() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<void>(`/api/v1/test-cases/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => http.delete(`/api/v1/test-cases/${id}`),
     onSuccess: (_data, id) => {
       qc.removeQueries({ queryKey: testCaseKeys.detail(id) });
       void qc.invalidateQueries({ queryKey: testCaseKeys.lists() });
@@ -89,8 +87,7 @@ export function useDeleteTestCase() {
 export function useIndexTestCase() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<TestCase>(`/api/v1/test-cases/${id}/index`, { method: "POST" }),
+    mutationFn: (id: string) => http.post<TestCase>(`/api/v1/test-cases/${id}/index`),
     onSuccess: (testCase) => {
       qc.setQueryData(testCaseKeys.detail(testCase.id), testCase);
       void qc.invalidateQueries({ queryKey: testCaseKeys.lists() });

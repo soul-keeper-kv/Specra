@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { API_URL, ApiError, apiFetch } from "@/lib/api/client";
+import { API_URL, ApiError, http, streamHeaders } from "@/lib/api/client";
 import type { AskReply, ChatReply, ProviderInfo } from "@/lib/api/types";
 
 export const aiKeys = {
@@ -12,7 +12,7 @@ export const aiKeys = {
 export function useProviders() {
   return useQuery({
     queryKey: aiKeys.providers,
-    queryFn: () => apiFetch<ProviderInfo>("/api/ai/providers"),
+    queryFn: ({ signal }) => http.get<ProviderInfo>("/api/ai/providers", { signal }),
     staleTime: 5 * 60_000,
     retry: false,
   });
@@ -21,23 +21,21 @@ export function useProviders() {
 export function useChat() {
   return useMutation({
     mutationFn: (input: { message: string; conversationId: string }) =>
-      apiFetch<ChatReply>("/api/ai/chat", { method: "POST", body: input }),
+      http.post<ChatReply>("/api/ai/chat", input),
   });
 }
 
 export function useAsk() {
   return useMutation({
     mutationFn: (input: { question: string; topK?: number; similarityThreshold?: number }) =>
-      apiFetch<AskReply>("/api/ai/ask", { method: "POST", body: input }),
+      http.post<AskReply>("/api/ai/ask", input),
   });
 }
 
 export function useClearConversation() {
   return useMutation({
     mutationFn: (conversationId: string) =>
-      apiFetch<void>(`/api/ai/chat/${encodeURIComponent(conversationId)}`, {
-        method: "DELETE",
-      }),
+      http.delete(`/api/ai/chat/${encodeURIComponent(conversationId)}`),
   });
 }
 
@@ -48,6 +46,10 @@ export function useClearConversation() {
  * frames by hand: split on the blank line between events, then read the `event:`
  * and `data:` lines. Multiple `data:` lines in one frame are joined with "\n",
  * per the SSE spec — that is what preserves newlines inside a model's answer.
+ *
+ * This is the one call that does not go through axios: its browser adapters hand back a body
+ * only once it is complete, which is the opposite of what a token stream is for. `streamHeaders()`
+ * supplies the credential, language and request id the axios interceptor would have added.
  */
 export async function streamChat(
   input: { message: string; conversationId: string },
@@ -61,7 +63,7 @@ export async function streamChat(
   try {
     response = await fetch(`${API_URL}/api/ai/chat/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: streamHeaders(),
       body: JSON.stringify(input),
       signal: handlers.signal,
     });

@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 import en from "@messages/en.json";
 import vi from "@messages/vi.json";
 
+import { signInAsE2eUser } from "../support/session";
+
 /**
  * These run against the web app alone. The API may or may not be up, so assert on things the UI
  * must get right either way — routing, language, theme and client-side validation.
@@ -46,48 +48,72 @@ test.describe("locale detection at the root", () => {
   });
 });
 
-test("the workspace navigates between its sections", async ({ page }) => {
-  await page.goto("/en/dashboard");
+/**
+ * The signed-in shell redirects a visitor with no session, so these seed one before navigating.
+ * The marketing and sign-in tests below deliberately do not — they are about the signed-out side.
+ */
+test.describe("the signed-in shell", () => {
+  test.beforeEach(async ({ page }) => {
+    await signInAsE2eUser(page);
+  });
 
-  await expect(page.getByRole("heading", { name: en.dashboard.title, level: 1 })).toBeVisible();
+  test("navigates between its sections", async ({ page }) => {
+    await page.goto("/en/dashboard");
 
-  await page.getByRole("link", { name: en.nav.projects, exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/projects$/);
-  await expect(page.getByRole("heading", { name: en.projects.title, level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: en.dashboard.title, level: 1 }),
+    ).toBeVisible();
 
-  await page.getByRole("link", { name: en.nav.chat, exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/chat$/);
-  await expect(page.getByRole("heading", { name: en.chat.title, level: 1 })).toBeVisible();
-});
+    await page.getByRole("link", { name: en.nav.projects, exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/projects$/);
+    await expect(
+      page.getByRole("heading", { name: en.projects.title, level: 1 }),
+    ).toBeVisible();
 
-test("switching language rewrites the path and keeps the page", async ({ page }) => {
-  await page.goto("/en/projects");
+    await page.getByRole("link", { name: en.nav.chat, exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/chat$/);
+    await expect(page.getByRole("heading", { name: en.chat.title, level: 1 })).toBeVisible();
+  });
 
-  await page.getByRole("button", { name: en.language.change }).click();
-  await page.getByRole("menuitem", { name: "Tiếng Việt" }).click();
+  test("switching language rewrites the path and keeps the page", async ({ page }) => {
+    await page.goto("/en/projects");
 
-  await expect(page).toHaveURL(/\/vi\/projects$/);
-  await expect(page.getByRole("heading", { name: vi.projects.title, level: 1 })).toBeVisible();
-});
+    await page.getByRole("button", { name: en.language.change }).click();
+    await page.getByRole("menuitem", { name: "Tiếng Việt" }).click();
 
-test("the theme choice reaches the html element", async ({ page }) => {
-  await page.goto("/en/dashboard");
+    await expect(page).toHaveURL(/\/vi\/projects$/);
+    await expect(
+      page.getByRole("heading", { name: vi.projects.title, level: 1 }),
+    ).toBeVisible();
+  });
 
-  await page.getByRole("button", { name: en.theme.change }).click();
-  await page.getByRole("menuitem", { name: en.theme.dark }).click();
+  test("the theme choice reaches the html element", async ({ page }) => {
+    await page.goto("/en/dashboard");
 
-  await expect(page.locator("html")).toHaveClass(/dark/);
-});
+    await page.getByRole("button", { name: en.theme.change }).click();
+    await page.getByRole("menuitem", { name: en.theme.dark }).click();
 
-test("the command palette opens on the keyboard and navigates", async ({ page }) => {
-  await page.goto("/en/dashboard");
+    await expect(page.locator("html")).toHaveClass(/dark/);
+  });
 
-  await page.keyboard.press("ControlOrMeta+k");
-  const palette = page.getByRole("dialog");
-  await expect(palette).toBeVisible();
+  test("the command palette opens on the keyboard and navigates", async ({ page }) => {
+    await page.goto("/en/dashboard");
 
-  await palette.getByRole("option", { name: en.nav.chat }).click();
-  await expect(page).toHaveURL(/\/en\/chat$/);
+    await page.keyboard.press("ControlOrMeta+k");
+    const palette = page.getByRole("dialog");
+    await expect(palette).toBeVisible();
+
+    await palette.getByRole("option", { name: en.nav.chat }).click();
+    await expect(page).toHaveURL(/\/en\/chat$/);
+  });
+
+  test("the chat toggles swap the description text", async ({ page }) => {
+    await page.goto("/en/chat");
+
+    await expect(page.getByText(en.chat.subtitle)).toBeVisible();
+    await page.getByLabel(en.chat.rag).click();
+    await expect(page.getByText(en.chat.subtitleRag)).toBeVisible();
+  });
 });
 
 test("the sign-in form validates before it will submit", async ({ page }) => {
@@ -97,14 +123,21 @@ test("the sign-in form validates before it will submit", async ({ page }) => {
   // browser's native type="email" validation before the zod messages ever render.
   await page.getByRole("button", { name: en.auth.signIn.submit }).click();
 
-  await expect(page.getByText(en.auth.validation.nameRequired)).toBeVisible();
-  await expect(page.getByText(en.auth.validation.emailInvalid)).toBeVisible();
+  await expect(page.getByText(en.auth.validation.emailRequired)).toBeVisible();
+  await expect(page.getByText(en.auth.validation.passwordRequired)).toBeVisible();
 });
 
-test("the chat toggles swap the description text", async ({ page }) => {
-  await page.goto("/en/chat");
+test("a signed-out visitor is sent from the shell to sign in, and can reach sign-up", async ({
+  page,
+}) => {
+  await page.goto("/en/dashboard");
 
-  await expect(page.getByText(en.chat.subtitle)).toBeVisible();
-  await page.getByLabel(en.chat.rag).click();
-  await expect(page.getByText(en.chat.subtitleRag)).toBeVisible();
+  // The guard keeps where they were going, so signing in resumes it instead of dumping them
+  // on the dashboard.
+  await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fdashboard$/);
+  await expect(page.getByRole("heading", { name: en.auth.signIn.title })).toBeVisible();
+
+  await page.getByRole("link", { name: en.auth.signIn.signUpLink }).click();
+  await expect(page).toHaveURL(/\/en\/sign-up$/);
+  await expect(page.getByRole("heading", { name: en.auth.signUp.title })).toBeVisible();
 });

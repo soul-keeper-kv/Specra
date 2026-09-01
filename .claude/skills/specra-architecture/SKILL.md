@@ -140,8 +140,10 @@ src/
   `components/` is not — move the component to `components/common/` instead.
 - **`components/` is for what more than one feature uses**; `components/ui/` is shadcn's
   output, edited only when a variant is genuinely missing.
-- **`lib/` holds no React state.** `lib/api/client.ts` is the only place `fetch` is called
-  and the only place `ApiError` is constructed; feature hooks call `apiFetch`, never `fetch`.
+- **`lib/` holds no React state.** `lib/api/client.ts` owns the axios instance, its
+  interceptors and the only construction of `ApiError`; feature hooks call `http.*`, never
+  `fetch` or a bare `axios` (the SSE stream in `features/chat/api/ai.ts` is the one exception,
+  and it still takes its headers from `client.ts`).
 - **A new page is registered in `lib/config/navigation.ts`**, which the sidebar, the command
   palette and the breadcrumbs all read — otherwise the page exists and nobody can reach it.
 

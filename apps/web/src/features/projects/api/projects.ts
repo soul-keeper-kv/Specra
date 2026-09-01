@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiFetch, buildQuery } from "@/lib/api/client";
+import { http } from "@/lib/api/client";
 import type {
   PageResponse,
   Project,
@@ -23,15 +23,18 @@ export const projectKeys = {
 export function useProjects(workspaceId: string | undefined, query: ProjectQuery) {
   return useQuery({
     queryKey: projectKeys.list(workspaceId ?? "", query),
-    queryFn: () =>
-      apiFetch<PageResponse<Project>>(
-        `/api/v1/workspaces/${workspaceId}/projects${buildQuery({
-          q: query.q,
+    queryFn: ({ signal }) =>
+      http.get<PageResponse<Project>>(`/api/v1/workspaces/${workspaceId}/projects`, {
+        signal,
+        // An empty filter is left off the query string entirely — axios drops an `undefined`
+        // param, and the API reads a blank `q` as "match nothing".
+        params: {
+          q: query.q || undefined,
           page: query.page ?? 0,
           size: query.size ?? 20,
           sort: query.sort ?? "updatedAt,desc",
-        })}`,
-      ),
+        },
+      }),
     enabled: Boolean(workspaceId),
     placeholderData: (previous) => previous, // keeps the grid from flashing while paging
   });
@@ -40,7 +43,7 @@ export function useProjects(workspaceId: string | undefined, query: ProjectQuery
 export function useProject(id: string | undefined) {
   return useQuery({
     queryKey: projectKeys.detail(id ?? ""),
-    queryFn: () => apiFetch<Project>(`/api/v1/projects/${id}`),
+    queryFn: ({ signal }) => http.get<Project>(`/api/v1/projects/${id}`, { signal }),
     enabled: Boolean(id),
   });
 }
@@ -49,10 +52,7 @@ export function useCreateProject(workspaceId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: ProjectInput) =>
-      apiFetch<Project>(`/api/v1/workspaces/${workspaceId}/projects`, {
-        method: "POST",
-        body: input,
-      }),
+      http.post<Project>(`/api/v1/workspaces/${workspaceId}/projects`, input),
     onSuccess: (project) => {
       qc.setQueryData(projectKeys.detail(project.id), project);
       void qc.invalidateQueries({ queryKey: projectKeys.lists() });
@@ -63,8 +63,7 @@ export function useCreateProject(workspaceId: string | undefined) {
 export function useUpdateProject(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ProjectPatch) =>
-      apiFetch<Project>(`/api/v1/projects/${id}`, { method: "PATCH", body: input }),
+    mutationFn: (input: ProjectPatch) => http.patch<Project>(`/api/v1/projects/${id}`, input),
     onSuccess: (project) => {
       qc.setQueryData(projectKeys.detail(project.id), project);
       void qc.invalidateQueries({ queryKey: projectKeys.lists() });
@@ -75,7 +74,7 @@ export function useUpdateProject(id: string) {
 export function useDeleteProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiFetch<void>(`/api/v1/projects/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => http.delete(`/api/v1/projects/${id}`),
     onSuccess: (_data, id) => {
       qc.removeQueries({ queryKey: projectKeys.detail(id) });
       void qc.invalidateQueries({ queryKey: projectKeys.lists() });

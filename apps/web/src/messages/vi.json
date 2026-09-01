@@ -284,14 +284,17 @@
       "profile": "Hồ sơ",
       "appearance": "Hiển thị",
       "language": "Ngôn ngữ",
-      "ai": "Trợ lý AI"
+      "ai": "Trợ lý AI",
+      "members": "Thành viên"
     },
     "profile": {
       "title": "Hồ sơ",
-      "description": "Bạn là ai trong không gian làm việc này.",
+      "description": "Bạn là ai trong Specra.",
       "name": "Tên hiển thị",
       "email": "Email",
-      "demoNotice": "Bộ khung này chưa có backend xác thực. Các giá trị chỉ được lưu trong trình duyệt."
+      "emailHint": "Đổi email cần bước xác minh, tính năng này chưa được xây dựng.",
+      "save": "Lưu thay đổi",
+      "saved": "Đã lưu"
     },
     "appearance": {
       "title": "Hiển thị",
@@ -342,18 +345,39 @@
   "auth": {
     "signIn": {
       "title": "Đăng nhập Specra",
-      "subtitle": "Chưa cần tài khoản — bộ khung này đăng nhập cục bộ cho bạn.",
+      "subtitle": "Dùng email và mật khẩu của tài khoản bạn.",
+      "email": "Email",
+      "emailPlaceholder": "ban@vidu.com",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "noAccount": "Chưa có tài khoản?",
+      "signUpLink": "Tạo tài khoản",
+      "backToSite": "Quay lại trang chủ"
+    },
+    "signUp": {
+      "title": "Tạo tài khoản",
+      "subtitle": "Bạn sẽ có một không gian làm việc của riêng mình, và bạn là chủ sở hữu.",
       "name": "Tên",
       "namePlaceholder": "Nguyễn Văn A",
       "email": "Email",
       "emailPlaceholder": "ban@vidu.com",
-      "submit": "Tiếp tục",
-      "notice": "Không có gì được gửi đi đâu cả. Phiên đăng nhập nằm trong trình duyệt này cho tới khi bạn đăng xuất.",
-      "backToSite": "Quay lại trang giới thiệu"
+      "password": "Mật khẩu",
+      "passwordHint": "Tối thiểu {min} ký tự. Độ dài mới là điều quan trọng — một câu dễ nhớ tốt hơn một chuỗi rối rắm.",
+      "submit": "Tạo tài khoản",
+      "haveAccount": "Đã có tài khoản?",
+      "signInLink": "Đăng nhập"
+    },
+    "guard": {
+      "checking": "Đang kiểm tra phiên đăng nhập…"
     },
     "validation": {
-      "nameRequired": "Hãy cho biết nên gọi bạn là gì",
-      "emailInvalid": "Địa chỉ email này trông chưa đúng"
+      "nameRequired": "Hãy cho biết tên của bạn",
+      "nameMax": "Tên tối đa {max} ký tự",
+      "emailRequired": "Email là bắt buộc",
+      "emailInvalid": "Địa chỉ email không hợp lệ",
+      "passwordRequired": "Mật khẩu là bắt buộc",
+      "passwordMin": "Mật khẩu tối thiểu {min} ký tự",
+      "passwordMax": "Mật khẩu tối đa {max} ký tự"
     }
   },
   "commandPalette": {
@@ -375,6 +399,40 @@
       "title": "Không tìm thấy trang",
       "description": "Liên kết sai, hoặc nội dung ở đây đã chuyển đi nơi khác.",
       "cta": "Về trang tổng quan"
+    }
+  },
+  "members": {
+    "title": "Thành viên",
+    "subtitle": "Ai truy cập được {workspace}, và làm được những gì trong đó.",
+    "you": "bạn",
+    "empty": "Chưa có ai ở đây",
+    "emptyHint": "Thêm đồng nghiệp bằng địa chỉ email họ đã đăng ký.",
+    "noWorkspace": "Chưa có không gian làm việc",
+    "noWorkspaceHint": "Hãy tạo một không gian làm việc trước; thành viên thuộc về một không gian.",
+    "columns": {
+      "person": "Người dùng",
+      "role": "Vai trò",
+      "joined": "Tham gia"
+    },
+    "roles": {
+      "OWNER": "Chủ sở hữu",
+      "ADMIN": "Quản trị viên",
+      "MEMBER": "Thành viên"
+    },
+    "add": {
+      "title": "Thêm người",
+      "description": "Người đó phải có sẵn tài khoản: Specra chưa gửi được email, nên một địa chỉ lạ sẽ bị từ chối thay vì được mời.",
+      "email": "Email",
+      "emailPlaceholder": "dongnghiep@vidu.com",
+      "role": "Vai trò",
+      "submit": "Thêm"
+    },
+    "remove": {
+      "action": "Xoá khỏi không gian làm việc",
+      "title": "Xoá thành viên này?",
+      "description": "{name} sẽ mất quyền truy cập không gian làm việc này và mọi thứ trong đó. Tài khoản và các không gian khác của họ không bị ảnh hưởng.",
+      "cancel": "Huỷ",
+      "confirm": "Xoá"
     }
   }
 }

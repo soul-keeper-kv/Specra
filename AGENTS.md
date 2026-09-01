@@ -57,7 +57,7 @@ current `notes`/`chat` scaffold gets replaced by.
 
 |                       |                                                                                                           |
 | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `apps/web`            | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod, next-intl           |
+| `apps/web`            | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, axios, Zustand, Zod, next-intl    |
 | `apps/api`            | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector, Micrometer Tracing |
 | `packages/test-model` | The IR contract: the JSON Schema, its TypeScript mirror, fixtures, a validator                            |
 | `tests/e2e`           | Playwright, its own package — drives the product, is not part of it                                       |
@@ -105,6 +105,7 @@ the rest are per-area reference it points into.
 | `specra-testmodel`    | The IR, the adapter, the runner: schema changes, actions, locators, determinism                           |
 | `specra-api`          | JPA, Flyway, MapStruct, RFC 9457 errors, message bundles, tracing, tests                                  |
 | `specra-web`          | Next 16, next-intl, theming, TanStack v9, shadcn traps                                                    |
+| `specra-web-api`      | Calling the API: the axios client, React Query hooks, query keys, `ApiError`                              |
 | `specra-ai`           | Spring AI, provider selection, pgvector RAG, SSE streaming                                                |
 | `commit-message`      | Conventional Commits matching this repo's commitlint                                                      |
 

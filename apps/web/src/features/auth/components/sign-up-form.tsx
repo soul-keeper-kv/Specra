@@ -3,7 +3,6 @@
 import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,36 +16,35 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLogin } from "@/features/auth/api/auth";
+import { useRegister } from "@/features/auth/api/auth";
 import { AuthFormError, FieldError } from "@/features/auth/components/auth-form-error";
-import { buildSignInSchema } from "@/features/auth/schemas";
+import { buildSignUpSchema, PASSWORD_MIN } from "@/features/auth/schemas";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ApiError } from "@/lib/api/client";
 
 /**
- * Email and password, against `POST /api/v1/auth/login`.
+ * Creates an account and signs in with it, against `POST /api/v1/auth/register`.
  *
- * Where the user lands afterwards is whatever sent them here: the route guard puts the page it
- * refused on `?next=`, so a deep link that expired mid-session resumes instead of dumping the user
- * on the dashboard. Anything that is not a path inside this app is ignored — an open redirect is a
- * phishing primitive, and a login page is exactly where it pays off.
+ * Registration also gives the new user a workspace of their own, so the dashboard has something to
+ * show the moment they arrive — which is why this lands on `/dashboard` rather than on an empty
+ * "create a workspace" screen.
  */
-export function SignInForm() {
-  const t = useTranslations("auth.signIn");
+export function SignUpForm() {
+  const t = useTranslations("auth.signUp");
   const tValidation = useTranslations("auth.validation");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const login = useLogin();
+  const register = useRegister();
 
-  const schema = useMemo(() => buildSignInSchema(tValidation), [tValidation]);
-  const serverErrors = login.error instanceof ApiError ? login.error.fieldErrors : undefined;
+  const schema = useMemo(() => buildSignUpSchema(tValidation), [tValidation]);
+  const serverErrors =
+    register.error instanceof ApiError ? register.error.fieldErrors : undefined;
 
   const form = useForm({
-    defaultValues: { email: "", password: "" },
+    defaultValues: { displayName: "", email: "", password: "" },
     validators: { onSubmit: schema },
     onSubmit: async ({ value }) => {
-      await login.mutateAsync(value);
-      router.replace(safeNext(searchParams.get("next")));
+      await register.mutateAsync(value);
+      router.replace("/dashboard");
     },
   });
 
@@ -65,7 +63,32 @@ export function SignInForm() {
             void form.handleSubmit();
           }}
         >
-          <AuthFormError error={login.error} />
+          <AuthFormError error={register.error} />
+
+          <form.Field name="displayName">
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>{t("name")}</Label>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  autoComplete="name"
+                  autoFocus
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder={t("namePlaceholder")}
+                  aria-invalid={
+                    field.state.meta.errors.length > 0 || Boolean(serverErrors?.displayName)
+                  }
+                />
+                <FieldError
+                  messages={field.state.meta.errors}
+                  serverMessage={serverErrors?.displayName}
+                />
+              </div>
+            )}
+          </form.Field>
 
           <form.Field name="email">
             {(field) => (
@@ -76,7 +99,6 @@ export function SignInForm() {
                   name={field.name}
                   type="email"
                   autoComplete="email"
-                  autoFocus
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -101,7 +123,7 @@ export function SignInForm() {
                   id={field.name}
                   name={field.name}
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -109,6 +131,9 @@ export function SignInForm() {
                     field.state.meta.errors.length > 0 || Boolean(serverErrors?.password)
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  {t("passwordHint", { min: PASSWORD_MIN })}
+                </p>
                 <FieldError
                   messages={field.state.meta.errors}
                   serverMessage={serverErrors?.password}
@@ -119,8 +144,12 @@ export function SignInForm() {
 
           <form.Subscribe selector={(state) => state.canSubmit}>
             {(canSubmit) => (
-              <Button type="submit" className="w-full" disabled={!canSubmit || login.isPending}>
-                {login.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!canSubmit || register.isPending}
+              >
+                {register.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 {t("submit")}
               </Button>
             )}
@@ -129,27 +158,15 @@ export function SignInForm() {
       </CardContent>
       <CardFooter className="justify-center text-sm text-muted-foreground">
         <span>
-          {t("noAccount")}{" "}
+          {t("haveAccount")}{" "}
           <Link
-            href="/sign-up"
+            href="/sign-in"
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            {t("signUpLink")}
+            {t("signInLink")}
           </Link>
         </span>
       </CardFooter>
     </Card>
   );
-}
-
-/**
- * Only a path inside this app, and never one that starts a new sign-in loop.
- *
- * `//evil.example` is a protocol-relative URL that a naive check for a leading slash lets through,
- * which is why the second character is tested too.
- */
-function safeNext(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/dashboard";
-  if (next.startsWith("/sign-in") || next.startsWith("/sign-up")) return "/dashboard";
-  return next;
 }

@@ -1,57 +1,41 @@
 "use client";
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { useSyncExternalStore } from "react";
 
-export type SessionUser = {
-  name: string;
-  email: string;
-};
+import {
+  getServerSessionSnapshot,
+  getSessionSnapshot,
+  subscribeToSession,
+} from "@/lib/api/session";
+import type { Account } from "@/lib/api/types";
 
 /**
- * A stand-in session, kept entirely in the browser.
+ * React's view of the session that `lib/api/session` owns.
  *
- * The API has no auth yet, so this exists to give the shell something real to render — a user menu,
- * a sign-out, a route group that sends you to the sign-in page. When real auth arrives, the shape
- * below is what the components already consume, so only this file and the sign-in form change.
+ * `useSyncExternalStore` rather than a Zustand store with `persist`: the fetch layer has to read
+ * the same tokens from outside React — it attaches one to every request and exchanges the other on
+ * a 401 — and two copies of a credential is one copy too many. The server snapshot is always
+ * "signed out, not yet known", which is what the server can honestly render; React swaps in the
+ * real value immediately after hydration, with no mismatch and no effect.
  */
-type AuthState = {
-  user: SessionUser | null;
-  /**
-   * False until zustand has read localStorage. Anything that depends on `user` must wait for this,
-   * or the server renders "signed out", the client immediately renders "signed in", and React
-   * reports a hydration mismatch.
-   */
-  hydrated: boolean;
-  signIn: (user: SessionUser) => void;
-  signOut: () => void;
-  update: (patch: Partial<SessionUser>) => void;
-  setHydrated: () => void;
-};
+export function useSessionSnapshot() {
+  return useSyncExternalStore(subscribeToSession, getSessionSnapshot, getServerSessionSnapshot);
+}
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      hydrated: false,
-      signIn: (user) => set({ user }),
-      signOut: () => set({ user: null }),
-      update: (patch) =>
-        set((state) => (state.user ? { user: { ...state.user, ...patch } } : state)),
-      setHydrated: () => set({ hydrated: true }),
-    }),
-    {
-      name: "specra-session",
-      // Only the user is stored; `hydrated` describes this tab, not the saved session.
-      partialize: (state) => ({ user: state.user }),
-      onRehydrateStorage: () => (state) => state?.setHydrated(),
-    },
-  ),
-);
+/** The signed-in account, or null. Null also means "not known yet" — see {@link useSessionReady}. */
+export function useSessionUser(): Account | null {
+  return useSessionSnapshot().session?.user ?? null;
+}
 
-/** Most components only need these two, and reading them separately avoids re-rendering on writes. */
-export const useSessionUser = () => useAuthStore((state) => state.user);
-export const useSessionReady = () => useAuthStore((state) => state.hydrated);
+/**
+ * False until storage has been read.
+ *
+ * Anything that redirects a signed-out visitor must wait for this. Without it, the first paint of
+ * every page is "signed out", and a signed-in user is bounced to the sign-in screen and back.
+ */
+export function useSessionReady(): boolean {
+  return useSessionSnapshot().hydrated;
+}
 
 /** First letters of the display name, for the avatar fallback. */
 export function initialsOf(name: string): string {

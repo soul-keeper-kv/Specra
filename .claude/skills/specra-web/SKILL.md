@@ -104,34 +104,30 @@ Never copy server data into Zustand and sync the two.
 
 ## Calling the API
 
-Every request goes through `apiFetch` in `src/lib/api/client.ts`. It throws `ApiError`,
-which carries the backend's RFC 9457 problem document: `status`, `code`, `fieldErrors`,
-and the `requestId`/`traceId` that identify the matching server log line.
+**`specra-web-api` is the skill for this** — read it before writing a query, a mutation, or
+anything in a feature's `api/` folder. The short version:
 
-Branch on `code`, never on `message` — the message is translated per request and differs
-between languages. `apiFetch` sends the active locale as `Accept-Language` (read off
-`<html lang>`) and an `X-Request-Id`, so the error text comes back already translated and
-both sides can be searched by the same id.
-
-Rendering per-field validation errors:
+- Every request goes through the **axios** instance in `src/lib/api/client.ts`, called through
+  the `http.get` / `post` / `put` / `patch` / `delete` helpers, which already unwrap
+  `response.data`. Never `fetch`, never a bare `axios`, from a feature.
+- Interceptors add `Authorization`, `Accept-Language` and `X-Request-Id`, turn every failure
+  into `ApiError`, and refresh the access token once on an `invalid-token` 401.
+- `queryFn: ({ signal }) => http.get(url, { signal })`; query strings are `params`, not string
+  concatenation; keys come from the feature's key factory. `retry` is already configured in
+  `providers.tsx` to skip 4xx.
+- Branch on `error.code`, never on the message — it is translated per request. `status === 0`
+  means the API could not be reached at all, not an HTTP error.
+- The SSE stream in `features/chat/api/ai.ts` is the one thing still on `fetch`, and it takes
+  its headers from `streamHeaders()`.
 
 ```tsx
 serverErrors={mutation.error instanceof ApiError ? mutation.error.fieldErrors : undefined}
 ```
 
-`status === 0` means the API could not be reached at all, not an HTTP error.
-
-Query keys are declared centrally in `noteKeys` / `aiKeys` — reuse them instead of
-writing loose arrays.
-
-`retry` is already configured in `providers.tsx` to skip 4xx.
-
-### API types
-
 `src/lib/api/types.ts` holds the **hand-written** types the code actually uses.
-`src/types/api.d.ts` is generated (`pnpm gen:api`, needs the API running) and exists
-only for cross-checking — springdoc marks every field optional because Java records emit
-no `required`, so the generated version is looser. Do not import from the generated file.
+`src/types/api.d.ts` is generated (`pnpm gen:api`, needs the API running) and exists only for
+cross-checking — springdoc marks every field optional because Java records emit no `required`,
+so the generated version is looser. Do not import from the generated file.
 
 ## Internationalisation
 

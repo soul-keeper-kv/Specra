@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiFetch } from "@/lib/api/client";
+import { http } from "@/lib/api/client";
 import type { PageResponse, Workspace, WorkspaceInput } from "@/lib/api/types";
 
 export const workspaceKeys = {
@@ -13,15 +13,15 @@ export const workspaceKeys = {
 export function useWorkspaces() {
   return useQuery({
     queryKey: workspaceKeys.list(),
-    queryFn: () => apiFetch<PageResponse<Workspace>>("/api/v1/workspaces?size=50"),
+    queryFn: ({ signal }) =>
+      http.get<PageResponse<Workspace>>("/api/v1/workspaces", { signal, params: { size: 50 } }),
   });
 }
 
 export function useCreateWorkspace() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: WorkspaceInput) =>
-      apiFetch<Workspace>("/api/v1/workspaces", { method: "POST", body: input }),
+    mutationFn: (input: WorkspaceInput) => http.post<Workspace>("/api/v1/workspaces", input),
     onSuccess: () => void qc.invalidateQueries({ queryKey: workspaceKeys.list() }),
   });
 }

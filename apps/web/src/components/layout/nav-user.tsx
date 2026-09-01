@@ -18,24 +18,20 @@ import {
   SidebarMenuSkeleton,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  initialsOf,
-  useAuthStore,
-  useSessionReady,
-  useSessionUser,
-} from "@/features/auth/store";
+import { useLogout } from "@/features/auth/api/auth";
+import { initialsOf, useSessionReady, useSessionUser } from "@/features/auth/store";
 import { Link, useRouter } from "@/i18n/navigation";
 
-/** The account block at the foot of the sidebar. Reads the local stand-in session. */
+/** The account block at the foot of the sidebar. */
 export function NavUser() {
   const t = useTranslations("nav");
   const user = useSessionUser();
   const ready = useSessionReady();
-  const signOut = useAuthStore((state) => state.signOut);
+  const logout = useLogout();
   const router = useRouter();
   const { isMobile } = useSidebar();
 
-  // Until localStorage has been read, neither state is knowable — rendering either one would
+  // Until storage has been read, neither state is knowable — rendering either one would
   // contradict the server's markup.
   if (!ready) {
     return (
@@ -67,12 +63,14 @@ export function NavUser() {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" tooltip={user.name}>
+            <SidebarMenuButton size="lg" tooltip={user.displayName}>
               <Avatar className="size-8 rounded-lg">
-                <AvatarFallback className="rounded-lg">{initialsOf(user.name)}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {initialsOf(user.displayName)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{user.displayName}</span>
                 <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -92,9 +90,11 @@ export function NavUser() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              disabled={logout.isPending}
               onSelect={() => {
-                signOut();
-                router.push("/");
+                // Revoking this device's refresh token is a round trip, but leaving the page is
+                // not allowed to wait for it: the local session is cleared either way.
+                logout.mutate(undefined, { onSettled: () => router.replace("/sign-in") });
               }}
             >
               <LogOut className="size-4" />
