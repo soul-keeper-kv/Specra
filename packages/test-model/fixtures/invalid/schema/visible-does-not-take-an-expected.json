@@ -1,0 +1,13 @@
+{
+  "irVersion": 1,
+  "name": "Assert the heading",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "assert",
+      "target": { "page": "DashboardPage", "element": "heading" },
+      "assertion": { "condition": "visible", "expected": "Dashboard" }
+    }
+  ]
+}

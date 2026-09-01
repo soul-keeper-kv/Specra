@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specra.dev/schema/test-model.v1.schema.json",
+  "title": "Specra Test Model v1",
+  "description": "An engine-independent description of one test's intent. It names no execution engine: there is no `page`, `locator` or `expect` here, and no duration anywhere — waiting is a state, never a number of milliseconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["irVersion", "name", "steps"],
+  "properties": {
+    "irVersion": {
+      "const": 1,
+      "description": "Schema version. Never edit a version in place once documents of that version exist; add a v2 and a migrator."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "description": { "type": "string", "maxLength": 2000 },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/slug" }
+    },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "setup": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "teardown": { "type": "array", "items": { "$ref": "#/$defs/step" } }
+  },
+
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64
+    },
+    "stepId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9]*$",
+      "maxLength": 64,
+      "description": "A parameter, element or flow name: lowerCamelCase."
+    },
+    "pageName": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "maxLength": 64,
+      "description": "A page object name: UpperCamelCase, e.g. LoginPage."
+    },
+
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["string", "number", "boolean"] },
+        "required": { "type": "boolean", "default": true },
+        "secret": {
+          "type": "boolean",
+          "default": false,
+          "description": "A secret is supplied by an Environment at run time. Its value never enters this document, a prompt, a generated file or a log."
+        },
+        "description": { "type": "string", "maxLength": 500 }
+      }
+    },
+
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "value": { "type": ["string", "number", "boolean"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "enum": ["param", "secret"] },
+            "name": { "$ref": "#/$defs/identifier" }
+          }
+        }
+      ]
+    },
+
+    "pageTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page"],
+      "properties": {
+        "page": { "$ref": "#/$defs/pageName" },
+        "element": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "selectorTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector"],
+      "properties": {
+        "selector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "value"],
+          "properties": {
+            "strategy": { "enum": ["css", "xpath"] },
+            "value": { "type": "string", "minLength": 1 }
+          },
+          "description": "The escape hatch. Recorded as debt on the automation test; never the first choice."
+        }
+      }
+    },
+    "target": {
+      "oneOf": [{ "$ref": "#/$defs/pageTarget" }, { "$ref": "#/$defs/selectorTarget" }]
+    },
+    "elementPageTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "element"],
+      "properties": {
+        "page": { "$ref": "#/$defs/pageName" },
+        "element": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "elementTarget": {
+      "oneOf": [{ "$ref": "#/$defs/elementPageTarget" }, { "$ref": "#/$defs/selectorTarget" }],
+      "description": "A target that must name a specific element, not just a page."
+    },
+
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition"],
+      "properties": {
+        "condition": {
+          "enum": [
+            "visible",
+            "hidden",
+            "enabled",
+            "disabled",
+            "checked",
+            "textEquals",
+            "textContains",
+            "valueEquals",
+            "countEquals",
+            "urlMatches",
+            "attributeEquals"
+          ]
+        },
+        "expected": { "type": ["string", "number", "boolean"] },
+        "attribute": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "condition": {
+                "enum": ["textEquals", "textContains", "valueEquals", "urlMatches"]
+              }
+            },
+            "required": ["condition"]
+          },
+          "then": {
+            "required": ["expected"],
+            "properties": { "expected": { "type": "string" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "condition": { "const": "countEquals" } },
+            "required": ["condition"]
+          },
+          "then": {
+            "required": ["expected"],
+            "properties": { "expected": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "condition": { "const": "attributeEquals" } },
+            "required": ["condition"]
+          },
+          "then": {
+            "required": ["attribute", "expected"],
+            "properties": {
+              "attribute": { "type": "string", "minLength": 1 },
+              "expected": { "type": ["string", "number", "boolean"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "condition": {
+                "enum": ["visible", "hidden", "enabled", "disabled", "checked"]
+              }
+            },
+            "required": ["condition"]
+          },
+          "then": { "properties": { "expected": false, "attribute": false } }
+        }
+      ]
+    },
+
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "action"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stepId" },
+        "sourceStepIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "description": "The manual test steps this came from. A step that traces to nothing must declare itself derived."
+        },
+        "derived": { "type": "boolean", "default": false },
+        "description": { "type": "string", "maxLength": 500 },
+        "action": {
+          "enum": [
+            "navigate",
+            "reload",
+            "goBack",
+            "goForward",
+            "fill",
+            "clear",
+            "press",
+            "select",
+            "check",
+            "uncheck",
+            "upload",
+            "click",
+            "doubleClick",
+            "rightClick",
+            "hover",
+            "dragTo",
+            "waitFor",
+            "assert",
+            "useFlow"
+          ]
+        },
+        "target": { "$ref": "#/$defs/target" },
+        "to": { "$ref": "#/$defs/target" },
+        "value": { "$ref": "#/$defs/value" },
+        "assertion": { "$ref": "#/$defs/assertion" },
+        "flow": { "$ref": "#/$defs/identifier" }
+      },
+      "allOf": [
+        {
+          "$comment": "Traceability: a step that is not marked derived must name a manual step it came from.",
+          "if": { "properties": { "derived": { "not": { "const": true } } } },
+          "then": {
+            "required": ["sourceStepIds"],
+            "properties": { "sourceStepIds": { "minItems": 1 } }
+          }
+        },
+        {
+          "$comment": "Actions that act on one element.",
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "fill",
+                  "clear",
+                  "select",
+                  "check",
+                  "uncheck",
+                  "upload",
+                  "click",
+                  "doubleClick",
+                  "rightClick",
+                  "hover",
+                  "dragTo"
+                ]
+              }
+            },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["target"],
+            "properties": { "target": { "$ref": "#/$defs/elementTarget" } }
+          }
+        },
+        {
+          "$comment": "Actions that carry a value.",
+          "if": {
+            "properties": { "action": { "enum": ["fill", "select", "upload", "press"] } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "$ref": "#/$defs/value" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "const": "navigate" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["target"],
+            "properties": { "target": { "$ref": "#/$defs/pageTarget" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "const": "dragTo" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["to"],
+            "properties": { "to": { "$ref": "#/$defs/elementTarget" } }
+          }
+        },
+        {
+          "$comment": "assert states the condition now; waitFor waits for the same condition.",
+          "if": {
+            "properties": { "action": { "enum": ["assert", "waitFor"] } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["target", "assertion"],
+            "properties": {
+              "target": { "$ref": "#/$defs/target" },
+              "assertion": { "$ref": "#/$defs/assertion" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "const": "useFlow" } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["flow"],
+            "properties": {
+              "flow": { "$ref": "#/$defs/identifier" },
+              "target": false,
+              "to": false,
+              "value": false,
+              "assertion": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "enum": ["reload", "goBack", "goForward"] } },
+            "required": ["action"]
+          },
+          "then": {
+            "properties": {
+              "target": false,
+              "to": false,
+              "value": false,
+              "assertion": false,
+              "flow": false
+            }
+          }
+        },
+        {
+          "$comment": "Only dragTo has a second target, and only useFlow names a flow.",
+          "if": {
+            "properties": { "action": { "not": { "const": "dragTo" } } },
+            "required": ["action"]
+          },
+          "then": { "properties": { "to": false } }
+        },
+        {
+          "if": {
+            "properties": { "action": { "not": { "const": "useFlow" } } },
+            "required": ["action"]
+          },
+          "then": { "properties": { "flow": false } }
+        }
+      ]
+    }
+  }
+}

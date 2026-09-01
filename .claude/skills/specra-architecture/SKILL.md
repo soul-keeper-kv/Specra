@@ -27,10 +27,10 @@ change).
 Two more are planned, and are described before they exist so nothing gets built in the wrong
 place — [`docs/architecture/03-module-boundaries.md`](../../../docs/architecture/03-module-boundaries.md):
 
-| Path                  | What it is                                      | Rule                                                     |
-| --------------------- | ----------------------------------------------- | -------------------------------------------------------- |
-| `packages/test-model` | The IR contract: schema, types, fixtures        | No runtime dependencies. Imports nothing in this repo.   |
-| `services/runner`     | Node worker: adapter, codegen, inspect, execute | Stateless. Owns no database. Imports nothing in `apps/`. |
+| Path                  | What it is                                      | Rule                                                       |
+| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| `packages/test-model` | The IR contract: schema, types, fixtures        | Imports nothing in this repo. `ajv` is its one dependency. |
+| `services/runner`     | Node worker: adapter, codegen, inspect, execute | Stateless. Owns no database. Imports nothing in `apps/`.   |
 
 **The split rule between the two runtimes is one question: does the job need the
 Node/Playwright toolchain?** If yes, `services/runner`. If no, `apps/api`. Not "it feels more

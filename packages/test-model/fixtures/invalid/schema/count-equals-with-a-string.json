@@ -1,0 +1,13 @@
+{
+  "irVersion": 1,
+  "name": "Count the rows",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "assert",
+      "target": { "page": "CartPage", "element": "lineItems" },
+      "assertion": { "condition": "countEquals", "expected": "two" }
+    }
+  ]
+}

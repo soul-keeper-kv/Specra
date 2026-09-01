@@ -1,0 +1,122 @@
+{
+  "irVersion": 1,
+  "name": "Checkout a cart of two items",
+  "description": "Exercises every action group: a reused flow, waits, input variants, a drag, and the selector escape hatch.",
+  "tags": ["regression", "checkout"],
+  "parameters": [
+    { "name": "couponCode", "type": "string", "required": false },
+    { "name": "cardNumber", "type": "string", "required": true, "secret": true }
+  ],
+  "setup": [
+    {
+      "id": "setup-login",
+      "derived": true,
+      "description": "Sign in before the case begins",
+      "action": "useFlow",
+      "flow": "login"
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "navigate",
+      "target": { "page": "CartPage" }
+    },
+    {
+      "id": "s2",
+      "sourceStepIds": ["ts-1"],
+      "derived": false,
+      "action": "waitFor",
+      "target": { "page": "CartPage", "element": "lineItems" },
+      "assertion": { "condition": "countEquals", "expected": 2 }
+    },
+    {
+      "id": "s3",
+      "sourceStepIds": ["ts-2"],
+      "action": "select",
+      "target": { "page": "CartPage", "element": "shippingMethod" },
+      "value": { "kind": "literal", "value": "express" }
+    },
+    {
+      "id": "s4",
+      "sourceStepIds": ["ts-3"],
+      "action": "check",
+      "target": { "page": "CartPage", "element": "giftWrap" }
+    },
+    {
+      "id": "s5",
+      "sourceStepIds": ["ts-4"],
+      "action": "fill",
+      "target": { "page": "CartPage", "element": "couponInput" },
+      "value": { "kind": "param", "name": "couponCode" }
+    },
+    {
+      "id": "s6",
+      "sourceStepIds": ["ts-4"],
+      "action": "press",
+      "target": { "page": "CartPage", "element": "couponInput" },
+      "value": { "kind": "literal", "value": "Enter" }
+    },
+    {
+      "id": "s7",
+      "sourceStepIds": ["ts-5"],
+      "description": "The legacy promo widget has no stable handle yet",
+      "action": "dragTo",
+      "target": { "selector": { "strategy": "css", "value": "#promo .handle" } },
+      "to": { "page": "CartPage", "element": "promoDropZone" }
+    },
+    {
+      "id": "s8",
+      "sourceStepIds": ["ts-6"],
+      "action": "click",
+      "target": { "page": "CartPage", "element": "checkoutButton" }
+    },
+    {
+      "id": "s9",
+      "sourceStepIds": ["ts-7"],
+      "action": "fill",
+      "target": { "page": "PaymentPage", "element": "cardNumberInput" },
+      "value": { "kind": "secret", "name": "cardNumber" }
+    },
+    {
+      "id": "s10",
+      "sourceStepIds": ["ts-8"],
+      "action": "click",
+      "target": { "page": "PaymentPage", "element": "payButton" }
+    },
+    {
+      "id": "s11",
+      "sourceStepIds": ["ts-9"],
+      "action": "assert",
+      "target": { "page": "ConfirmationPage" },
+      "assertion": { "condition": "urlMatches", "expected": "^/orders/[0-9]+$" }
+    },
+    {
+      "id": "s12",
+      "sourceStepIds": ["ts-9"],
+      "action": "assert",
+      "target": { "page": "ConfirmationPage", "element": "status" },
+      "assertion": { "condition": "textContains", "expected": "Thank you" }
+    },
+    {
+      "id": "s13",
+      "sourceStepIds": ["ts-9"],
+      "action": "assert",
+      "target": { "page": "ConfirmationPage", "element": "downloadInvoice" },
+      "assertion": {
+        "condition": "attributeEquals",
+        "attribute": "aria-disabled",
+        "expected": "false"
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "id": "teardown-1",
+      "derived": true,
+      "action": "useFlow",
+      "flow": "clearCart"
+    }
+  ]
+}

@@ -25,6 +25,9 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     <archunit.version>1.4.1</archunit.version>
+    <json-schema-validator.version>1.5.6</json-schema-validator.version>
+    <!-- The IR contract lives outside this module on purpose; see core/testmodel. -->
+    <test-model.dir>${project.basedir}/../../packages/test-model</test-model.dir>
     <spotless.version>3.10.1</spotless.version>
     <!-- DO NOT BUMP without checking the JDK first. From 1.29.0 onwards
          google-java-format resolves JCTree$JCAnyPattern, the AST node for
@@ -153,6 +156,16 @@
       <version>${springdoc.version}</version>
     </dependency>
 
+    <!-- ── the Test Model / IR contract ───────────────────────────────── -->
+    <!-- The schema itself is not here: it is one file in packages/test-model, copied onto
+         the classpath by maven-resources-plugin below, so the web app, the runner and this
+         service validate against the same bytes rather than three drifting copies. -->
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${json-schema-validator.version}</version>
+    </dependency>
+
     <!-- ── codegen ────────────────────────────────────────────────────── -->
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -217,6 +230,46 @@
 
   <build>
     <plugins>
+      <!-- The IR contract is shared, not copied: the schema and the fixtures come from
+           packages/test-model so that a change there fails this build rather than drifting
+           quietly. TestModelContractTest is what turns that into a verdict. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-test-model-schema</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/testmodel</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${test-model.dir}/schema</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-test-model-fixtures</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.testOutputDirectory}/testmodel/fixtures</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${test-model.dir}/fixtures</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

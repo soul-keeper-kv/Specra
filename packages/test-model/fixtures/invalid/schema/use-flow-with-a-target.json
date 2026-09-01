@@ -1,0 +1,13 @@
+{
+  "irVersion": 1,
+  "name": "Run the login flow",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "useFlow",
+      "flow": "login",
+      "target": { "page": "LoginPage" }
+    }
+  ]
+}

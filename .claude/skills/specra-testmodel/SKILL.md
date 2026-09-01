@@ -40,7 +40,8 @@ and none of them owns it: `apps/web`, `services/runner`, and hand-written Java r
 **Adding an optional field** — additive, no version bump:
 
 1. Edit the schema.
-2. Regenerate the TS types (`pnpm --filter @specra/test-model build`).
+2. Mirror it in `src/types.ts`. `schema-parity.test.ts` is what keeps the closed
+   vocabularies honest; it fails on an action the schema has and the types do not.
 3. Mirror it on the Java record and run the contract test.
 4. Add a fixture that uses it.
 

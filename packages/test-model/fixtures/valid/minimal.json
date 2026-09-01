@@ -1,0 +1,19 @@
+{
+  "irVersion": 1,
+  "name": "The home page loads",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "navigate",
+      "target": { "page": "HomePage" }
+    },
+    {
+      "id": "s2",
+      "sourceStepIds": ["ts-2"],
+      "action": "assert",
+      "target": { "page": "HomePage", "element": "heading" },
+      "assertion": { "condition": "visible" }
+    }
+  ]
+}

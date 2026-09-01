@@ -1,0 +1,18 @@
+{
+  "irVersion": 1,
+  "name": "A journey that verifies nothing",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "navigate",
+      "target": { "page": "LoginPage" }
+    },
+    {
+      "id": "s2",
+      "sourceStepIds": ["ts-2"],
+      "action": "click",
+      "target": { "page": "LoginPage", "element": "submitButton" }
+    }
+  ]
+}

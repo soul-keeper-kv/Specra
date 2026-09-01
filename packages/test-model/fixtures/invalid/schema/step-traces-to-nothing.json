@@ -1,0 +1,11 @@
+{
+  "irVersion": 1,
+  "name": "Open the dashboard",
+  "steps": [
+    {
+      "id": "s1",
+      "action": "navigate",
+      "target": { "page": "DashboardPage" }
+    }
+  ]
+}

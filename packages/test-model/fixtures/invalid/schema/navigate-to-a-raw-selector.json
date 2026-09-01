@@ -1,0 +1,12 @@
+{
+  "irVersion": 1,
+  "name": "Navigate to a selector",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "navigate",
+      "target": { "selector": { "strategy": "css", "value": "#home" } }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "irVersion": 2,
+  "name": "From the future",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "navigate",
+      "target": { "page": "HomePage" }
+    }
+  ]
+}

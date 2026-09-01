@@ -140,7 +140,7 @@ Every boundary above has something that fails a build when it is crossed:
 | no execution engine named outside the adapter  | `ArchitectureTest` (Java) + eslint restricted imports (Node) |
 | IR schema ↔ Java records                       | shared fixtures, validated on both sides                     |
 | adapter determinism                            | golden-file tests: same IR in, identical bytes out           |
-| `packages/test-model` stays dependency-free    | its `package.json` has no runtime dependencies               |
+| `packages/test-model` stays app-free           | its only runtime dependency is `ajv`                         |
 
 A rule with no test is a paragraph nobody reads. When adding a boundary, add its check in the
 same change.

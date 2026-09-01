@@ -11,18 +11,27 @@ with a provider-agnostic setup, and a `notes` + `chat` demo that exercises all o
 
 The plumbing is the part worth keeping. `note` and `chat` are placeholders.
 
-## M0 — The contract
+## M0 — The contract ✅
 
 Nothing else can be built well before this exists.
 
-- `packages/test-model`: `test-model.v1.schema.json`, generated TS types, fixtures, a
-  validator. No runtime dependencies.
-- `core/testmodel` in `apps/api`: Java records, plus the contract test that validates the
-  same fixtures.
+- `packages/test-model`: `test-model.v1.schema.json` (draft 2020-12), a TypeScript mirror of
+  its types, an ajv validator, and the fixtures — `valid/`, `invalid/schema/` and
+  `invalid/semantic/`.
+- `core/testmodel` in `apps/api`: the Java records, and `TestModelSchema`, which validates
+  against **the same schema file**, copied onto the classpath by the build rather than
+  reimplemented.
+- Contract and parity tests on both sides, over the same fixtures.
 - ArchUnit rule: no execution engine named in Java.
 
-**Done when** a fixture that the schema rejects also fails Jackson binding, and both facts are
-asserted by tests.
+**Done**: 31 tests in `packages/test-model`, 34 in `TestModelContractTest` and
+`TestModelVocabularyTest`, all without Docker. The schema makes two things unrepresentable
+rather than merely illegal — a duration, and a step that traces to nothing.
+
+The semantic layer (undeclared parameters, a secret read as a plain parameter, duplicate step
+ids, a test that asserts nothing) is deliberately **not** here. It runs where an IR is
+authored and stored, in `apps/api`, and lands with M4. `fixtures/invalid/semantic/` already
+holds the cases, schema-valid on purpose, so the layer has its target before it is written.
 
 ## M1 — Domain and tenancy
 

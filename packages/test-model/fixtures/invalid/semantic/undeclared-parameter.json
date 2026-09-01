@@ -1,0 +1,20 @@
+{
+  "irVersion": 1,
+  "name": "Fill a username that was never declared",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "fill",
+      "target": { "page": "LoginPage", "element": "usernameInput" },
+      "value": { "kind": "param", "name": "username" }
+    },
+    {
+      "id": "s2",
+      "sourceStepIds": ["ts-2"],
+      "action": "assert",
+      "target": { "page": "LoginPage", "element": "usernameInput" },
+      "assertion": { "condition": "visible" }
+    }
+  ]
+}

@@ -148,6 +148,17 @@ class ArchitectureTest {
                   + " turns a configuration change back into a code change");
 
   @ArchTest
+  static final ArchRule noExecutionEngineIsNamedInCode =
+      noClasses()
+          .should()
+          .dependOnClassesThat()
+          .resideInAnyPackage("com.microsoft.playwright..", "org.openqa.selenium..", "io.appium..")
+          .because(
+              "the engine boundary is the Test Model plus its adapter, and the adapter lives in"
+                  + " services/runner: a browser driver on this classpath means the control plane"
+                  + " has started doing the runner's job, and the second engine just got harder");
+
+  @ArchTest
   static final ArchRule dependenciesArriveThroughTheConstructor =
       fields()
           .should()

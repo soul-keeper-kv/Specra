@@ -1,0 +1,14 @@
+{
+  "irVersion": 1,
+  "name": "Wait for the banner",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "waitFor",
+      "target": { "page": "HomePage", "element": "banner" },
+      "assertion": { "condition": "visible" },
+      "timeout": 3000
+    }
+  ]
+}

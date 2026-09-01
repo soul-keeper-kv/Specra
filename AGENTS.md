@@ -55,23 +55,29 @@ current `notes`/`chat` scaffold gets replaced by.
 
 ## The repo
 
-|                      |                                                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------- |
-| `apps/web`           | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod, next-intl           |
-| `apps/api`           | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector, Micrometer Tracing |
-| `tests/e2e`          | Playwright, its own package — drives the product, is not part of it                                       |
-| `tools/notion-clone` | Standalone script, unrelated to the two apps                                                              |
+|                       |                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `apps/web`            | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod, next-intl           |
+| `apps/api`            | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector, Micrometer Tracing |
+| `packages/test-model` | The IR contract: the JSON Schema, its TypeScript mirror, fixtures, a validator                            |
+| `tests/e2e`           | Playwright, its own package — drives the product, is not part of it                                       |
+| `tools/notion-clone`  | Standalone script, unrelated to the two apps                                                              |
 
-Planned, and described in [03 — Module boundaries](docs/architecture/03-module-boundaries.md)
-before they exist so nothing gets built in the wrong place:
+One more is planned, and described in
+[03 — Module boundaries](docs/architecture/03-module-boundaries.md) before it exists so
+nothing gets built in the wrong place:
 
-|                       |                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| `packages/test-model` | The IR contract: JSON Schema, generated TS types, fixtures. No dependencies.          |
-| `services/runner`     | Node/TS worker: the Playwright adapter, codegen validation, DOM inspection, execution |
+|                   |                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| `services/runner` | Node/TS worker: the Playwright adapter, codegen validation, DOM inspection, execution |
 
 The split rule is one question: **does the job need the Node/Playwright toolchain?** If yes,
 `services/runner`. If no, `apps/api`. Nothing else decides it.
+
+**The IR schema is one file, shared literally.** `packages/test-model/schema/` holds it; the
+api build copies it onto the classpath and validates against the same bytes. Restating its
+rules in Java or TypeScript is how a contract becomes two contracts — mirror the _types_ if
+you must, and let the parity tests catch you.
 
 ## Files for AI agents
 
@@ -116,7 +122,7 @@ apps/api/src/main/java/dev/specra/api/
 │   ├── logging/     MdcKeys, CorrelationIdFilter, RequestLoggingFilter
 │   ├── web/         PageResponse
 │   ├── content/     ContentStore + registry: one shape for every kind of user content
-│   └── testmodel/   the IR records, mirroring packages/test-model's schema  (planned)
+│   └── testmodel/   the IR records + the shared schema, validated by TestModelSchema
 └── feature/         one folder per feature, one folder per layer inside it
     ├── note/        scaffold — replaced by testcase, see docs/architecture/09-roadmap.md
     │   ├── web/     NoteController

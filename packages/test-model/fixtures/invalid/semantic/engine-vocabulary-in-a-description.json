@@ -1,0 +1,20 @@
+{
+  "irVersion": 1,
+  "name": "Open the dashboard",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "description": "await page.getByRole('link', { name: 'Dashboard' }).click()",
+      "action": "navigate",
+      "target": { "page": "DashboardPage" }
+    },
+    {
+      "id": "s2",
+      "sourceStepIds": ["ts-2"],
+      "action": "assert",
+      "target": { "page": "DashboardPage", "element": "heading" },
+      "assertion": { "condition": "visible" }
+    }
+  ]
+}

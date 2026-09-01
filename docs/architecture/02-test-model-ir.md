@@ -167,14 +167,19 @@ first when the primary breaks.
 | Artefact                          | Home                                       |
 | --------------------------------- | ------------------------------------------ |
 | `test-model.v1.schema.json`       | `packages/test-model/schema/` — the source |
-| TypeScript types                  | generated from the schema, same package    |
+| TypeScript types                  | a hand-written mirror, same package        |
 | Java records                      | `apps/api` `core/testmodel/`, hand-written |
 | Shared fixtures (valid + invalid) | `packages/test-model/fixtures/`            |
 
-Java mirrors the schema rather than generating from it, because the records also carry JPA
-and validation concerns. **A contract test on each side validates the same fixtures**, so the
-two representations cannot drift silently: a fixture the schema accepts and Jackson rejects
-fails the build.
+**The schema file itself is shared, not reimplemented.** `apps/api` does not restate the rules
+in Java: the build copies `test-model.v1.schema.json` onto its classpath and
+`TestModelSchema` validates against those same bytes. Two implementations of one contract
+would drift; one file cannot.
+
+The types on each side are mirrors, and mirrors do drift — so each side has a parity test that
+compares its enums against the schema's, and a contract test that runs every fixture. A
+fixture the schema accepts and Jackson rejects fails the build; an action added to the schema
+and forgotten in `types.ts` or `StepAction` fails the build.
 
 `packages/test-model` may not depend on Playwright, on Next.js, or on anything in `apps/`. It
 is the one package both runtimes and the browser bundle can import.
@@ -184,12 +189,24 @@ is the one package both runtimes and the browser bundle can import.
 An IR is validated before it is stored, in this order, and a failure is a rejected
 generation, not a stored bad document:
 
-1. **Schema** — JSON Schema, structural.
-2. **Referential** — every `target.page`/`element` resolves against the project's page
-   objects; every `value.name` is a declared parameter; every `useFlow` names a real flow.
-3. **Semantic** — no engine vocabulary in any free-text field; no duration anywhere; every
-   step traces back to at least one manual step (or is marked `derived`); the document ends
-   in at least one `assert`.
+| Layer       | Catches                                                                                                             | Runs in                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Schema      | structure, enums, required fields, per-action shape, any stray field                                                | everywhere — one shared file |
+| Referential | unknown page or element, undeclared parameter, unknown flow                                                         | `apps/api`                   |
+| Semantic    | engine vocabulary in free text, a secret read as a plain parameter, duplicate step ids, a test that asserts nothing | `apps/api`                   |
+
+The last two run only where an IR is authored and stored, which is the api. The runner
+receives an IR that has already passed all three, and the web app uses the schema for
+immediate feedback in the editor. `fixtures/invalid/semantic/` holds documents that are
+schema-valid on purpose: they mark exactly where structural validation stops.
+
+Two rules are worth stating as properties rather than checks, because the schema makes them
+unrepresentable rather than merely illegal:
+
+- **A duration cannot be written down.** There is no `sleep` action and a step forbids
+  additional properties, so `timeout`, `delay` and `waitMs` are all rejected by the same rule.
+- **An untraceable step cannot be written down.** A step that is not marked `derived` must
+  name at least one manual step it came from.
 
 A test case with no assertion is not a test, and the pipeline says so instead of generating a
 spec that can only pass.

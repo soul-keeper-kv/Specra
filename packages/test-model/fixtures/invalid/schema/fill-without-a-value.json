@@ -1,0 +1,12 @@
+{
+  "irVersion": 1,
+  "name": "Type into the username field",
+  "steps": [
+    {
+      "id": "s1",
+      "sourceStepIds": ["ts-1"],
+      "action": "fill",
+      "target": { "page": "LoginPage", "element": "usernameInput" }
+    }
+  ]
+}
