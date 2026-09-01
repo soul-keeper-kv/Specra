@@ -18,13 +18,11 @@
       // Creates .env from .env.example if missing, then waits for Postgres to
       // report healthy — so the API never races the database on startup.
       "preLaunchTask": "specra: db up",
-      // docker-compose.yml (root, compose project "specra") and
-      // apps/api/compose.yaml (compose project "api") both declare
-      // container_name: specra-postgres. With cwd=apps/api,
-      // spring-boot-docker-compose would `docker compose up` the second one on
-      // top of the first and Docker rejects the duplicate container name, so
-      // the app dies during startup. The database is already up by this point.
-      "vmArgs": "-Dspring.docker.compose.enabled=false",
+      // No -Dspring.docker.compose.enabled=false here. The repo has one compose
+      // file with a pinned project name, and application.yml points
+      // spring.docker.compose.file at it, so the database is already up by this
+      // point and the app's own `compose up --wait` is a no-op rather than the
+      // duplicate-container-name conflict it used to be.
       "envFile": "${workspaceFolder}/.env",
       // NOT integratedTerminal. That path makes the debug adapter hand the
       // java command to a terminal and then wait for the JVM to dial back on
@@ -43,10 +41,11 @@
       "mainClass": "dev.specra.api.TestSpecraApiApplication",
       "projectName": "specra-api",
       "cwd": "${workspaceFolder}/apps/api",
-      // Same container-name clash as above: Testcontainers owns the database
-      // here, so spring-boot-docker-compose must stay out of it. (application-
-      // test.yml disables it, but only under the "test" profile, which this
-      // configuration deliberately does not activate.)
+      // Testcontainers owns the database here, so spring-boot-docker-compose
+      // must stay out of it — otherwise the run gets two databases and connects
+      // to the wrong one. (application-test.yml disables it, but only under the
+      // "test" profile, which this configuration deliberately does not
+      // activate.)
       "vmArgs": "-Dspring.docker.compose.enabled=false",
       "envFile": "${workspaceFolder}/.env",
       // NOT integratedTerminal. That path makes the debug adapter hand the

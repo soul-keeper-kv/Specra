@@ -24,9 +24,21 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  # Running the API brings the database up if it is not already running. It points at
+  # the repo's one compose file rather than a copy beside this module: two files both
+  # declaring container_name specra-postgres are two compose projects fighting over one
+  # container name, and the loser is whichever process started second — the API, dying
+  # at startup with "container name is already in use". The path is relative to the
+  # working directory, which is apps/api for `pnpm dev:api` and for both API launch
+  # configurations in .vscode/launch.json.
+  #
+  # start_only: the database outlives the process that started it, so restarting the API
+  # does not take the data with it. Tests set enabled:false — Testcontainers owns their
+  # database (see application-test.yml).
   docker:
     compose:
       enabled: true
+      file: ../../docker-compose.yml
       lifecycle-management: start_only
 
   # ─────────────────────────────────────────────────────────────────────────

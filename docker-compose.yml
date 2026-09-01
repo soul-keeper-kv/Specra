@@ -1,6 +1,16 @@
 # Postgres with the vector extension, shared by the API and by `mvnw verify`.
-# `pnpm db:up` from the repo root, or let spring-boot-docker-compose start
-# apps/api/compose.yaml for you when you run the API.
+#
+# This is the only compose file in the repo, and that is deliberate. `pnpm db:up`
+# and spring-boot-docker-compose (see spring.docker.compose.file in the API's
+# application.yml) both bring up *this* file, so starting the database twice is a
+# no-op instead of a conflict.
+#
+# `name` is pinned rather than inferred from the checkout directory: compose
+# derives the project name from the folder, so a clone into `specra-main` would
+# otherwise be a second project trying to create the same `container_name`, and
+# Docker refuses that with "container name is already in use".
+name: specra
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
