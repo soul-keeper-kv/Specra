@@ -19,7 +19,7 @@ things that are easy to forget get done every time.
 | Error format   | RFC 9457 problem+json, one factory, stable `code`, translated text         | `core/error/ProblemFactory`          |
 | Correlation    | `X-Request-Id` in, echoed out, `traceId`/`spanId` in MDC and in the body   | `core/logging/`, Micrometer Tracing  |
 | API docs       | springdoc, one document at `/v3/api-docs`, error responses added globally  | `config/OpenApiConfig`               |
-| Code structure | `core` + `feature/` (api), `features/` + thin pages (web)                  | see the layout in `AGENTS.md`        |
+| Code structure | `core` + `feature/` (api), `features/` + thin pages (web)                  | `specra-architecture`                |
 | Auth           | local stand-in session only; no backend auth yet                           | `features/auth/store.ts`             |
 
 If a request seems to need one of these changed, say so and keep building under the

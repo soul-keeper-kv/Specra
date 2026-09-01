@@ -13,6 +13,9 @@ end-to-end checklist, and it points back here for the JPA/Flyway/MapStruct detai
 The AI/RAG/streaming layer has its own skill, `specra-ai` — read that instead when
 touching `feature/ai/` or `AiConfig`.
 
+Wondering which folder something belongs in, or why `ArchitectureTest` is red? That is
+`specra-architecture`.
+
 ## Package layout
 
 ```text

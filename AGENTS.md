@@ -27,13 +27,14 @@ Available skills — **start with `specra-feature`** whenever the task touches a
 sees. It holds the decisions that are already settled and the checklist that spans both apps;
 the rest are per-area reference it points into.
 
-| Skill            | Covers                                                                                                    |
-| ---------------- | --------------------------------------------------------------------------------------------------------- |
-| `specra-feature` | The end-to-end checklist: settled decisions, i18n both sides, errors, states, registration, done criteria |
-| `specra-api`     | JPA, Flyway, MapStruct, RFC 9457 errors, message bundles, tracing, tests                                  |
-| `specra-web`     | Next 16, next-intl, theming, TanStack v9, shadcn traps                                                    |
-| `specra-ai`      | Spring AI, provider selection, pgvector RAG, SSE streaming                                                |
-| `commit-message` | Conventional Commits matching this repo's commitlint                                                      |
+| Skill                 | Covers                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `specra-feature`      | The end-to-end checklist: settled decisions, i18n both sides, errors, states, registration, done criteria |
+| `specra-architecture` | Where a file goes: monorepo packages, core/feature split, api layering + ArchUnit, web slice              |
+| `specra-api`          | JPA, Flyway, MapStruct, RFC 9457 errors, message bundles, tracing, tests                                  |
+| `specra-web`          | Next 16, next-intl, theming, TanStack v9, shadcn traps                                                    |
+| `specra-ai`           | Spring AI, provider selection, pgvector RAG, SSE streaming                                                |
+| `commit-message`      | Conventional Commits matching this repo's commitlint                                                      |
 
 ## Layout
 
@@ -112,6 +113,9 @@ folder with three or four folders in it.
 these, on a controller or an entity in the wrong folder, and on a class that names an LLM
 vendor. A violation means a class is in the wrong place — move it before you reach for an
 exception to the rule.
+
+Deciding where a new class, component or package goes — or reading an `ArchitectureTest`
+failure — is what the `specra-architecture` skill is for.
 
 ## Invariants — breaking these breaks the product, it is not "cleanup"
 

@@ -27,7 +27,8 @@ A `page.tsx` resolves params, calls `setRequestLocale`, and renders a view from
 `features/`. Logic in a page cannot be tested without a router.
 
 Adding or changing a page or a feature? Read `specra-feature` first — it is the end-to-end
-checklist, and it points back here for the Next/TanStack/shadcn detail.
+checklist, and it points back here for the Next/TanStack/shadcn detail. Which folder a file
+belongs in, and what may import what, is `specra-architecture`.
 
 `apps/web/AGENTS.md` (written by Next.js) warns that Next 16 carries breaking changes.
 The correct documentation ships inside `node_modules/next/dist/docs/` — read it there
