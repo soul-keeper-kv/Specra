@@ -1,11 +1,15 @@
-# One install for the whole repo: `pnpm install` at the root covers apps/web too.
+# One install for the whole repo: `pnpm install` at the root covers every package below.
 packages:
   - apps/web
+  # End-to-end tests are their own package, not part of the app they drive: the suite has to
+  # be runnable against a deployed URL, and nothing in apps/web should be able to import it.
+  - tests/e2e
 
 # pnpm does not run a dependency's install scripts unless it is allowed here.
 allowBuilds:
   "@parcel/watcher": false
   "@swc/core": false
+  esbuild: true
   unrs-resolver: true
 
 # lucide-react 1.38.0 is newer than pnpm's default minimum release age gate.

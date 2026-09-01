@@ -1,0 +1,21 @@
+{
+  "name": "specra-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end tests. A separate package on purpose: it drives the running product from outside, it is not part of any one app.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report",
+    "browsers": "playwright install chromium",
+    "browsers:ci": "playwright install --with-deps chromium",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

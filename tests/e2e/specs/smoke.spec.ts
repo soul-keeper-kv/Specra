@@ -1,14 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-import en from "../src/messages/en.json";
-import vi from "../src/messages/vi.json";
+import en from "@messages/en.json";
+import vi from "@messages/vi.json";
 
 /**
  * These run against the web app alone. The API may or may not be up, so assert on things the UI
  * must get right either way — routing, language, theme and client-side validation.
  *
  * Expected text is imported from the bundles rather than written out here: a copy of a string in a
- * test is a second translation that nobody remembers to update.
+ * test is a second translation that nobody remembers to update. The `@messages/*` alias in
+ * tsconfig.json is the only path from this package into apps/web, and it is deliberately narrow —
+ * e2e drives the product through its interface, it does not reach into its source.
  */
 
 /**
