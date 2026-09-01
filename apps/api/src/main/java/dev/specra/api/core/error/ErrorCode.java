@@ -34,6 +34,8 @@ public enum ErrorCode {
   AI_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
   /** The model provider could not be reached at all, or timed out. */
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+  /** The store or backend named by the request exists, but cannot perform this operation. */
+  UNSUPPORTED_OPERATION(HttpStatus.NOT_IMPLEMENTED),
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 
   /** Dereferenceable in principle, stable in practice — clients match on it as an opaque id. */

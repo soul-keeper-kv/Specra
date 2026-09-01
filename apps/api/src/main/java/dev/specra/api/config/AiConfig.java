@@ -1,5 +1,6 @@
 package dev.specra.api.config;
 
+import dev.specra.api.feature.ai.tool.ContentTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -42,9 +43,11 @@ public class AiConfig {
    */
   @Bean
   @Primary
-  public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory) {
+  public ChatClient chatClient(
+      ChatModel chatModel, ChatMemory chatMemory, ContentTools contentTools) {
     return ChatClient.builder(chatModel)
         .defaultSystem(properties.systemPrompt())
+        .defaultTools(contentTools)
         .defaultAdvisors(
             MessageChatMemoryAdvisor.builder(chatMemory).build(), new SimpleLoggerAdvisor())
         .build();

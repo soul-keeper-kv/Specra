@@ -29,4 +29,14 @@ public record PageResponse<T>(
         page.isFirst(),
         page.isLast());
   }
+
+  /**
+   * Re-map the rows without touching the paging numbers. Lets an adapter translate one page of its
+   * own type into a page of a shared type, which {@code PageResponse.from} cannot do because it
+   * starts from a Spring {@code Page}.
+   */
+  public <R> PageResponse<R> map(Function<T, R> mapper) {
+    return new PageResponse<>(
+        content.stream().map(mapper).toList(), page, size, totalElements, totalPages, first, last);
+  }
 }

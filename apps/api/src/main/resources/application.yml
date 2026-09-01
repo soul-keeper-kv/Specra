@@ -79,7 +79,10 @@ spring:
         options:
           model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
           temperature: 0.7
-          max-tokens: 2048
+          # Bumped from 2048 now that the assistant has tools: an answer that quotes retrieved
+          # note bodies runs long, and a truncated answer looks like a model failure rather
+          # than a limit. Thinking, if it were ever enabled, must stay below this number.
+          max-tokens: ${ANTHROPIC_MAX_TOKENS:8192}
 
     openai:
       api-key: ${OPENAI_API_KEY:not-set}
@@ -159,11 +162,20 @@ springdoc:
 specra:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  content:
+    # Which ContentStore the assistant's tools act on when a call does not name one.
+    # Must match a ContentStore bean's kind(); ContentStoreRegistry checks that at
+    # startup, so a typo fails the boot instead of the first tool call.
+    default-kind: ${CONTENT_DEFAULT_KIND:note}
   ai:
     system-prompt: >
       You are Specra's assistant. Answer concisely and concretely.
       When you are unsure, say so instead of inventing details.
       Reply in the same language the user wrote in.
+      You can search the user's saved documents with the search_content tool and read one
+      in full with get_content. Use them before answering anything about what the user has
+      written, and cite the titles you relied on. Never claim a document exists without
+      having found it with a tool.
     chat-memory:
       max-messages: 40
     rag:

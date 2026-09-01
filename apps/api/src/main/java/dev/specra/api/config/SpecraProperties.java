@@ -19,7 +19,10 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "specra")
 @Validated
 public record SpecraProperties(
-    @DefaultValue Cors cors, @DefaultValue Ai ai, @DefaultValue Logging logging) {
+    @DefaultValue Cors cors,
+    @DefaultValue Ai ai,
+    @DefaultValue Content content,
+    @DefaultValue Logging logging) {
 
   /** Origins allowed to call {@code /api/**} from a browser. */
   public record Cors(
@@ -43,4 +46,12 @@ public record SpecraProperties(
         @DefaultValue("true") boolean enabled,
         @Min(1) @DefaultValue("1000") long slowRequestMillis) {}
   }
+
+  /**
+   * Which {@code ContentStore} the AI tools act on when the caller does not name one.
+   *
+   * <p>Checked against the registered stores at startup, so a typo fails the boot instead of
+   * surfacing as a puzzling 400 the first time someone asks the assistant a question.
+   */
+  public record Content(@NotBlank @DefaultValue("note") String defaultKind) {}
 }
