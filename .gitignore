@@ -11,10 +11,11 @@ test-results/
 target/
 !.mvn/wrapper/maven-wrapper.jar
 
-# env & secrets
+# env & secrets — keep real values local, commit sanitized templates.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # tooling output
 notion-export/
