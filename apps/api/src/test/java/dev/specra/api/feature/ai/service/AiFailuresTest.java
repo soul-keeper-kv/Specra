@@ -38,7 +38,7 @@ class AiFailuresTest {
     }
     AiProviders providers =
         new AiProviders(PROVIDER, "embed", mock(ChatModel.class), mock(EmbeddingModel.class));
-    return new AiFailures(new AiCredentials(environment, providers), providers);
+    return new AiFailures(new AiCredentials(environment, providers, null), providers);
   }
 
   private AiFailures configured() {

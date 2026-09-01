@@ -1,10 +1,13 @@
 package dev.specra.api.feature.ai.service;
 
+import dev.specra.api.feature.workspace.service.AiAccountService;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,14 +42,33 @@ public class AiCredentials {
   private final Environment environment;
   private final AiProviders providers;
 
-  public AiCredentials(Environment environment, AiProviders providers) {
+  /** Nullable on purpose: unit tests build this class without the workspace feature. */
+  @Nullable private final AiAccountService accounts;
+
+  public AiCredentials(
+      Environment environment, AiProviders providers, @Nullable AiAccountService accounts) {
     this.environment = environment;
     this.providers = providers;
+    this.accounts = accounts;
   }
 
   /** True when the active chat provider can be called at all. */
   public boolean chatIsConfigured() {
     return isConfigured(providers.chat());
+  }
+
+  /**
+   * The per-workspace answer: the workspace's own account first — bring-your-own-key — then the
+   * platform's configuration. Callers that know which tenant they act for ask this; the ones that
+   * predate tenancy keep asking {@link #chatIsConfigured()} and get the platform answer.
+   */
+  public boolean chatIsConfiguredFor(@Nullable UUID workspaceId) {
+    if (workspaceId != null
+        && accounts != null
+        && accounts.hasUsableKey(workspaceId, providers.chat())) {
+      return true;
+    }
+    return chatIsConfigured();
   }
 
   public boolean isConfigured(String provider) {
