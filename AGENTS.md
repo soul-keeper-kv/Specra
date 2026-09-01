@@ -123,6 +123,7 @@ apps/api/src/main/java/dev/specra/api/
 │   ├── logging/     MdcKeys, CorrelationIdFilter, RequestLoggingFilter
 │   ├── web/         PageResponse
 │   ├── content/     ContentStore + registry: one shape for every kind of user content
+│   ├── git/         GitProvider port + its records — no JGit type appears here
 │   └── testmodel/   the IR records + the shared schema, validated by TestModelSchema
 └── feature/         one folder per feature, one folder per layer inside it
     ├── workspace/   the tenant boundary; other features check parents through its service
@@ -133,6 +134,11 @@ apps/api/src/main/java/dev/specra/api/
     │   ├── domain/  TestCase, TestCaseStep (entities), TestCaseRepository
     │   ├── mapper/  TestCaseMapper (MapStruct)
     │   └── dto/     TestCaseRequest/Response, TestCaseSummaryResponse
+    ├── git/         the repository connection and everything done to its working copy
+    │   ├── web/     GitController, GitCredentialController
+    │   ├── service/ GitService, GithubGitProvider (the only JGit importer), WorkingCopies
+    │   ├── domain/  GitRepository, GitCredential
+    │   └── dto/     RepositoryRequest, CommitRequest, GitStatusResponse, …
     └── ai/
         ├── web/     AiController
         ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders,
@@ -239,6 +245,10 @@ failure — is what the `specra-architecture` skill is for.
 1. **Never name an LLM vendor in code.** The provider is chosen at runtime by
    `spring.ai.model.chat` / `spring.ai.model.embedding`. No `@Qualifier("anthropic")`, no
    `new AnthropicChatModel(...)`, no `if (provider.equals("openai"))`.
+
+   The same containment rule covers JGit: `core/git` is the port, `GithubGitProvider` is the
+   only class that may import `org.eclipse.jgit`, and `ArchitectureTest` fails the build on
+   any other importer.
 
 2. **`AiController.asJson(token)` is not redundant.** SSE tokens must be JSON-encoded;
    dropping it silently eats a token's leading space and any newline inside an answer.

@@ -59,7 +59,7 @@ workspace's provider and budget with the key AES-GCM-encrypted at rest (refused,
 variable to set, when `SPECRA_ENCRYPTION_KEY` is absent — never stored in plaintext), and
 `AiCredentials.chatIsConfiguredFor(workspaceId)` is the seam that consults it first.
 
-## M2 — Git
+## M2 — Git ✅
 
 - `GitProvider` port and the GitHub implementation, JGit underneath.
 - Working copies, status, diff, commit, push, branches, history.
@@ -67,6 +67,22 @@ variable to set, when `SPECRA_ENCRYPTION_KEY` is absent — never stored in plai
 
 **Done when** a project can be connected to a real repository, and a file edited in Specra
 lands as a commit authored by the user.
+
+**Done**: `core/git` is the port and `GithubGitProvider` the only class allowed to import JGit —
+`ArchitectureTest` enforces that, the same containment rule the model vendors live under.
+Migration V6 adds `git_credentials` (tokens encrypted by `SecretsCipher`, read back as "set")
+and turns V2's `credential_id` into a real reference.
+
+Two decisions changed on contact with the code. **One working copy per project, not per
+(project, branch)**: per-branch directories exist to preserve uncommitted work across a switch,
+but switching is refused while the copy is dirty, so they preserved nothing and broke a branch
+created locally — the next request would look for a directory cloned from a branch nobody had
+pushed. And **the copy is reached only under a per-project lock**, because a working copy is a
+directory and two requests mutating one corrupt it.
+
+A push that is not a fast-forward comes back as `GIT_PUSH_REJECTED` for the user to pull and
+retry; nothing in the code path can force it. The provider is tested against a real bare
+repository over `file://`, which drives the same transport code a GitHub URL does.
 
 ## M3 — The runner
 

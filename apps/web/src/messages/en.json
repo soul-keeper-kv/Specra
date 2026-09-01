@@ -161,6 +161,10 @@
     },
     "detail": {
       "back": "All projects"
+    },
+    "tabs": {
+      "testCases": "Test cases",
+      "source": "Source control"
     }
   },
   "testcases": {
@@ -259,6 +263,99 @@
       "confirm": "Delete test case"
     }
   },
+  "git": {
+    "title": "Source control",
+    "empty": {
+      "title": "No repository connected",
+      "description": "Specra writes automation code into your own Git repository — it is the source of truth, and Specra never keeps a second copy. Connect one to start."
+    },
+    "connect": {
+      "trigger": "Connect a repository",
+      "title": "Connect a repository",
+      "description": "One project is one repository and one default branch.",
+      "submit": "Connect",
+      "provider": "Provider",
+      "providerHint": "GitHub is implemented today; the others are accepted and reported as unsupported.",
+      "remoteUrl": "Remote URL",
+      "remoteUrlPlaceholder": "https://github.com/acme/storefront-e2e.git",
+      "defaultBranch": "Default branch",
+      "credential": "Credential",
+      "noCredential": "None — public repository",
+      "credentialHint": "Manage tokens in Settings → Git."
+    },
+    "status": {
+      "dirty": "{count, plural, one {# change} other {# changes}}"
+    },
+    "actions": {
+      "pull": "Pull",
+      "push": "Push",
+      "verify": "Test connection",
+      "disconnect": "Disconnect",
+      "newBranch": "New branch",
+      "switchBranch": "Switch branch"
+    },
+    "tabs": {
+      "changes": "Changes",
+      "history": "History"
+    },
+    "changes": {
+      "title": "Working copy",
+      "clean": "Nothing has changed since the last commit."
+    },
+    "changeKind": {
+      "ADDED": "Added",
+      "MODIFIED": "Modified",
+      "DELETED": "Deleted",
+      "UNTRACKED": "Untracked",
+      "CONFLICTING": "Conflicting"
+    },
+    "commit": {
+      "message": "Commit message",
+      "placeholder": "test(auth): generate the login spec",
+      "hint": "Only the files you tick are committed, and the commit is authored as you.",
+      "submit": "{count, plural, =0 {Commit} one {Commit # file} other {Commit # files}}"
+    },
+    "diff": {
+      "allChanges": "All changes",
+      "empty": "Nothing to show — the working copy matches the last commit."
+    },
+    "history": {
+      "empty": "No commits yet.",
+      "by": "{author} · {when}"
+    },
+    "branch": {
+      "title": "New branch",
+      "description": "Created from the default branch and checked out. The working copy must be clean.",
+      "name": "Branch name",
+      "submit": "Create and switch"
+    },
+    "confirmDisconnect": {
+      "title": "Disconnect this repository?",
+      "description": "Specra forgets the connection and deletes its working copy. Your repository and its history are untouched.",
+      "confirm": "Disconnect"
+    },
+    "validation": {
+      "remoteUrlRequired": "The remote URL is required",
+      "remoteUrlMax": "Max 500 characters",
+      "branchRequired": "The branch name is required",
+      "branchMax": "Max 200 characters",
+      "credentialNameRequired": "Name the credential",
+      "credentialNameMax": "Max 120 characters",
+      "credentialUsernameMax": "Max 120 characters",
+      "credentialTokenRequired": "The token is required",
+      "credentialTokenMax": "Max 500 characters"
+    },
+    "toast": {
+      "connected": "Repository connected",
+      "disconnected": "Repository disconnected",
+      "committed": "Committed {sha}",
+      "pushed": "Pushed to the remote",
+      "pulled": "Pulled from the remote",
+      "switched": "Switched to {branch}",
+      "branchCreated": "Branch {branch} created",
+      "verified": "{count, plural, one {Connected — # branch} other {Connected — # branches}}"
+    }
+  },
   "chat": {
     "title": "Chat",
     "subtitle": "Plain conversation. History is kept in PostgreSQL.",
@@ -285,7 +382,8 @@
       "appearance": "Appearance",
       "language": "Language",
       "ai": "AI assistant",
-      "members": "Members"
+      "members": "Members",
+      "git": "Git"
     },
     "profile": {
       "title": "Profile",
@@ -338,6 +436,47 @@
       "noWorkspace": {
         "title": "No workspace yet",
         "description": "The AI account belongs to a workspace — create one first.",
+        "cta": "Open projects"
+      }
+    },
+    "git": {
+      "title": "Git credentials",
+      "description": "Tokens for reaching your repositories. Stored encrypted, never shown again, and shared across the workspace — one token usually unlocks several repositories.",
+      "add": "Add credential",
+      "empty": {
+        "title": "No credentials yet",
+        "description": "Add a personal access token to connect a private repository."
+      },
+      "row": {
+        "user": "as {username}",
+        "noUser": "no username",
+        "tokenStored": "token stored",
+        "delete": "Delete {name}"
+      },
+      "form": {
+        "title": "Add a credential",
+        "description": "The token is encrypted on the server and never returned by the API.",
+        "name": "Name",
+        "namePlaceholder": "acme-bot PAT",
+        "username": "Username",
+        "usernamePlaceholder": "acme-bot",
+        "usernameHint": "Optional for GitHub tokens; other hosts may require it.",
+        "token": "Token",
+        "tokenHint": "A personal access token with repo scope. It is shown once, here, and never again.",
+        "submit": "Save credential"
+      },
+      "toast": {
+        "created": "Credential “{name}” saved",
+        "deleted": "Credential “{name}” deleted"
+      },
+      "confirmDelete": {
+        "title": "Delete this credential?",
+        "description": "“{name}” is gone, and any repository using it falls back to connecting without authentication.",
+        "confirm": "Delete credential"
+      },
+      "noWorkspace": {
+        "title": "No workspace yet",
+        "description": "Credentials belong to a workspace — create one first.",
         "cta": "Open projects"
       }
     }

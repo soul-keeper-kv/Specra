@@ -161,6 +161,10 @@
     },
     "detail": {
       "back": "Tất cả dự án"
+    },
+    "tabs": {
+      "testCases": "Ca kiểm thử",
+      "source": "Mã nguồn"
     }
   },
   "testcases": {
@@ -259,6 +263,99 @@
       "confirm": "Xóa ca kiểm thử"
     }
   },
+  "git": {
+    "title": "Mã nguồn",
+    "empty": {
+      "title": "Chưa kết nối kho mã",
+      "description": "Specra ghi mã tự động hóa vào kho Git của chính bạn — đó là nguồn sự thật, và Specra không bao giờ giữ bản sao thứ hai. Hãy kết nối một kho để bắt đầu."
+    },
+    "connect": {
+      "trigger": "Kết nối kho mã",
+      "title": "Kết nối kho mã",
+      "description": "Mỗi dự án là một kho và một nhánh mặc định.",
+      "submit": "Kết nối",
+      "provider": "Nhà cung cấp",
+      "providerHint": "Hiện đã hỗ trợ GitHub; các nhà cung cấp khác sẽ được báo là chưa hỗ trợ.",
+      "remoteUrl": "URL của remote",
+      "remoteUrlPlaceholder": "https://github.com/acme/storefront-e2e.git",
+      "defaultBranch": "Nhánh mặc định",
+      "credential": "Thông tin đăng nhập",
+      "noCredential": "Không — kho công khai",
+      "credentialHint": "Quản lý token ở Cài đặt → Git."
+    },
+    "status": {
+      "dirty": "{count} thay đổi"
+    },
+    "actions": {
+      "pull": "Pull",
+      "push": "Push",
+      "verify": "Kiểm tra kết nối",
+      "disconnect": "Ngắt kết nối",
+      "newBranch": "Nhánh mới",
+      "switchBranch": "Chuyển nhánh"
+    },
+    "tabs": {
+      "changes": "Thay đổi",
+      "history": "Lịch sử"
+    },
+    "changes": {
+      "title": "Bản làm việc",
+      "clean": "Không có gì thay đổi kể từ commit trước."
+    },
+    "changeKind": {
+      "ADDED": "Đã thêm",
+      "MODIFIED": "Đã sửa",
+      "DELETED": "Đã xóa",
+      "UNTRACKED": "Chưa theo dõi",
+      "CONFLICTING": "Đang xung đột"
+    },
+    "commit": {
+      "message": "Thông điệp commit",
+      "placeholder": "test(auth): sinh spec đăng nhập",
+      "hint": "Chỉ những tệp bạn tick mới được commit, và commit ghi tên bạn là tác giả.",
+      "submit": "{count, plural, =0 {Commit} other {Commit # tệp}}"
+    },
+    "diff": {
+      "allChanges": "Tất cả thay đổi",
+      "empty": "Không có gì để xem — bản làm việc trùng với commit gần nhất."
+    },
+    "history": {
+      "empty": "Chưa có commit nào.",
+      "by": "{author} · {when}"
+    },
+    "branch": {
+      "title": "Nhánh mới",
+      "description": "Tạo từ nhánh mặc định và chuyển sang luôn. Bản làm việc phải sạch.",
+      "name": "Tên nhánh",
+      "submit": "Tạo và chuyển"
+    },
+    "confirmDisconnect": {
+      "title": "Ngắt kết nối kho này?",
+      "description": "Specra quên kết nối và xóa bản làm việc của nó. Kho mã và lịch sử của bạn không bị đụng tới.",
+      "confirm": "Ngắt kết nối"
+    },
+    "validation": {
+      "remoteUrlRequired": "URL của remote là bắt buộc",
+      "remoteUrlMax": "Tối đa 500 ký tự",
+      "branchRequired": "Tên nhánh là bắt buộc",
+      "branchMax": "Tối đa 200 ký tự",
+      "credentialNameRequired": "Hãy đặt tên",
+      "credentialNameMax": "Tối đa 120 ký tự",
+      "credentialUsernameMax": "Tối đa 120 ký tự",
+      "credentialTokenRequired": "Token là bắt buộc",
+      "credentialTokenMax": "Tối đa 500 ký tự"
+    },
+    "toast": {
+      "connected": "Đã kết nối kho mã",
+      "disconnected": "Đã ngắt kết nối kho mã",
+      "committed": "Đã commit {sha}",
+      "pushed": "Đã push lên remote",
+      "pulled": "Đã pull từ remote",
+      "switched": "Đã chuyển sang {branch}",
+      "branchCreated": "Đã tạo nhánh {branch}",
+      "verified": "Kết nối được — {count} nhánh"
+    }
+  },
   "chat": {
     "title": "Trò chuyện",
     "subtitle": "Hội thoại thường. Lịch sử được lưu trong PostgreSQL.",
@@ -285,7 +382,8 @@
       "appearance": "Hiển thị",
       "language": "Ngôn ngữ",
       "ai": "Trợ lý AI",
-      "members": "Thành viên"
+      "members": "Thành viên",
+      "git": "Git"
     },
     "profile": {
       "title": "Hồ sơ",
@@ -338,6 +436,47 @@
       "noWorkspace": {
         "title": "Chưa có không gian làm việc",
         "description": "Tài khoản AI thuộc về một không gian làm việc — hãy tạo trước.",
+        "cta": "Mở dự án"
+      }
+    },
+    "git": {
+      "title": "Thông tin đăng nhập Git",
+      "description": "Token để truy cập kho mã của bạn. Được mã hóa khi lưu, không hiển thị lại, và dùng chung trong không gian làm việc — một token thường mở được nhiều kho.",
+      "add": "Thêm thông tin đăng nhập",
+      "empty": {
+        "title": "Chưa có thông tin đăng nhập nào",
+        "description": "Thêm personal access token để kết nối một kho riêng tư."
+      },
+      "row": {
+        "user": "với tài khoản {username}",
+        "noUser": "không có tên người dùng",
+        "tokenStored": "đã lưu token",
+        "delete": "Xóa {name}"
+      },
+      "form": {
+        "title": "Thêm thông tin đăng nhập",
+        "description": "Token được mã hóa trên máy chủ và không bao giờ được API trả về.",
+        "name": "Tên",
+        "namePlaceholder": "acme-bot PAT",
+        "username": "Tên người dùng",
+        "usernamePlaceholder": "acme-bot",
+        "usernameHint": "Không bắt buộc với token GitHub; một số nhà cung cấp khác thì cần.",
+        "token": "Token",
+        "tokenHint": "Personal access token có quyền repo. Nó chỉ hiện một lần, ở đây.",
+        "submit": "Lưu thông tin đăng nhập"
+      },
+      "toast": {
+        "created": "Đã lưu “{name}”",
+        "deleted": "Đã xóa “{name}”"
+      },
+      "confirmDelete": {
+        "title": "Xóa thông tin đăng nhập này?",
+        "description": "“{name}” sẽ mất, và kho nào đang dùng nó sẽ chuyển sang kết nối không xác thực.",
+        "confirm": "Xóa"
+      },
+      "noWorkspace": {
+        "title": "Chưa có không gian làm việc",
+        "description": "Thông tin đăng nhập thuộc về một không gian làm việc — hãy tạo trước.",
         "cta": "Mở dự án"
       }
     }

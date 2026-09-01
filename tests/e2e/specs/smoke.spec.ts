@@ -135,9 +135,12 @@ test("a signed-out visitor is sent from the shell to sign in, and can reach sign
   // The guard keeps where they were going, so signing in resumes it instead of dumping them
   // on the dashboard.
   await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fdashboard$/);
-  await expect(page.getByRole("heading", { name: en.auth.signIn.title })).toBeVisible();
+  // By text rather than by role: a shadcn CardTitle is a styled div, not a heading, and asserting
+  // a role the markup does not claim would be testing our own guess about the component. `exact`
+  // is what keeps it to the card — Next's route announcer repeats the page title too.
+  await expect(page.getByText(en.auth.signIn.title, { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: en.auth.signIn.signUpLink }).click();
   await expect(page).toHaveURL(/\/en\/sign-up$/);
-  await expect(page.getByRole("heading", { name: en.auth.signUp.title })).toBeVisible();
+  await expect(page.getByText(en.auth.signUp.title, { exact: true })).toBeVisible();
 });

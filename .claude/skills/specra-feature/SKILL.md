@@ -20,7 +20,8 @@ things that are easy to forget get done every time.
 | Correlation    | `X-Request-Id` in, echoed out, `traceId`/`spanId` in MDC and in the body   | `core/logging/`, Micrometer Tracing  |
 | API docs       | springdoc, one document at `/v3/api-docs`, error responses added globally  | `config/OpenApiConfig`               |
 | Code structure | `core` + `feature/` (api), `features/` + thin pages (web)                  | `specra-architecture`                |
-| Auth           | local stand-in session only; no backend auth yet                           | `features/auth/store.ts`             |
+| Auth           | JWT bearer + rotating refresh token; every `/api/**` call needs one        | `feature/auth`, `lib/api/session.ts` |
+| Roles          | per workspace — OWNER · ADMIN · MEMBER, on a `workspace_members` row       | `WorkspaceRole`, `WorkspaceAccess`   |
 
 If a request seems to need one of these changed, say so and keep building under the
 existing decision — do not open a question about it.

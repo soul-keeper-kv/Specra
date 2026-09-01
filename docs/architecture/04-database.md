@@ -67,7 +67,16 @@ row lock, so two authors creating at once cannot share a number.
 `LoginPage.submitButton`" is a GIN-indexed containment query, and it is exactly what impact
 analysis needs.
 
-### V6 — execution
+### V6 — git credentials
+
+| Table             | Notable columns                                                         |
+| ----------------- | ----------------------------------------------------------------------- |
+| `git_credentials` | `workspace_id`, `name` unique per workspace, `username`, `token_cipher` |
+
+Also finishes V2s `git_repositories`: `credential_id` becomes a real `uuid` reference, and
+`active_branch` records which branch the projects operations act on right now.
+
+### V7 — execution
 
 | Table            | Notable columns                                                                                                                                      |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -78,7 +87,7 @@ analysis needs.
 `failed_step_id` points at an IR step id, not a line number. That is what lets the UI
 highlight the manual step the user wrote and the generated line at the same time.
 
-### V7 — AI audit
+### V8 — AI audit
 
 | Table            | Notable columns                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

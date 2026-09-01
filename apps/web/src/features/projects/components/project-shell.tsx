@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProject } from "@/features/projects/api/projects";
+import { ProjectTabs } from "@/features/projects/components/project-tabs";
 import { Link } from "@/i18n/navigation";
 
 /**
@@ -72,6 +73,8 @@ export function ProjectShell({
           <p className="max-w-2xl text-sm text-muted-foreground">{project.data.description}</p>
         ) : null}
       </div>
+
+      <ProjectTabs projectId={projectId} />
 
       {children}
     </div>
