@@ -56,41 +56,8 @@
       "env": {
         "AI_CHAT_PROVIDER": "ollama"
       },
+      // See "API: Spring Boot" for why this is not integratedTerminal.
       "console": "internalConsole"
-    },
-    {
-      "type": "java",
-      "name": "API: Spring Boot (throwaway pgvector)",
-      "request": "launch",
-      // Boots against a disposable Testcontainers database instead of the
-      // compose one. No preLaunchTask: it brings up its own container.
-      "mainClass": "dev.specra.api.TestSpecraApiApplication",
-      "projectName": "specra-api",
-      "cwd": "${workspaceFolder}/apps/api",
-      // Testcontainers owns the database here, so spring-boot-docker-compose
-      // must stay out of it — otherwise the run gets two databases and connects
-      // to the wrong one. (application-test.yml disables it, but only under the
-      // "test" profile, which this configuration deliberately does not
-      // activate.)
-      "vmArgs": "-Dspring.docker.compose.enabled=false",
-      "envFile": "${workspaceFolder}/.env",
-      // NOT integratedTerminal. That path makes the debug adapter hand the
-      // java command to a terminal and then wait for the JVM to dial back on
-      // JDWP; here the JVM never starts and the session dies with
-      // "Failed to launch debuggee in terminal ... TransportTimeoutException".
-      // internalConsole has the adapter spawn the JVM itself. Output lands in
-      // the Debug Console; neither entry point reads stdin.
-      "console": "internalConsole"
-    },
-    {
-      "type": "java",
-      "name": "API: attach to :5005",
-      "request": "attach",
-      "hostName": "localhost",
-      "port": 5005,
-      "projectName": "specra-api"
-      // Pair with:
-      //   ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     },
 
     // ── Web ──────────────────────────────────────────────────────────────────
@@ -110,44 +77,11 @@
     },
     {
       "type": "node-terminal",
-      "name": "Web: server-side only",
-      "request": "launch",
-      "command": "pnpm dev",
-      "cwd": "${workspaceFolder}/apps/web"
-    },
-    {
-      "type": "chrome",
-      "name": "Web: browser only (needs `pnpm dev` already running)",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/apps/web",
-      "sourceMapPathOverrides": {
-        "webpack://_N_E/*": "${webRoot}/*",
-        "turbopack://[project]/*": "${webRoot}/*"
-      }
-    },
-
-    // ── Web tests ────────────────────────────────────────────────────────────
-    {
-      "type": "node-terminal",
       "name": "Web: Vitest (current file)",
       "request": "launch",
       // Vitest treats bare arguments as path filters, so the basename is enough.
+      // The whole suite is the "web: check" task, or `pnpm test:web` from root.
       "command": "pnpm exec vitest run ${fileBasenameNoExtension}",
-      "cwd": "${workspaceFolder}/apps/web"
-    },
-    {
-      "type": "node-terminal",
-      "name": "Web: Vitest (all)",
-      "request": "launch",
-      "command": "pnpm exec vitest run",
-      "cwd": "${workspaceFolder}/apps/web"
-    },
-    {
-      "type": "node-terminal",
-      "name": "Web: Playwright (headed)",
-      "request": "launch",
-      "command": "pnpm exec playwright test --headed",
       "cwd": "${workspaceFolder}/apps/web"
     }
   ],
@@ -160,9 +94,13 @@
       "presentation": { "group": "1-specra", "order": 1 }
     },
     {
-      "name": "Full stack (throwaway database)",
+      // One button for the free local setup: Postgres and the model server come
+      // up first (the API entry's preLaunchTask), the API runs on qwen2.5:7b,
+      // and Next plus Chrome start alongside it. Ending the session stops all
+      // three and frees the GPU.
+      "name": "Full stack (Ollama, local GPU)",
       "configurations": [
-        "API: Spring Boot (throwaway pgvector)",
+        "API: Spring Boot (Ollama, local GPU)",
         "Web: full stack (server + browser)"
       ],
       "stopAll": true,
