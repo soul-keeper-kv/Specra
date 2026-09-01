@@ -398,3 +398,47 @@ export type GitCredentialInput = {
   /** Write-only; encrypted at rest and never returned. */
   token: string;
 };
+
+// ── External test-management integrations ──────────────────────────────────
+
+export type TestManagementConnection = {
+  id: string;
+  name: string;
+  provider: string;
+  configuration: Record<string, string>;
+  credentialsSet: boolean;
+  updatedAt: string;
+};
+
+export type TestManagementConnectionInput = {
+  name: string;
+  provider: string;
+  configuration: Record<string, string>;
+  credentials: Record<string, string>;
+};
+
+export type TestManagementBinding = {
+  id: string;
+  connectionId: string;
+  connectionName: string;
+  provider: string;
+  configuration: Record<string, string>;
+  remoteProjectId: string;
+  updatedAt: string;
+};
+
+export type TestManagementVerify = {
+  accountName: string;
+  remoteProjectId: string;
+  remoteProjectName: string;
+  testCount: number;
+};
+
+export type ExternalTestSummary = {
+  externalId: string;
+  title: string;
+  status: string;
+  priority: string;
+  labels: string[];
+  url: string;
+};

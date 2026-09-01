@@ -164,7 +164,33 @@
     },
     "tabs": {
       "testCases": "Test cases",
-      "source": "Source control"
+      "source": "Source control",
+      "integrations": "Integrations"
+    }
+  },
+  "testManagement": {
+    "title": "Test management integrations",
+    "connect": {
+      "title": "Connect test management",
+      "description": "Specra reads tests from the external system; it does not take ownership of them. Xray is the first installed provider.",
+      "name": "Connection name",
+      "baseUrl": "Jira URL",
+      "username": "Jira username (optional)",
+      "token": "Personal access token",
+      "remoteProject": "Jira project key",
+      "submit": "Connect Xray"
+    },
+    "connected": {
+      "project": "Remote project: {project}",
+      "verify": "Verify connection",
+      "disconnect": "Disconnect project",
+      "verified": "Connected as {account} to {project}; {count, plural, =0 {no Xray Tests found} one {# Xray Test found} other {# Xray Tests found}}."
+    },
+    "tests": {
+      "title": "External tests",
+      "description": "Read directly from the provider. Specra keeps only the traceability needed for automation.",
+      "empty": "No tests were returned by this project.",
+      "open": "Open {id} in the external system"
     }
   },
   "testcases": {

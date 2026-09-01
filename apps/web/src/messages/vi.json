@@ -164,7 +164,33 @@
     },
     "tabs": {
       "testCases": "Ca kiểm thử",
-      "source": "Mã nguồn"
+      "source": "Mã nguồn",
+      "integrations": "Tích hợp"
+    }
+  },
+  "testManagement": {
+    "title": "Tích hợp quản lý kiểm thử",
+    "connect": {
+      "title": "Kết nối hệ thống quản lý kiểm thử",
+      "description": "Specra đọc ca kiểm thử từ hệ thống ngoài, không giành quyền sở hữu chúng. Xray là nhà cung cấp đầu tiên được cài.",
+      "name": "Tên kết nối",
+      "baseUrl": "URL Jira",
+      "username": "Tên người dùng Jira (không bắt buộc)",
+      "token": "Personal access token",
+      "remoteProject": "Mã dự án Jira",
+      "submit": "Kết nối Xray"
+    },
+    "connected": {
+      "project": "Dự án bên ngoài: {project}",
+      "verify": "Kiểm tra kết nối",
+      "disconnect": "Ngắt liên kết dự án",
+      "verified": "Đã kết nối bằng tài khoản {account} tới {project}; tìm thấy {count} Xray Test."
+    },
+    "tests": {
+      "title": "Ca kiểm thử bên ngoài",
+      "description": "Đọc trực tiếp từ nhà cung cấp. Specra chỉ giữ thông tin truy vết cần cho tự động hóa.",
+      "empty": "Dự án này chưa trả về ca kiểm thử nào.",
+      "open": "Mở {id} trong hệ thống bên ngoài"
     }
   },
   "testcases": {

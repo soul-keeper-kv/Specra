@@ -69,8 +69,14 @@ public enum ErrorCode {
    * #AI_PROVIDER_ERROR} so {@link #forStatus} keeps the general 502.
    */
   GIT_AUTH_FAILED(HttpStatus.BAD_GATEWAY),
+  /** Jira/Xray accepted the request but rejected the stored PAT or its project permissions. */
+  INTEGRATION_AUTH_FAILED(HttpStatus.BAD_GATEWAY),
+  /** Jira/Xray answered with a failure unrelated to authentication. */
+  INTEGRATION_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
   /** The model provider could not be reached at all, or timed out. */
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+  /** The configured Jira/Xray host could not be reached or timed out. */
+  INTEGRATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   /**
    * Nobody has given this installation usable credentials for the active model provider, so there
    * is nothing to call. Distinct from {@link #AI_PROVIDER_ERROR} on purpose: that one means the

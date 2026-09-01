@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, GitBranch } from "lucide-react";
+import { ClipboardList, GitBranch, Plug } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
@@ -18,6 +18,12 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
   const tabs = [
     { href: `/projects/${projectId}`, key: "testCases", icon: ClipboardList, exact: true },
     { href: `/projects/${projectId}/source`, key: "source", icon: GitBranch, exact: false },
+    {
+      href: `/projects/${projectId}/integrations`,
+      key: "integrations",
+      icon: Plug,
+      exact: false,
+    },
   ] as const;
 
   return (
