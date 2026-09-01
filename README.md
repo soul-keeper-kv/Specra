@@ -202,7 +202,7 @@ runs Flyway, writes and reads vectors, and checks the SSE wire format over real 
 **SSE tokens are JSON-encoded.** The SSE spec requires a receiver to strip one space
 after `data:`. Model tokens very often begin with a space (`" world"`) and sometimes
 contain a newline — plain SSE framing corrupts both. So
-[AiController](apps/api/src/main/java/dev/specra/api/feature/ai/AiController.java) sends each
+[AiController](apps/api/src/main/java/dev/specra/api/feature/ai/web/AiController.java) sends each
 token as a JSON string and the client `JSON.parse`s it. `AiStreamIT` locks that contract
 down.
 

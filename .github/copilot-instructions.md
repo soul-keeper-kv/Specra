@@ -16,4 +16,5 @@ Detailed skills are in `.claude/skills/` (Copilot scans both `.github/skills/` a
 
 The thirteen things most likely to be got wrong are listed under **Invariants** in
 `AGENTS.md`. Read that section before touching anything in
-`apps/api/src/main/java/dev/specra/api/feature/ai/` or `apps/web/src/features/notes/`.
+`apps/api/src/main/java/dev/specra/api/feature/ai/` (web/ · service/ · tool/ · dto/) or
+`apps/web/src/features/notes/`.

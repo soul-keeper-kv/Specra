@@ -212,9 +212,13 @@ ESLint 9 flat config, including React 19's `react-hooks` rules. Frequent failure
 ## Tests
 
 ```bash
-pnpm test         # Vitest, jsdom
-pnpm test:e2e     # Playwright, starts the dev server itself
+pnpm test         # Vitest, jsdom — in apps/web
+pnpm test:e2e     # Playwright — from the repo root; lives in tests/e2e, not here
 ```
+
+Playwright is **not** a dependency of this app. The suite is its own workspace package
+(`specra-e2e`) so it can be pointed at any deployment with `E2E_BASE_URL`; with that unset
+it builds this app and serves it on :3100 itself.
 
 The Vitest config is `vitest.config.mts` (the `.mts` extension is what makes Vite load
 it as ESM).
@@ -223,7 +227,7 @@ E2E runs whether or not the API is up, so it only asserts on things the UI must 
 in either case — routing, locale, theme, the command palette, client-side validation. Do
 not write e2e tests that depend on backend data.
 
-Expected text is imported from `src/messages/*.json` rather than written out in the spec:
+Expected text is imported from `@messages/*.json` rather than written out in the spec:
 a copy of a string in a test is a second translation nobody remembers to update.
 
 Two things to know:

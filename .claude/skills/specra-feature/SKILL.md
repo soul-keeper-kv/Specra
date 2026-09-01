@@ -47,7 +47,8 @@ this is the order and the parts that cross concerns.
 
 1. `resources/db/migration/V<n>__<name>.sql` — Hibernate runs `ddl-auto: validate`, so an
    entity without a migration fails startup.
-2. `feature/<domain>/` — entity, repository, mapper, service, controller, `dto/`.
+2. `feature/<name>/` — one folder per layer: `domain/` (entity + repository), `mapper/`,
+   `service/`, `web/` (controller), `dto/`.
    Lists return `PageResponse.from(page, mapper::toResponse)`.
 3. **Validation messages as keys**, never literals:
    ```java
@@ -108,8 +109,10 @@ Reference: `features/notes/`.
    Branch on `error.code`, never on `error.message` — the message is translated per request.
 7. **Destructive actions get an `AlertDialog`.** Anything that also drops embeddings or
    cannot be undone.
-8. **Tests.** Vitest for logic; add to `e2e/smoke.spec.ts` only what holds with the API down,
-   and import expected text from `src/messages/*.json` rather than typing it again.
+8. **Tests.** Vitest for logic; add to `tests/e2e/specs/smoke.spec.ts` — a separate package,
+   not part of apps/web — only what holds with the API down, and import expected text from
+   `@messages/*.json` rather than typing it again (that alias is the only path e2e has into
+   the web app's source).
 
 ## Adding a language
 

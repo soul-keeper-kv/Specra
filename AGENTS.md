@@ -6,6 +6,7 @@ Monorepo: a Next.js web app and a Spring Boot API, one product.
 | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | `apps/web`           | Next.js 16, React 19, Tailwind 4, shadcn/ui, TanStack Query/Table/Form, Zustand, Zod, next-intl           |
 | `apps/api`           | Spring Boot 3.5.16, Java 17, Maven, JPA/PostgreSQL, Flyway, Spring AI 1.1.8, pgvector, Micrometer Tracing |
+| `tests/e2e`          | Playwright, its own package — drives the product, is not part of it                                       |
 | `tools/notion-clone` | Standalone script, unrelated to the two apps                                                              |
 
 ## Files for AI agents
@@ -46,10 +47,20 @@ apps/api/src/main/java/dev/specra/api/
 │   ├── error/       ErrorCode, BusinessException, ProblemFactory, GlobalExceptionHandler
 │   ├── i18n/        SupportedLocale, MessageResolver, LocalizedText, HttpLocaleResolver
 │   ├── logging/     MdcKeys, CorrelationIdFilter, RequestLoggingFilter
-│   └── web/         PageResponse
-└── feature/
-    ├── note/        entity, repository, service, controller, mapper, dto/
-    └── ai/          controller, RagService, dto/
+│   ├── web/         PageResponse
+│   └── content/     ContentStore + registry: one shape for every kind of user content
+└── feature/         one folder per feature, one folder per layer inside it
+    ├── note/
+    │   ├── web/     NoteController
+    │   ├── service/ NoteService, NoteIndexService, NoteEvents, NoteContentStore
+    │   ├── domain/  Note (entity), NoteRepository
+    │   ├── mapper/  NoteMapper (MapStruct)
+    │   └── dto/     NoteRequest, NoteResponse
+    └── ai/
+        ├── web/     AiController
+        ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders
+        ├── tool/    ContentTools — what the model is allowed to call
+        └── dto/     AskRequest/AskReply, ChatRequest/ChatReply, ProviderInfo
 
 apps/web/src/
 ├── app/[locale]/    (marketing) · (auth) · (app) route groups; layouts only
@@ -60,10 +71,47 @@ apps/web/src/
 ├── lib/             api/ (client, types) · config/ (site, navigation) · utils
 ├── hooks/ stores/ styles/ types/
 └── proxy.ts         locale routing at the edge
+
+tests/e2e/           its own pnpm package (specra-e2e), not a dependency of apps/web
+├── specs/           smoke.spec.ts
+├── playwright.config.ts
+└── tsconfig.json    @messages/* → apps/web/src/messages — the only path into the app
 ```
 
 Pages under `app/` stay thin: resolve params, call `setRequestLocale`, render a view from
 `features/`. Logic in a page cannot be tested without a router.
+
+End-to-end tests import expected text through the `@messages/*` alias, never with a
+relative path into `apps/web`, and never by retyping a translated string. Set
+`E2E_BASE_URL` to run the suite against a deployment instead of a local build.
+
+### Layers in `apps/api` — three folders, and the arrows point one way
+
+`web/ → service/ → domain/`, with `core` underneath and no arrow back up. **A class goes in
+the folder its role names** — that is the whole design. There are no ports, adapters or a
+hexagon: a service is a class, a repository is a Spring Data interface, and a feature is a
+folder with three or four folders in it.
+
+| Folder     | Holds                               | May depend on               |
+| ---------- | ----------------------------------- | --------------------------- |
+| `web/`     | controllers                         | `service/`, `dto/`, `core/` |
+| `service/` | services, events, mappers, AI tools | `domain/`, `dto/`, `core/`  |
+| `domain/`  | `@Entity`, Spring Data repositories | `core/` only                |
+| `dto/`     | request/response records            | nothing of its own feature  |
+
+- A **controller** parses, delegates once and shapes the response. Two service calls in
+  one handler is a use case that has no home yet — give it one, in a service.
+- A **service** owns the rule and the transaction. It never sees `HttpServletRequest`,
+  and it hands back a DTO, never an entity.
+- A **feature may use another feature**, never in a circle. Where the calling feature only
+  reacts to a change — notes keeping their embeddings in step — it publishes a record from
+  `NoteEvents` and the listener runs `AFTER_COMMIT`, so plain CRUD keeps working with the
+  AI stack switched off.
+
+`ArchitectureTest` (ArchUnit, part of `./mvnw test`, no Docker) fails the build on each of
+these, on a controller or an entity in the wrong folder, and on a class that names an LLM
+vendor. A violation means a class is in the wrong place — move it before you reach for an
+exception to the rule.
 
 ## Invariants — breaking these breaks the product, it is not "cleanup"
 
@@ -84,37 +132,44 @@ Pages under `app/` stay thin: resolve params, call `setRequestLocale`, render a 
 5. **TanStack Table here is v9**, not v8. There is no `useReactTable`,
    `getCoreRowModel()`, or the old `columnHelper`.
 
-6. **Specra's Postgres listens on port 5432** (the default). If another Postgres already
+6. **`vite` is pinned to 7 and `@vitejs/plugin-react` to 5 — do not take Vite 8.** Vite 8
+   depends on `rolldown`, whose Windows binding ships unsigned and with no reputation yet,
+   so Smart App Control blocks `rolldown-binding.win32-x64-msvc.node` and every `vitest`
+   run dies before it loads a test. Vite 7 bundles with rollup + esbuild, which SAC allows.
+   Vitest 4 supports `vite: ^6 || ^7 || ^8`, so staying on 7 costs nothing, and plugin-react
+   5 still peers both — the pin is one line to undo once rolldown earns a signature.
+
+7. **Specra's Postgres listens on port 5432** (the default). If another Postgres already
    holds 5432 on a dev machine, set `DB_PORT` in `.env` — do not edit the compose files.
 
-7. **pnpm only, and it is a workspace.** `pnpm-workspace.yaml` lists `apps/web`, so one
+8. **pnpm only, and it is a workspace.** `pnpm-workspace.yaml` lists `apps/web`, so one
    root `pnpm install` covers both packages and there is one `pnpm-lock.yaml`. Never run
    `npm install` or `yarn` here, and never add a `package-lock.json`. Root scripts reach
    the web app with `pnpm --filter specra-web <script>`, not `npm --prefix`.
 
-8. **No user-facing string is written in a component or a Java class.** Web strings live
+9. **No user-facing string is written in a component or a Java class.** Web strings live
    in `src/messages/*.json` and are read with `useTranslations` / `getTranslations`; API
    strings live in `src/main/resources/i18n/messages*.properties` and are read through
    `MessageResolver` or a Bean Validation `{key}`. Adding a key to one bundle and not the
    other fails `MessageBundleTest` (api) and `messages.test.ts` (web).
 
-9. **Errors are RFC 9457 problem documents, built only by `ProblemFactory`.** Never
-   return an ad-hoc error body or a bare `ResponseEntity.status(...)`. Throw a
-   `BusinessException` subclass with an `ErrorCode`; the handler renders it. Clients
-   branch on `code`, never on `title`/`detail` — those are translated per request.
+10. **Errors are RFC 9457 problem documents, built only by `ProblemFactory`.** Never
+    return an ad-hoc error body or a bare `ResponseEntity.status(...)`. Throw a
+    `BusinessException` subclass with an `ErrorCode`; the handler renders it. Clients
+    branch on `code`, never on `title`/`detail` — those are translated per request.
 
-10. **In `apps/web`, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`,
+11. **In `apps/web`, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`,
     never from `next/link` or `next/navigation`.** The next-intl versions add and strip
     the `/vi` · `/en` prefix. A `next/link` href sends the user out of their locale.
     (`useParams` and `useSearchParams` still come from `next/navigation`.)
 
-11. **The edge file is `proxy.ts`, not `middleware.ts`.** Next 16 renamed the convention
+12. **The edge file is `proxy.ts`, not `middleware.ts`.** Next 16 renamed the convention
     and warns on the old name; next-intl still calls its factory `createMiddleware`.
 
-12. **Do not put `setState` in an effect.** The React Compiler lint rule is an error, not
+13. **Do not put `setState` in an effect.** The React Compiler lint rule is an error, not
     a warning. Derive the value, or set it in the event handler that caused it.
 
-13. **`CorrelationIdFilter` runs first and clears the MDC in a `finally`.** Threads are
+14. **`CorrelationIdFilter` runs first and clears the MDC in a `finally`.** Threads are
     pooled; a leaked MDC entry attributes one user's log lines to another request.
 
 ## Common commands
@@ -124,9 +179,11 @@ pnpm install        # whole workspace: root tooling + apps/web
 pnpm db:up          # Postgres + pgvector, host port 5432
 pnpm dev:api        # :8080
 pnpm dev:web        # :3000  (redirects / to /vi)
-pnpm test:api       # 7 unit + 17 integration — needs Docker
+pnpm test:api       # unit + integration — needs Docker (unit alone: ./mvnw test)
 pnpm test:web       # 12 Vitest tests
-pnpm typecheck      # next typegen && tsc --noEmit
+pnpm test:e2e       # 8 Playwright specs; builds apps/web and serves it on :3100
+pnpm e2e:browsers   # one-off: download the Chromium build Playwright drives
+pnpm typecheck      # web + e2e: next typegen && tsc --noEmit
 
 pnpm format         # prettier: root docs + apps/web
 pnpm format:api     # spotless: google-java-format over apps/api

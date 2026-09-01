@@ -18,12 +18,62 @@ touching `feature/ai/` or `AiConfig`.
 ```text
 dev.specra.api
 ├── config/       @Configuration only; SpecraProperties holds everything under specra.*
-├── core/         no domain knowledge: error/ · i18n/ · logging/ · web/
-└── feature/      one package per domain, owning its whole vertical slice: note/ · ai/
+├── core/         no domain knowledge: error/ · i18n/ · logging/ · web/ · content/
+└── feature/      one folder per domain, one folder per layer inside it
+    ├── note/     web/ · service/ · domain/ · mapper/ · dto/
+    └── ai/       web/ · service/ · tool/ · dto/
 ```
 
 A class that a second feature would need belongs in `core/`, not in the feature that
 happened to need it first.
+
+## Layering — plain, and enforced
+
+`web/ → service/ → domain/`. Three layers, no ports and no adapters. **A class goes in the
+folder its role names**, so where a file sits tells you what it is allowed to touch:
+
+| Folder     | Holds                                               | May depend on               |
+| ---------- | --------------------------------------------------- | --------------------------- |
+| `web/`     | `@RestController`                                   | `service/`, `dto/`, `core/` |
+| `service/` | services, `*Events`, `@Tool` classes, port adapters | `domain/`, `dto/`, `core/`  |
+| `mapper/`  | MapStruct interfaces (service-layer collaborator)   | `domain/`, `dto/`           |
+| `domain/`  | `@Entity`, Spring Data repositories                 | `core/` only                |
+| `dto/`     | request/response records                            | nothing of its own feature  |
+
+`src/test/java/dev/specra/api/ArchitectureTest.java` (ArchUnit, runs in `./mvnw test`, no
+Docker) fails the build on:
+
+| Rule                                                                                     | Why it exists                                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `core` depending on `feature`                                                            | core is shared plumbing; a class naming a feature belongs in it     |
+| a cycle between features                                                                 | note → ai is fine; ai → note as well means neither can change alone |
+| `service/` accessed by anything but `web/`, `domain/` by anything but `service/`         | that is the layering itself                                         |
+| a `@RestController` outside `web/`, an `@Entity` or repository outside `domain/`         | otherwise the rule above is trivial to dodge                        |
+| anything depending on a `*Controller`                                                    | a controller is an entry point, not a collaborator                  |
+| `service/`, `mapper/` or `domain/` seeing `jakarta.servlet` or `org.springframework.web` | a service is also called by tests and schedulers                    |
+| importing `org.springframework.ai.<vendor>`                                              | the provider is `spring.ai.model.*`, chosen at runtime              |
+| `@Autowired` on a field                                                                  | constructor injection keeps the class buildable with `new`          |
+
+Practical consequences when writing a feature:
+
+- **A handler delegates once.** Two service calls in one controller method is a use case
+  without a home — `DELETE /api/notes/{id}` calls `NoteService.delete` and nothing else.
+- **A service returns a DTO**, never an entity. `NoteService.require` returns a `Note` and
+  is deliberately package-private: it is for the other service in the same feature.
+- **Cross-feature side effects go through an event.** `NoteService` publishes
+  `NoteEvents.NoteDeleted` / `NoteContentChanged`; `NoteIndexService` listens with
+  `@TransactionalEventListener(AFTER_COMMIT)` and drops the embeddings. CRUD therefore
+  knows nothing about vectors, and nothing is dropped for a transaction that rolls back.
+- **Do not wrap a model or network call in `@Transactional`.** `NoteIndexService.index` is
+  intentionally un-annotated: embedding takes seconds and a transaction would hold a
+  database connection for all of it. Read, call out, then mark the row in a short write.
+
+### Trap: `default` methods on a repository interface
+
+Mockito intercepts default methods too, so `@Mock NoteRepository` returns `null` from one
+instead of running its body — the service then silently does the wrong thing and the unit
+test still passes. Put "find it or throw" in the service (`NoteService.require`), not in
+the repository.
 
 ## Version constraints — read before deciding to "upgrade"
 
@@ -59,16 +109,18 @@ embedding model (transformers 384 / ollama 768 / openai 1536).
 Follow `feature/note/` as the reference. In order:
 
 1. `src/main/resources/db/migration/V<n>__<name>.sql` — table plus indexes
-2. `feature/<domain>/<Name>.java` — entity with `@Getter @Setter @NoArgsConstructor`,
+2. `feature/<name>/domain/<Name>.java` — entity with `@Getter @Setter @NoArgsConstructor`,
    `@EntityListeners(AuditingEntityListener.class)`, `@Version` for optimistic locking
-3. `feature/<domain>/<Name>Repository.java` — `JpaRepository<T, UUID>`
-4. `feature/<domain>/dto/<Name>Request.java` and `Response.java` — Java records, bean validation
+3. `feature/<name>/domain/<Name>Repository.java` — `JpaRepository<T, UUID>`, queries only
+4. `feature/<name>/dto/<Name>Request.java` and `Response.java` — Java records, bean validation
    on the request, `@Schema` so OpenAPI picks it up
-5. `feature/<domain>/<Name>Mapper.java` — MapStruct, `componentModel = "spring"`
-6. `feature/<domain>/<Name>Service.java` — `@Transactional(readOnly = true)` on the class,
-   `@Transactional` on write methods
-7. `feature/<domain>/<Name>Controller.java` — `/api/<plural>`, return `PageResponse<T>` for lists
-8. Tests: unit in `*Test.java`, integration in `*IT.java`
+5. `feature/<name>/mapper/<Name>Mapper.java` — MapStruct, `componentModel = "spring"`
+6. `feature/<name>/service/<Name>Service.java` — `@Transactional(readOnly = true)` on the
+   class, `@Transactional` on write methods
+7. `feature/<name>/web/<Name>Controller.java` — `/api/<plural>`, return `PageResponse<T>`
+   for lists
+8. Tests mirror the package: unit in `*Test.java` next to what they test, integration in
+   `*IT.java` under `web/`
 
 ### MapStruct trap
 
@@ -86,6 +138,9 @@ than a mock, so mapping bugs surface at the unit-test level.
 - Lists are always wrapped in `PageResponse<T>`, never Spring's own `Page<T>` (its shape
   is unstable and Spring warns about serialising it).
 - Never catch an exception in a controller, and never build an error body by hand.
+- Constrain query parameters the same way you constrain a body — `@Validated` on the
+  controller plus `@Min`/`@Max`/`@NotBlank` with a bundle key, as `/api/ai/retrieve` does.
+  An unbounded `topK` reaches the vector store exactly like a bounded one.
 
 ## Errors — RFC 9457, one factory
 

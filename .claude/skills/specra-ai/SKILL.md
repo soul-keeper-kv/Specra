@@ -38,7 +38,9 @@ public AiConfig(ChatModel chatModel) { ... }
 ```
 
 To report what is running, read the `spring.ai.model.chat` property (that is what
-`AiController` does to build `ProviderInfo`) — never infer it from a class name.
+`AiProviders` does to build `ProviderInfo`) — never infer it from a class name. That class
+is the only place the property is read; take the name from it rather than adding another
+`@Value` somewhere new.
 
 The valid values live in `org.springframework.ai.model.SpringAIModels`.
 
@@ -55,10 +57,10 @@ pnpm db:reset
 
 ## Two ChatClients, deliberately different
 
-| Bean                      | Advisors                            | Used by                        |
-| ------------------------- | ----------------------------------- | ------------------------------ |
-| `chatClient` (`@Primary`) | `MessageChatMemoryAdvisor` + logger | `/api/ai/chat`, `/chat/stream` |
-| `ragChatClient`           | logger only — **no memory**         | `RagService.ask`               |
+| Bean                      | Advisors                            | Used by          |
+| ------------------------- | ----------------------------------- | ---------------- |
+| `chatClient` (`@Primary`) | `MessageChatMemoryAdvisor` + logger | `ChatService`    |
+| `ragChatClient`           | logger only — **no memory**         | `RagService.ask` |
 
 RAG has no memory on purpose: with it, earlier turns bleed into the retrieved context
 and the model is liable to treat them as evidence. Do not merge the two beans.
@@ -71,7 +73,8 @@ Pass the conversation id through an advisor param:
 
 ## The SSE streaming contract — the easiest thing to break
 
-`AiController.stream()` sends every token as a **JSON string**:
+`ChatService.streamTokens()` returns the model's tokens and nothing else; framing them is
+the controller's job. `AiController.stream()` sends every token as a **JSON string**:
 
 ```java
 .map(token -> ServerSentEvent.builder(asJson(token)).event("token").build())
@@ -97,18 +100,28 @@ The web client parses frames itself with `fetch` + `ReadableStream` rather than 
 
 ## RAG
 
-`RagService`:
+Two classes, split by direction, so a feature that only keeps its rows indexed does not
+depend on the chat client as well.
+
+`DocumentIndexService` — text in:
 
 - `replaceDocument(sourceId, text, metadata)` — deletes old chunks by `sourceId`
   **first**, then chunks, embeds and stores. That is what stops an edited note leaving
   stale text retrievable.
-- `deleteBySource(sourceId)` — filters on `sourceId == '<uuid>'`
+- `deleteBySource(sourceId)` — filters on `sourceId == '<uuid>'`; idempotent
+
+`RagService` — questions out:
+
 - `ask(request)` — `QuestionAnswerAdvisor`, and returns `sources` pulled from
   `QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS` in `ChatClientResponse.context()`
 - `retrieve(...)` — similarity search only, no generation; use it to see what RAG
   actually pulls back
 
-The metadata key tying a chunk to its source row is the constant `RagService.SOURCE_ID`.
+The metadata key tying a chunk to its source row is `DocumentIndexService.SOURCE_ID`.
+
+Indexing is called from the owning feature, never the other way round: `NoteIndexService`
+calls `replaceDocument`, and drops chunks on `NoteEvents.NoteDeleted` /
+`NoteContentChanged` after the note's transaction commits.
 
 Chunking uses `TokenTextSplitter` (its builder methods carry a `with…` prefix:
 `withChunkSize`, `withMinChunkSizeChars`, `withKeepSeparator`).
