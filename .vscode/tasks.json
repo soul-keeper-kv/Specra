@@ -60,8 +60,14 @@
       // The binary is looked up on PATH and then at the per-user install path,
       // because the installer adds itself to PATH for *new* shells — a terminal
       // that was already open when Ollama was installed cannot see it.
+      //
+      // Not one double quote in the Windows command, deliberately. VS Code hands
+      // the string to powershell.exe as -Command "<the whole thing>", so an inner
+      // quote closes that wrapper early: PowerShell then sees the rest unquoted
+      // and dies on 'Unexpected token'. Join-Path and string concatenation say
+      // the same thing with single quotes only.
       "windows": {
-        "command": "$url = 'http://localhost:11434/api/tags'; $ok = $false; try { Invoke-WebRequest $url -TimeoutSec 10 -UseBasicParsing | Out-Null; $ok = $true } catch {}; if ($ok) { 'ollama already running'; exit 0 }; $exe = (Get-Command ollama -ErrorAction SilentlyContinue).Source; if (-not $exe) { $exe = \"$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe\" }; if (-not (Test-Path $exe)) { 'ollama is not installed - see https://ollama.com/download'; exit 1 }; Start-Process $exe -ArgumentList 'serve' -WindowStyle Hidden; foreach ($i in 1..60) { Start-Sleep -Seconds 1; try { Invoke-WebRequest $url -TimeoutSec 5 -UseBasicParsing | Out-Null; \"ollama up after ${i}s\"; exit 0 } catch {} }; 'ollama did not start in 60s'; exit 1"
+        "command": "$url = 'http://localhost:11434/api/tags'; $ok = $false; try { Invoke-WebRequest $url -TimeoutSec 10 -UseBasicParsing | Out-Null; $ok = $true } catch {}; if ($ok) { 'ollama already running'; exit 0 }; $exe = (Get-Command ollama -ErrorAction SilentlyContinue).Source; if (-not $exe) { $exe = Join-Path $env:LOCALAPPDATA 'Programs\\Ollama\\ollama.exe' }; if (-not (Test-Path $exe)) { 'ollama is not installed - see https://ollama.com/download'; exit 1 }; Start-Process $exe -ArgumentList 'serve' -WindowStyle Hidden; foreach ($i in 1..60) { Start-Sleep -Seconds 1; try { Invoke-WebRequest $url -TimeoutSec 5 -UseBasicParsing | Out-Null; 'ollama up after ' + $i + 's'; exit 0 } catch {} }; 'ollama did not start in 60s'; exit 1"
       },
       "linux": {
         "command": "curl -sf http://localhost:11434/api/tags >/dev/null && echo 'ollama already running' || { (ollama serve &) ; for i in $(seq 30); do sleep 1; curl -sf http://localhost:11434/api/tags >/dev/null && { echo \"ollama up after ${i}s\"; exit 0; }; done; echo 'ollama did not start in 30s'; exit 1; }"
@@ -85,7 +91,7 @@
       "label": "specra: ollama down",
       "type": "shell",
       "windows": {
-        "command": "$p = Get-Process ollama, 'ollama app' -ErrorAction SilentlyContinue; if ($p) { $p | Stop-Process -Force; \"stopped $($p.Count) ollama process(es)\" } else { 'ollama was not running' }"
+        "command": "$p = Get-Process ollama, 'ollama app' -ErrorAction SilentlyContinue; if ($p) { $p | Stop-Process -Force; 'stopped ' + $p.Count + ' ollama process(es)' } else { 'ollama was not running' }"
       },
       "linux": {
         "command": "pkill -f 'ollama serve' && echo 'stopped ollama' || echo 'ollama was not running'"
