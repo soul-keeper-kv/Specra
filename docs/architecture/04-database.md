@@ -24,17 +24,28 @@ Ordered by the migration that introduces them. `V1__init.sql` already exists and
 
 ### V2 — tenancy and projects
 
-| Table               | Notable columns                                                                  |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `users`             | `email` unique, `display_name`, `password_hash`                                  |
-| `workspaces`        | `name`, `slug` unique                                                            |
-| `workspace_members` | `(workspace_id, user_id)` unique, `role` — `OWNER` · `ADMIN` · `MEMBER`          |
-| `projects`          | `workspace_id`, `key` unique per workspace, `name`, `engine` (`PLAYWRIGHT`)      |
-| `git_repositories`  | `project_id` unique, `provider`, `remote_url`, `default_branch`, `credential_id` |
-| `environments`      | `project_id`, `name`, `base_url`, `is_default`                                   |
-| `environment_vars`  | `environment_id`, `key`, `value`, `is_secret`, unique on `(environment_id, key)` |
+| Table               | Notable columns                                                                   |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `users`             | `email` unique, `display_name`, `password_hash`                                   |
+| `workspaces`        | `name`, `slug` unique                                                             |
+| `workspace_members` | `(workspace_id, user_id)` unique, `role` — `OWNER` · `ADMIN` · `MEMBER`           |
+| `projects`          | `workspace_id`, `key` unique per workspace, `name`, `engine` (`PLAYWRIGHT`)       |
+| `git_repositories`  | `project_id` unique, `provider`, `remote_url`, `default_branch`, `credential_id`  |
+| `environments`      | `project_id`, `name`, `base_url`, `is_default`                                    |
+| `environment_vars`  | `environment_id`, `key`, `value`, `is_secret`, unique on `(environment_id, key)`  |
+| `ai_accounts`       | `workspace_id` unique, `provider`, `api_key_cipher`, models, `monthly_budget_usd` |
 
-### V3 — test cases
+### V3 — auth
+
+Local sign-in on top of V2's `users`: adds `status`, `locale`, `failed_logins`, `locked_until`
+and `last_login_at` to `users`, a case-insensitive unique index on `email`, and
+`refresh_tokens` — one row per issued refresh token, hash only, with rotation tracked through
+`replaced_by` so a replayed stolen token is detectable rather than merely expired.
+
+### V4 — test cases
+
+Also adds `projects.test_case_sequence`: references like `TC-104` are minted from it under a
+row lock, so two authors creating at once cannot share a number.
 
 | Table             | Notable columns                                                                                                                                  |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -42,7 +53,7 @@ Ordered by the migration that introduces them. `V1__init.sql` already exists and
 | `test_case_steps` | `test_case_id`, `position`, `action_text`, `expected_text`                                                                                       |
 | `test_case_tags`  | `(test_case_id, tag)` — same shape as `note_tags`                                                                                                |
 
-### V4 — the model and the generated code
+### V5 — the model and the generated code
 
 | Table              | Notable columns                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,7 +67,7 @@ Ordered by the migration that introduces them. `V1__init.sql` already exists and
 `LoginPage.submitButton`" is a GIN-indexed containment query, and it is exactly what impact
 analysis needs.
 
-### V5 — execution
+### V6 — execution
 
 | Table            | Notable columns                                                                                                                                      |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,7 +78,7 @@ analysis needs.
 `failed_step_id` points at an IR step id, not a line number. That is what lets the UI
 highlight the manual step the user wrote and the generated line at the same time.
 
-### V6 — AI audit
+### V7 — AI audit
 
 | Table            | Notable columns                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

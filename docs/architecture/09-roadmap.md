@@ -5,11 +5,11 @@ further along, on real domain logic — never on mocked behaviour behind a finis
 
 ## Where the repository is today
 
-A working scaffold, not the product: Next.js + Spring Boot, i18n in Vietnamese and English,
-RFC 9457 errors, correlation ids and tracing, OpenAPI, ArchUnit layering, pgvector, Spring AI
-with a provider-agnostic setup, and a `notes` + `chat` demo that exercises all of it.
-
-The plumbing is the part worth keeping. `note` and `chat` are placeholders.
+The plumbing plus the first real domain: Next.js + Spring Boot, i18n in Vietnamese and
+English, RFC 9457 errors, correlation ids and tracing, OpenAPI, ArchUnit layering, pgvector,
+Spring AI with a provider-agnostic setup — and workspaces, projects and test cases where the
+`notes` scaffold used to be. The `chat` assistant remains, now grounded in test cases through
+`TestCaseContentStore`.
 
 ## M0 — The contract ✅
 
@@ -33,9 +33,10 @@ ids, a test that asserts nothing) is deliberately **not** here. It runs where an
 authored and stored, in `apps/api`, and lands with M4. `fixtures/invalid/semantic/` already
 holds the cases, schema-valid on purpose, so the layer has its target before it is written.
 
-## M1 — Domain and tenancy
+## M1 — Domain and tenancy ✅
 
-- Migrations V2–V4 ([04](04-database.md)).
+- Migrations V2, V4 and V5 ([04](04-database.md)) — V3 became local auth, which landed
+  alongside this milestone rather than on it.
 - `workspace`, `project`, `testcase` features on the api side; `testcase` replaces `note`.
 - Web: projects list, project shell, test case list and editor.
 - **Delete `feature/note` and `features/notes`** once `testcase` covers the same ground.
@@ -48,6 +49,15 @@ holds the cases, schema-valid on purpose, so the layer has its target before it 
 
 **Done when** a user can create a project and author a test case, in both languages, with the
 error and navigation conventions the `specra-feature` skill requires.
+
+**Done**: workspace → project → test case, end to end in both languages. References are minted
+per project (`TC-1`, `TC-2`) under a row lock; editing a case whose IR exists sets the
+out-of-date flag, not a status. `note` is deleted on both sides — the assistant reads test
+cases through a read-only `TestCaseContentStore`, because a model writing a test case from a
+chat draft is exactly what "AI proposes, a human disposes" rules out. `AiAccount` stores the
+workspace's provider and budget with the key AES-GCM-encrypted at rest (refused, with the
+variable to set, when `SPECRA_ENCRYPTION_KEY` is absent — never stored in plaintext), and
+`AiCredentials.chatIsConfiguredFor(workspaceId)` is the seam that consults it first.
 
 ## M2 — Git
 

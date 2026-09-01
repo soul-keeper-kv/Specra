@@ -124,15 +124,18 @@ apps/api/src/main/java/dev/specra/api/
 │   ├── content/     ContentStore + registry: one shape for every kind of user content
 │   └── testmodel/   the IR records + the shared schema, validated by TestModelSchema
 └── feature/         one folder per feature, one folder per layer inside it
-    ├── note/        scaffold — replaced by testcase, see docs/architecture/09-roadmap.md
-    │   ├── web/     NoteController
-    │   ├── service/ NoteService, NoteIndexService, NoteEvents, NoteContentStore
-    │   ├── domain/  Note (entity), NoteRepository
-    │   ├── mapper/  NoteMapper (MapStruct)
-    │   └── dto/     NoteRequest, NoteResponse
+    ├── workspace/   the tenant boundary; other features check parents through its service
+    ├── project/     one project ≡ one Git repository; owns the TC-n reference sequence
+    ├── testcase/    the manual case — the first real feature, replacing the notes scaffold
+    │   ├── web/     TestCaseController
+    │   ├── service/ TestCaseService, TestCaseIndexService, TestCaseEvents, TestCaseContentStore
+    │   ├── domain/  TestCase, TestCaseStep (entities), TestCaseRepository
+    │   ├── mapper/  TestCaseMapper (MapStruct)
+    │   └── dto/     TestCaseRequest/Response, TestCaseSummaryResponse
     └── ai/
         ├── web/     AiController
-        ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders
+        ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders,
+        │             AiHealthService (probes the provider on a timer, caches the reading)
         ├── tool/    ContentTools — what the model is allowed to call
         └── dto/     AskRequest/AskReply, ChatRequest/ChatReply, ProviderInfo
 
@@ -140,7 +143,7 @@ apps/web/src/
 ├── app/[locale]/    (marketing) · (auth) · (app) route groups; layouts only
 ├── i18n/            routing, navigation, request config
 ├── messages/        en.json, vi.json
-├── features/        notes · chat · auth · settings · dashboard — api/ + components/ + schemas
+├── features/        projects · testcases · workspaces · chat · auth · settings · dashboard — api/ + components/ + schemas
 ├── components/      ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
 ├── lib/             api/ (client, types) · config/ (site, navigation) · utils
 ├── hooks/ stores/ styles/ types/
