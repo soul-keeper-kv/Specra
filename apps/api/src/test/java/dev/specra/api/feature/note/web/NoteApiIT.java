@@ -64,6 +64,14 @@ class NoteApiIT {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content").value("We agreed to ship the pgvector spike first."));
 
+    // No filters at all — the request the notes screen actually makes, and the one that used
+    // to 500: PostgreSQL cannot type an untyped parameter inside concat(), so a null search
+    // term became bytea and the statement died on "function lower(bytea) does not exist".
+    mvc.perform(get("/api/notes"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].id").value(id));
+
     mvc.perform(get("/api/notes").param("q", "pgvector"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalElements").value(1))
