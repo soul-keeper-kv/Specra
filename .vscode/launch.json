@@ -34,6 +34,32 @@
     },
     {
       "type": "java",
+      "name": "API: Spring Boot (Ollama, local GPU)",
+      "request": "launch",
+      "mainClass": "dev.specra.api.SpecraApiApplication",
+      "projectName": "specra-api",
+      "cwd": "${workspaceFolder}/apps/api",
+      // Brings up Postgres and the local model server, in parallel, and waits
+      // for both.
+      "preLaunchTask": "specra: db + ollama up",
+      // Frees the GPU when the debug session ends. The weights stay on disk, so
+      // the next start costs seconds, not another download.
+      "postDebugTask": "specra: ollama down",
+      "envFile": "${workspaceFolder}/.env",
+      // `env` wins over `envFile`, so this runs on the local model whatever .env
+      // says, without editing .env to switch back and forth.
+      //
+      // Chat only. AI_EMBEDDING_PROVIDER stays on transformers, which is already
+      // local and free: ollama's nomic-embed-text emits 768 dimensions against
+      // transformers' 384, and pgvector fixes the column width at creation, so
+      // switching it means dropping vector_store first ("specra: db reset").
+      "env": {
+        "AI_CHAT_PROVIDER": "ollama"
+      },
+      "console": "internalConsole"
+    },
+    {
+      "type": "java",
       "name": "API: Spring Boot (throwaway pgvector)",
       "request": "launch",
       // Boots against a disposable Testcontainers database instead of the

@@ -294,6 +294,8 @@ failure — is what the `specra-architecture` skill is for.
 ```bash
 pnpm install        # whole workspace: root tooling + apps/web
 pnpm db:up          # Postgres + pgvector, host port 5432
+ollama serve        # local chat model — free, no key; VS Code: "specra: ollama up"
+ollama pull qwen2.5:7b   # once, ~4.7 GB; the model OLLAMA_MODEL names
 pnpm dev:api        # :8080
 pnpm dev:web        # :3000  (redirects / to /vi)
 pnpm test:api       # unit + integration — needs Docker (unit alone: ./mvnw test)
