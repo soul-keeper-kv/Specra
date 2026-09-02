@@ -7,6 +7,7 @@
  */
 
 import { generate } from "../codegen/generate.js";
+import { formatFiles } from "../codegen/validate.js";
 import {
   JOB_KINDS,
   PayloadError,
@@ -20,7 +21,7 @@ export function isJobKind(value: unknown): value is JobKind {
   return typeof value === "string" && (JOB_KINDS as readonly string[]).includes(value);
 }
 
-export function handleJob(job: Job): JobResponse<unknown> {
+export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
   switch (job.kind) {
     case "codegen":
       return runCodegen(job.payload);
@@ -45,9 +46,19 @@ export function handleJob(job: Job): JobResponse<unknown> {
   }
 }
 
-function runCodegen(payload: unknown): JobResponse<unknown> {
+/**
+ * Generate, then format.
+ *
+ * Prettier is the authority on how the output is written, and it is async, so it runs here
+ * rather than inside `generate()` — which stays a pure, synchronous projection with golden
+ * files over it. The user receives what prettier would have written, which is what makes
+ * "the generated project passes `prettier --check`" true by construction instead of by a
+ * template author remembering where the line breaks go.
+ */
+async function runCodegen(payload: unknown): Promise<JobResponse<unknown>> {
   try {
-    return { ok: true, result: generate(parseCodegenPayload(payload)) };
+    const result = generate(parseCodegenPayload(payload));
+    return { ok: true, result: { ...result, files: await formatFiles(result.files) } };
   } catch (error) {
     // A refusal is a result, not a crash: an invalid IR, an uninspected page, an element whose
     // name collides. The API turns each into something the user can act on, so the message

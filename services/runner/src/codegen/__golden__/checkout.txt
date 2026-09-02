@@ -3,10 +3,7 @@
   "irVersion": 1,
   "name": "Checkout a cart of two items",
   "description": "Exercises every action group: a reused flow, waits, input variants, a drag, and the selector escape hatch.",
-  "tags": [
-    "regression",
-    "checkout"
-  ],
+  "tags": ["regression", "checkout"],
   "parameters": [
     {
       "name": "couponCode",
@@ -32,9 +29,7 @@
   "steps": [
     {
       "id": "s1",
-      "sourceStepIds": [
-        "ts-1"
-      ],
+      "sourceStepIds": ["ts-1"],
       "action": "navigate",
       "target": {
         "page": "CartPage"
@@ -42,9 +37,7 @@
     },
     {
       "id": "s2",
-      "sourceStepIds": [
-        "ts-1"
-      ],
+      "sourceStepIds": ["ts-1"],
       "derived": false,
       "action": "waitFor",
       "target": {
@@ -58,9 +51,7 @@
     },
     {
       "id": "s3",
-      "sourceStepIds": [
-        "ts-2"
-      ],
+      "sourceStepIds": ["ts-2"],
       "action": "select",
       "target": {
         "page": "CartPage",
@@ -73,9 +64,7 @@
     },
     {
       "id": "s4",
-      "sourceStepIds": [
-        "ts-3"
-      ],
+      "sourceStepIds": ["ts-3"],
       "action": "check",
       "target": {
         "page": "CartPage",
@@ -84,9 +73,7 @@
     },
     {
       "id": "s5",
-      "sourceStepIds": [
-        "ts-4"
-      ],
+      "sourceStepIds": ["ts-4"],
       "action": "fill",
       "target": {
         "page": "CartPage",
@@ -99,9 +86,7 @@
     },
     {
       "id": "s6",
-      "sourceStepIds": [
-        "ts-4"
-      ],
+      "sourceStepIds": ["ts-4"],
       "action": "press",
       "target": {
         "page": "CartPage",
@@ -114,9 +99,7 @@
     },
     {
       "id": "s7",
-      "sourceStepIds": [
-        "ts-5"
-      ],
+      "sourceStepIds": ["ts-5"],
       "description": "The legacy promo widget has no stable handle yet",
       "action": "dragTo",
       "target": {
@@ -132,9 +115,7 @@
     },
     {
       "id": "s8",
-      "sourceStepIds": [
-        "ts-6"
-      ],
+      "sourceStepIds": ["ts-6"],
       "action": "click",
       "target": {
         "page": "CartPage",
@@ -143,9 +124,7 @@
     },
     {
       "id": "s9",
-      "sourceStepIds": [
-        "ts-7"
-      ],
+      "sourceStepIds": ["ts-7"],
       "action": "fill",
       "target": {
         "page": "PaymentPage",
@@ -158,9 +137,7 @@
     },
     {
       "id": "s10",
-      "sourceStepIds": [
-        "ts-8"
-      ],
+      "sourceStepIds": ["ts-8"],
       "action": "click",
       "target": {
         "page": "PaymentPage",
@@ -169,9 +146,7 @@
     },
     {
       "id": "s11",
-      "sourceStepIds": [
-        "ts-9"
-      ],
+      "sourceStepIds": ["ts-9"],
       "action": "assert",
       "target": {
         "page": "ConfirmationPage"
@@ -183,9 +158,7 @@
     },
     {
       "id": "s12",
-      "sourceStepIds": [
-        "ts-9"
-      ],
+      "sourceStepIds": ["ts-9"],
       "action": "assert",
       "target": {
         "page": "ConfirmationPage",
@@ -198,9 +171,7 @@
     },
     {
       "id": "s13",
-      "sourceStepIds": [
-        "ts-9"
-      ],
+      "sourceStepIds": ["ts-9"],
       "action": "assert",
       "target": {
         "page": "ConfirmationPage",
@@ -347,7 +318,9 @@ export class ConfirmationPage {
   }
 
   async goto(): Promise<void> {
-    throw new Error("ConfirmationPage has no route yet — inspect it, or reach it through the application");
+    throw new Error(
+      "ConfirmationPage has no route yet — inspect it, or reach it through the application",
+    );
   }
 }
 
@@ -414,7 +387,6 @@ test("Checkout a cart of two items @regression @checkout", async ({ page }) => {
 
   // Teardown
   await clearCartFlow(page);
-
 });
 
 === unresolved ===

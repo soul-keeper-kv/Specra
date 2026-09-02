@@ -71,7 +71,7 @@ async function route(request: IncomingMessage, response: ServerResponse): Promis
     return;
   }
 
-  const result = handleJob({ kind, payload: (job as { payload?: unknown }).payload });
+  const result = await handleJob({ kind, payload: (job as { payload?: unknown }).payload });
   // A refused job is a complete answer, not a server fault: 422, so the API can tell "the runner
   // said no" apart from "the runner fell over".
   send(response, result.ok ? 200 : 422, result);

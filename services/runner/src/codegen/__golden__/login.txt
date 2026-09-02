@@ -3,10 +3,7 @@
   "irVersion": 1,
   "name": "Login with valid credentials",
   "description": "A registered user signs in and lands on the dashboard.",
-  "tags": [
-    "smoke",
-    "auth"
-  ],
+  "tags": ["smoke", "auth"],
   "parameters": [
     {
       "name": "username",
@@ -23,9 +20,7 @@
   "steps": [
     {
       "id": "s1",
-      "sourceStepIds": [
-        "ts-1"
-      ],
+      "sourceStepIds": ["ts-1"],
       "description": "Open the login page",
       "action": "navigate",
       "target": {
@@ -34,9 +29,7 @@
     },
     {
       "id": "s2",
-      "sourceStepIds": [
-        "ts-2"
-      ],
+      "sourceStepIds": ["ts-2"],
       "action": "fill",
       "target": {
         "page": "LoginPage",
@@ -49,9 +42,7 @@
     },
     {
       "id": "s3",
-      "sourceStepIds": [
-        "ts-3"
-      ],
+      "sourceStepIds": ["ts-3"],
       "action": "fill",
       "target": {
         "page": "LoginPage",
@@ -64,9 +55,7 @@
     },
     {
       "id": "s4",
-      "sourceStepIds": [
-        "ts-4"
-      ],
+      "sourceStepIds": ["ts-4"],
       "action": "click",
       "target": {
         "page": "LoginPage",
@@ -75,9 +64,7 @@
     },
     {
       "id": "s5",
-      "sourceStepIds": [
-        "ts-5"
-      ],
+      "sourceStepIds": ["ts-5"],
       "action": "assert",
       "target": {
         "page": "DashboardPage",
@@ -187,5 +174,4 @@ test("Login with valid credentials @smoke @auth", async ({ page }) => {
   await loginPage.passwordInput.fill(password());
   await loginPage.submitButton.click();
   await expect(dashboardPage.heading).toBeVisible();
-
 });

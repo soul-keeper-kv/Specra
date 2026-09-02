@@ -7,6 +7,10 @@
  *
  * Run with `UPDATE_GOLDEN=1 pnpm --filter specra-runner test` to rewrite them, then read the
  * git diff before committing. That reading is the point; skipping it makes the files decoration.
+ *
+ * The snapshot is taken *after* prettier, because that is what lands in the user's repository:
+ * a golden file of the pre-formatting bytes would be a record of an intermediate nobody ever
+ * sees, and would go on matching while the delivered file changed.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,6 +28,7 @@ import {
   options,
 } from "./fixtures.js";
 import { generate } from "./generate.js";
+import { formatFiles } from "./validate.js";
 import type { CodegenRequest } from "./types.js";
 
 const GOLDEN = path.join(path.dirname(fileURLToPath(import.meta.url)), "__golden__");
@@ -75,11 +80,10 @@ const CASES: { name: string; request: CodegenRequest }[] = [
 ];
 
 /** One text blob per case: paths and bodies, so a moved file is as visible as a changed one. */
-function snapshot(request: CodegenRequest): string {
+async function snapshot(request: CodegenRequest): Promise<string> {
   const result = generate(request);
-  const parts = result.files.map(
-    (file) => `=== ${file.path} (${file.role}) ===\n${file.contents}`,
-  );
+  const files = await formatFiles(result.files);
+  const parts = files.map((file) => `=== ${file.path} (${file.role}) ===\n${file.contents}`);
   if (result.unresolved.length > 0) {
     parts.push(`=== unresolved ===\n${JSON.stringify(result.unresolved, null, 2)}\n`);
   }
@@ -87,8 +91,8 @@ function snapshot(request: CodegenRequest): string {
 }
 
 describe("the Playwright adapter is a pure projection", () => {
-  it.each(CASES)("$name matches its golden file", ({ name, request }) => {
-    const actual = snapshot(request);
+  it.each(CASES)("$name matches its golden file", async ({ name, request }) => {
+    const actual = await snapshot(request);
     const file = path.join(GOLDEN, `${name}.txt`);
 
     if (UPDATE || !existsSync(file)) {
@@ -99,19 +103,19 @@ describe("the Playwright adapter is a pure projection", () => {
     expect(actual).toEqual(readFileSync(file, "utf8"));
   });
 
-  it.each(CASES)("$name generates identical bytes when run twice", ({ request }) => {
-    expect(snapshot(request)).toEqual(snapshot(request));
+  it.each(CASES)("$name generates identical bytes when run twice", async ({ request }) => {
+    expect(await snapshot(request)).toEqual(await snapshot(request));
   });
 
   it.each(CASES)(
     "$name is byte-identical whatever order the pages arrive in",
-    ({ request }) => {
+    async ({ request }) => {
       const reversed = { ...request, pages: [...request.pages].reverse() };
       // File order is normalised by path, and page objects are rendered per file, so shuffling
       // the input must not move a single byte. Only the spec's own import order is allowed to
       // depend on the IR — and that comes from step order, not from this array.
-      const a = snapshot(request);
-      const b = snapshot(reversed);
+      const a = await snapshot(request);
+      const b = await snapshot(reversed);
       expect(sortedSections(b)).toEqual(sortedSections(a));
     },
   );

@@ -29,6 +29,7 @@ import {
   options,
 } from "./fixtures.js";
 import { generate } from "./generate.js";
+import { formatFiles } from "./validate.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..", "..");
@@ -49,7 +50,7 @@ afterAll(() => rmSync(workdir, { recursive: true, force: true }));
  * constructed compiled fine in isolation and not at all in a project, which is precisely the
  * class of bug a golden file cannot see and the compiler can.
  */
-function materialise(): string {
+async function materialise(): Promise<string> {
   const generations = [
     generate({
       model: irFixture("login"),
@@ -74,7 +75,7 @@ function materialise(): string {
   ];
 
   for (const result of generations) {
-    for (const file of result.files) {
+    for (const file of await formatFiles(result.files)) {
       const full = path.join(workdir, file.path);
       mkdirSync(path.dirname(full), { recursive: true });
       writeFileSync(full, file.contents);
@@ -112,7 +113,7 @@ function materialise(): string {
 describe("the generated project stands on its own", () => {
   const engineAvailable = existsSync(path.join(ENGINE_TYPES, "@playwright", "test"));
 
-  it("typechecks with the real compiler against the real engine types", () => {
+  it("typechecks with the real compiler against the real engine types", async () => {
     if (!engineAvailable) {
       // Never silently pass: say why, so a green run is not mistaken for a verified one.
       throw new Error(
@@ -120,7 +121,7 @@ describe("the generated project stands on its own", () => {
       );
     }
 
-    const dir = materialise();
+    const dir = await materialise();
     let output = "";
     try {
       execFileSync(process.execPath, [TSC, "--noEmit", "--project", "tsconfig.json"], {

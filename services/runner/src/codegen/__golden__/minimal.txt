@@ -5,9 +5,7 @@
   "steps": [
     {
       "id": "s1",
-      "sourceStepIds": [
-        "ts-1"
-      ],
+      "sourceStepIds": ["ts-1"],
       "action": "navigate",
       "target": {
         "page": "HomePage"
@@ -15,9 +13,7 @@
     },
     {
       "id": "s2",
-      "sourceStepIds": [
-        "ts-2"
-      ],
+      "sourceStepIds": ["ts-2"],
       "action": "assert",
       "target": {
         "page": "HomePage",
@@ -62,5 +58,4 @@ test("The home page loads", async ({ page }) => {
 
   await homePage.goto();
   await expect(homePage.heading).toBeVisible();
-
 });
