@@ -168,10 +168,19 @@ test("Login with valid credentials @smoke @auth", async ({ page }) => {
   const loginPage = new LoginPage(page);
   const dashboardPage = new DashboardPage(page);
 
-  // Open the login page
-  await loginPage.goto();
-  await loginPage.usernameInput.fill(username());
-  await loginPage.passwordInput.fill(password());
-  await loginPage.submitButton.click();
-  await expect(dashboardPage.heading).toBeVisible();
+  await test.step("Open the login page [s1]", async () => {
+    await loginPage.goto();
+  });
+  await test.step("fill LoginPage.usernameInput [s2]", async () => {
+    await loginPage.usernameInput.fill(username());
+  });
+  await test.step("fill LoginPage.passwordInput [s3]", async () => {
+    await loginPage.passwordInput.fill(password());
+  });
+  await test.step("click LoginPage.submitButton [s4]", async () => {
+    await loginPage.submitButton.click();
+  });
+  await test.step("assert DashboardPage.heading [s5]", async () => {
+    await expect(dashboardPage.heading).toBeVisible();
+  });
 });

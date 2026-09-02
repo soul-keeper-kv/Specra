@@ -224,7 +224,7 @@ export const password = (): string => read("PASSWORD", true);
 export const username = (): string => read("USERNAME", true);
 
 === flows/clear-cart.flow.ts (FIXTURE) ===
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { CartPage } from "../pages/CartPage.js";
 
@@ -232,12 +232,16 @@ import { CartPage } from "../pages/CartPage.js";
 export async function clearCartFlow(page: Page): Promise<void> {
   const cartPage = new CartPage(page);
 
-  await cartPage.goto();
-  await expect(cartPage.lineItems).toHaveCount(0);
+  await test.step("navigate CartPage [c1]", async () => {
+    await cartPage.goto();
+  });
+  await test.step("assert CartPage.lineItems [c2]", async () => {
+    await expect(cartPage.lineItems).toHaveCount(0);
+  });
 }
 
 === flows/login.flow.ts (FIXTURE) ===
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { LoginPage } from "../pages/LoginPage.js";
 import { DashboardPage } from "../pages/DashboardPage.js";
@@ -248,11 +252,21 @@ export async function loginFlow(page: Page): Promise<void> {
   const loginPage = new LoginPage(page);
   const dashboardPage = new DashboardPage(page);
 
-  await loginPage.goto();
-  await loginPage.usernameInput.fill(username());
-  await loginPage.passwordInput.fill(password());
-  await loginPage.submitButton.click();
-  await expect(dashboardPage.heading).toBeVisible();
+  await test.step("navigate LoginPage [f1]", async () => {
+    await loginPage.goto();
+  });
+  await test.step("fill LoginPage.usernameInput [f2]", async () => {
+    await loginPage.usernameInput.fill(username());
+  });
+  await test.step("fill LoginPage.passwordInput [f3]", async () => {
+    await loginPage.passwordInput.fill(password());
+  });
+  await test.step("click LoginPage.submitButton [f4]", async () => {
+    await loginPage.submitButton.click();
+  });
+  await test.step("assert DashboardPage.heading [f5]", async () => {
+    await expect(dashboardPage.heading).toBeVisible();
+  });
 }
 
 === pages/CartPage.ts (PAGE) ===
@@ -367,26 +381,54 @@ test("Checkout a cart of two items @regression @checkout", async ({ page }) => {
   const confirmationPage = new ConfirmationPage(page);
 
   // Setup
-  // Sign in before the case begins
-  await loginFlow(page);
+  await test.step("Sign in before the case begins [setup-login]", async () => {
+    await loginFlow(page);
+  });
 
-  await cartPage.goto();
-  await expect(cartPage.lineItems).toHaveCount(2);
-  await cartPage.shippingMethod.selectOption("express");
-  await cartPage.giftWrap.check();
-  await cartPage.couponInput.fill(couponCode());
-  await cartPage.couponInput.press("Enter");
-  // The legacy promo widget has no stable handle yet
-  await page.locator("#promo .handle").dragTo(cartPage.promoDropZone);
-  await cartPage.checkoutButton.click();
-  await paymentPage.cardNumberInput.fill(cardNumber());
-  await paymentPage.payButton.click();
-  await expect(page).toHaveURL(new RegExp("^/orders/[0-9]+$"));
-  await expect(confirmationPage.status).toContainText("Thank you");
-  await expect(confirmationPage.downloadInvoice).toHaveAttribute("aria-disabled", "false");
+  await test.step("navigate CartPage [s1]", async () => {
+    await cartPage.goto();
+  });
+  await test.step("waitFor CartPage.lineItems [s2]", async () => {
+    await expect(cartPage.lineItems).toHaveCount(2);
+  });
+  await test.step("select CartPage.shippingMethod [s3]", async () => {
+    await cartPage.shippingMethod.selectOption("express");
+  });
+  await test.step("check CartPage.giftWrap [s4]", async () => {
+    await cartPage.giftWrap.check();
+  });
+  await test.step("fill CartPage.couponInput [s5]", async () => {
+    await cartPage.couponInput.fill(couponCode());
+  });
+  await test.step("press CartPage.couponInput [s6]", async () => {
+    await cartPage.couponInput.press("Enter");
+  });
+  await test.step("The legacy promo widget has no stable handle yet [s7]", async () => {
+    await page.locator("#promo .handle").dragTo(cartPage.promoDropZone);
+  });
+  await test.step("click CartPage.checkoutButton [s8]", async () => {
+    await cartPage.checkoutButton.click();
+  });
+  await test.step("fill PaymentPage.cardNumberInput [s9]", async () => {
+    await paymentPage.cardNumberInput.fill(cardNumber());
+  });
+  await test.step("click PaymentPage.payButton [s10]", async () => {
+    await paymentPage.payButton.click();
+  });
+  await test.step("assert ConfirmationPage [s11]", async () => {
+    await expect(page).toHaveURL(new RegExp("^/orders/[0-9]+$"));
+  });
+  await test.step("assert ConfirmationPage.status [s12]", async () => {
+    await expect(confirmationPage.status).toContainText("Thank you");
+  });
+  await test.step("assert ConfirmationPage.downloadInvoice [s13]", async () => {
+    await expect(confirmationPage.downloadInvoice).toHaveAttribute("aria-disabled", "false");
+  });
 
   // Teardown
-  await clearCartFlow(page);
+  await test.step("useFlow [teardown-1]", async () => {
+    await clearCartFlow(page);
+  });
 });
 
 === unresolved ===

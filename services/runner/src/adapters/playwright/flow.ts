@@ -43,14 +43,16 @@ export function renderFlow(
   }
 
   // `expect` only when something is asserted: an unused import is a lint error in a strict
-  // project, and the generated project is the user's to lint however they like.
+  // project, and the generated project is the user's to lint however they like. `test` is
+  // unconditional because every step is wrapped in `test.step` — that is what carries the IR
+  // step id into the result, so a flow without the import is a file that does not compile.
   const asserts = steps.some((step) => step.action === "assert" || step.action === "waitFor");
 
   const lines: string[] = [];
   lines.push(
     asserts
-      ? 'import { expect, type Page } from "@playwright/test";'
-      : 'import type { Page } from "@playwright/test";',
+      ? 'import { expect, test, type Page } from "@playwright/test";'
+      : 'import { test, type Page } from "@playwright/test";',
   );
   lines.push("");
   for (const page of used) {

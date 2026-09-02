@@ -234,10 +234,17 @@ describe("text from the IR cannot become code", () => {
     });
 
     const spec = fileNamed(files, ".spec.ts");
+    // The raw separator never survives: to a JS parser it ends a line, so a description
+    // carrying one could otherwise close a string and start a statement.
     expect(spec).not.toContain(LINE_SEPARATOR);
     expect(spec).toContain("globalThis.PWNED = true;");
-    // …but only inside the comment it was flattened into.
-    expect(spec).toMatch(/\/\/ open globalThis\.PWNED = true; \/\//);
+    // …and only inside the escaped `test.step` title it became. Containment is stronger here
+    // than in the comment this used to be flattened into: a string literal escapes the
+    // separator into its six-character form rather than relying on the text having no
+    // newline in it.
+    expect(spec).toMatch(
+      /await test\.step\("open\\u2028globalThis\.PWNED = true; \/\/ \[s1\]", async \(\) => \{/,
+    );
   });
 });
 

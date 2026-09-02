@@ -24,6 +24,9 @@ import {
 } from "../../codegen/naming.js";
 import { rawSelectorExpression } from "./locators.js";
 
+/** One level in, relative to wherever the caller places the `test.step` wrapper. */
+const STEP_INDENT = "  ";
+
 /** How a step reaches its element, given what the page objects resolved. */
 export interface StepContext {
   /**
@@ -39,13 +42,40 @@ export interface StepContext {
   onUnresolved: (step: TestStep, page: string, element?: string) => void;
 }
 
+/**
+ * One IR step, wrapped in `test.step` so the step survives into the result.
+ *
+ * The wrapper is what makes a failure locatable. Playwright's report records which step carried
+ * the error but never mentions it in the message, so the IR step id has to be *in the title* —
+ * that is the only channel from a generated line back to the manual step a person wrote, and it
+ * is what lets a run detail highlight both at once. It also gives the trace viewer a readable
+ * outline instead of a flat list of clicks.
+ *
+ * The title is the step's own description when it has one, so a reader of the trace sees the
+ * sentence from the test case rather than a restatement of the code below it.
+ */
 export function renderStep(step: TestStep, context: StepContext): string[] {
+  const body = renderAction(step, context);
+  const title = `${step.description?.trim() || describe(step)} [${step.id}]`;
+
   const lines: string[] = [];
-  if (step.description) {
-    lines.push(lineComment(step.description));
+  lines.push(`await test.step(${stringLiteral(title)}, async () => {`);
+  for (const line of body) {
+    lines.push(`${STEP_INDENT}${line}`);
   }
-  lines.push(...renderAction(step, context));
+  lines.push("});");
   return lines;
+}
+
+/** A short label for a step the author gave no description, so the trace is never blank. */
+function describe(step: TestStep): string {
+  const target = step.target;
+  if (target && typeof target === "object" && "page" in target) {
+    const page = (target as { page?: string }).page;
+    const element = (target as { element?: string }).element;
+    return element ? `${step.action} ${page}.${element}` : `${step.action} ${page}`;
+  }
+  return step.action;
 }
 
 function renderAction(step: TestStep, context: StepContext): string[] {

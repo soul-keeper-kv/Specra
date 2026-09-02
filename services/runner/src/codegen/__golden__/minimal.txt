@@ -56,6 +56,10 @@ import { HomePage } from "../pages/HomePage.js";
 test("The home page loads", async ({ page }) => {
   const homePage = new HomePage(page);
 
-  await homePage.goto();
-  await expect(homePage.heading).toBeVisible();
+  await test.step("navigate HomePage [s1]", async () => {
+    await homePage.goto();
+  });
+  await test.step("assert HomePage.heading [s2]", async () => {
+    await expect(homePage.heading).toBeVisible();
+  });
 });
