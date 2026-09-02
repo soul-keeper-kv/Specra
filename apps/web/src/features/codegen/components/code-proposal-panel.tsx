@@ -3,12 +3,15 @@
 import {
   AlertTriangle,
   Check,
+  Eye,
   FileCode2,
   GitCommitHorizontal,
   Loader2,
+  Pencil,
   RefreshCw,
   ScanSearch,
   Sparkles,
+  Undo2,
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -23,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useApplyGeneration,
   useCodeGeneration,
@@ -58,6 +62,15 @@ export function CodeProposalPanel({
    * people pull from, so it is a second decision rather than a consequence of the first.
    */
   const [push, setPush] = useState(false);
+  /**
+   * Corrected bodies by path, empty until somebody types.
+   *
+   * Kept here rather than sent back to the proposal: the stored row is the record of what the
+   * model produced, and the edit is what the reviewer decided to commit instead. They travel
+   * together on apply, which is the only call that writes anything.
+   */
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState(false);
 
   if (!testCaseId) {
     return <Empty title={t("empty.notImported")} hint={t("empty.notImportedHint")} />;
@@ -73,14 +86,28 @@ export function CodeProposalPanel({
   }
 
   const current = proposal.data;
-  const files = current?.files ?? [];
+  /**
+   * The proposal as it would be committed. Overlaying the edits here means the diff, the file
+   * list and the apply all read the same thing — the reviewer never sees one version and
+   * commits another.
+   */
+  const files = (current?.files ?? []).map((file) =>
+    file.path in edits
+      ? { ...file, contents: edits[file.path]!, status: "MODIFIED" as const }
+      : file,
+  );
   const active = files.find((file) => file.path === selected) ?? files[0];
   const changed = files.filter((file) => file.status !== "UNCHANGED").length;
+  const edited = Object.keys(edits).length;
 
   function runGeneration() {
     generate.mutate(undefined, {
       onSuccess: (created) => {
         setSelected(created.files[0]?.path ?? null);
+        // Edits belonged to the proposal that was just superseded. Carrying them over would
+        // silently paste old corrections into lines that may no longer exist.
+        setEdits({});
+        setEditing(false);
         toast.success(t("toast.generated", { count: created.files.length }));
       },
     });
@@ -89,7 +116,15 @@ export function CodeProposalPanel({
   function applyProposal() {
     if (!current) return;
     apply.mutate(
-      { id: current.id, input: { push } },
+      {
+        id: current.id,
+        input: {
+          push,
+          ...(edited > 0
+            ? { edits: Object.entries(edits).map(([path, contents]) => ({ path, contents })) }
+            : {}),
+        },
+      },
       {
         onSuccess: (applied) =>
           toast.success(
@@ -100,6 +135,19 @@ export function CodeProposalPanel({
         onError: (error) => toast.error(describe(error, t)),
       },
     );
+  }
+
+  function editFile(path: string, contents: string) {
+    setEdits((previous) => ({ ...previous, [path]: contents }));
+  }
+
+  /** Drops the correction rather than storing the original again, so "edited" stops being true. */
+  function revertEdit(path: string) {
+    setEdits((previous) => {
+      const next = { ...previous };
+      delete next[path];
+      return next;
+    });
   }
 
   function rejectProposal() {
@@ -169,6 +217,11 @@ export function CodeProposalPanel({
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="secondary">{t("status.proposed")}</Badge>
             <span>{t("summary", { files: files.length, changed })}</span>
+            {edited > 0 ? (
+              <Badge variant="outline" className="font-normal">
+                {t("editedCount", { count: edited })}
+              </Badge>
+            ) : null}
             <span className="font-mono">
               {t("fromModel", { version: current.modelVersion })}
             </span>
@@ -221,13 +274,67 @@ export function CodeProposalPanel({
                 <>
                   <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
                     <span className="truncate font-mono text-xs">{active.path}</span>
-                    <Badge variant="outline" className="shrink-0 font-normal">
-                      {t(`fileStatus.${active.status}`)}
-                    </Badge>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {active.path in edits ? (
+                        <Badge variant="secondary" className="font-normal">
+                          {t("edited")}
+                        </Badge>
+                      ) : null}
+                      <Badge variant="outline" className="font-normal">
+                        {t(`fileStatus.${active.status}`)}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        onClick={() => setEditing((was) => !was)}
+                      >
+                        {editing ? (
+                          <>
+                            <Eye className="size-3.5" />
+                            {t("viewDiff")}
+                          </>
+                        ) : (
+                          <>
+                            <Pencil className="size-3.5" />
+                            {t("edit")}
+                          </>
+                        )}
+                      </Button>
+                      {active.path in edits ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={() => revertEdit(active.path)}
+                        >
+                          <Undo2 className="size-3.5" />
+                          {t("revertEdit")}
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
-                  <ScrollArea className="h-64">
-                    <FileDiff file={active} />
-                  </ScrollArea>
+                  {editing ? (
+                    <>
+                      <Label htmlFor="generated-file-editor" className="sr-only">
+                        {t("editorLabel")}
+                      </Label>
+                      <Textarea
+                        id="generated-file-editor"
+                        // Keyed on the path so switching files replaces the editor rather than
+                        // carrying one file's caret and scroll position into another's body.
+                        key={active.path}
+                        value={active.contents}
+                        onChange={(event) => editFile(active.path, event.target.value)}
+                        spellCheck={false}
+                        className="h-64 resize-none rounded-none border-0 font-mono text-xs focus-visible:ring-0"
+                      />
+                    </>
+                  ) : (
+                    <ScrollArea className="h-64">
+                      <FileDiff file={active} />
+                    </ScrollArea>
+                  )}
                 </>
               ) : null}
             </div>

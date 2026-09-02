@@ -21,7 +21,9 @@ import dev.specra.api.feature.ai.service.AiGenerationService;
 import dev.specra.api.feature.codegen.domain.CodeGeneration;
 import dev.specra.api.feature.codegen.domain.CodeGenerationRepository;
 import dev.specra.api.feature.codegen.domain.CodeGenerationStatus;
+import dev.specra.api.feature.codegen.dto.ApplyGenerationRequest;
 import dev.specra.api.feature.codegen.dto.CodeGenerationResponse;
+import dev.specra.api.feature.codegen.dto.EditedFileRequest;
 import dev.specra.api.feature.git.dto.CommitRequest;
 import dev.specra.api.feature.git.dto.CommitResponse;
 import dev.specra.api.feature.git.dto.FileWriteRequest;
@@ -251,6 +253,70 @@ class CodeGenerationServiceTest {
         .hasMessageContaining("generation-not-proposed");
 
     verify(git, never()).writeFile(any(), any());
+  }
+
+  /**
+   * Invariant 4 is only real if the reviewer can be the author. Shown a wrong line and offered
+   * nothing but "generate again", they are a spectator.
+   */
+  @Test
+  void aReviewerSEditIsWhatGetsCommitted() {
+    CodeGeneration proposal = proposal(CodeGenerationStatus.PROPOSED);
+    when(repository.findById(proposal.getId())).thenReturn(Optional.of(proposal));
+    when(git.commit(eq(PROJECT), any())).thenReturn(new CommitResponse("abc", "m"));
+
+    service.apply(
+        proposal.getId(),
+        new ApplyGenerationRequest(
+            null,
+            null,
+            List.of(new EditedFileRequest("tests/auth/login.spec.ts", "corrected by a human"))));
+
+    ArgumentCaptor<FileWriteRequest> writes = ArgumentCaptor.forClass(FileWriteRequest.class);
+    verify(git).writeFile(eq(PROJECT), writes.capture());
+    assertThat(writes.getValue().content()).isEqualTo("corrected by a human");
+  }
+
+  /**
+   * The stored proposal is the audit record of what the model produced. An edit that rewrote it
+   * would leave {@code ai_generations} describing something nobody generated.
+   */
+  @Test
+  void anEditDoesNotRewriteWhatTheModelProposed() {
+    CodeGeneration proposal = proposal(CodeGenerationStatus.PROPOSED);
+    when(repository.findById(proposal.getId())).thenReturn(Optional.of(proposal));
+    when(git.commit(eq(PROJECT), any())).thenReturn(new CommitResponse("abc", "m"));
+
+    service.apply(
+        proposal.getId(),
+        new ApplyGenerationRequest(
+            null, null, List.of(new EditedFileRequest("tests/auth/login.spec.ts", "edited"))));
+
+    assertThat(proposal.getFiles()).contains("\"contents\":\"code\"").doesNotContain("edited");
+  }
+
+  /**
+   * Otherwise apply quietly becomes "commit any file I name", which is not what the reviewer looked
+   * at and not what the proposal was reviewed as.
+   */
+  @Test
+  void anEditToAFileTheProposalDoesNotContainIsRefused() {
+    CodeGeneration proposal = proposal(CodeGenerationStatus.PROPOSED);
+    when(repository.findById(proposal.getId())).thenReturn(Optional.of(proposal));
+
+    assertThatThrownBy(
+            () ->
+                service.apply(
+                    proposal.getId(),
+                    new ApplyGenerationRequest(
+                        null,
+                        null,
+                        List.of(new EditedFileRequest(".github/workflows/ci.yml", "x")))))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("edit-unknown-path");
+
+    verify(git, never()).writeFile(any(), any());
+    verify(git, never()).commit(any(), any());
   }
 
   @Test

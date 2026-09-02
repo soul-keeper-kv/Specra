@@ -762,7 +762,13 @@
       "rejected": "Đã từ chối đề xuất; chưa ghi gì cả",
       "appliedAndPushed": "Đã commit {sha} và push"
     },
-    "pushAfterApply": "Push sau khi commit"
+    "pushAfterApply": "Push sau khi commit",
+    "edit": "Sửa",
+    "viewDiff": "Xem khác biệt",
+    "edited": "Đã sửa",
+    "revertEdit": "Hoàn tác",
+    "editorLabel": "Nội dung tệp",
+    "editedCount": "{count, plural, other {Đã sửa # tệp}}"
   },
   "runs": {
     "title": "Lần chạy",

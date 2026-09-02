@@ -18,6 +18,7 @@ import dev.specra.api.feature.codegen.domain.CodeGenerationRepository;
 import dev.specra.api.feature.codegen.domain.CodeGenerationStatus;
 import dev.specra.api.feature.codegen.dto.ApplyGenerationRequest;
 import dev.specra.api.feature.codegen.dto.CodeGenerationResponse;
+import dev.specra.api.feature.codegen.dto.EditedFileRequest;
 import dev.specra.api.feature.git.dto.CommitRequest;
 import dev.specra.api.feature.git.dto.FileWriteRequest;
 import dev.specra.api.feature.git.service.GitService;
@@ -215,6 +216,8 @@ public class CodeGenerationService {
     requireProposed(generation);
 
     List<Map<String, Object>> files = read(generation.getFiles());
+    applyEdits(files, request);
+
     List<String> paths = new ArrayList<>();
     for (Map<String, Object> file : files) {
       String path = String.valueOf(file.get("path"));
@@ -248,6 +251,44 @@ public class CodeGenerationService {
                     commit.sha()));
 
     return complete(generation.getId(), CodeGenerationStatus.APPLIED, commit.sha(), testCase);
+  }
+
+  /**
+   * Replaces proposed bodies with the ones a reviewer corrected.
+   *
+   * <p>Mutates the list read from the proposal rather than the stored row: {@code files} is {@code
+   * updatable = false} on purpose, so what the model produced stays on record and the commit
+   * carries what the human approved. Editing the row would make the {@code ai_generations} trail
+   * describe something nobody generated.
+   *
+   * <p>A path the proposal does not contain is refused. Accepting one would quietly turn apply into
+   * "commit any file I name", which is a different endpoint with a different review attached to it
+   * — and the reviewer only ever saw these files.
+   */
+  private static void applyEdits(List<Map<String, Object>> files, ApplyGenerationRequest request) {
+    if (request == null) {
+      return;
+    }
+    for (EditedFileRequest edit : request.editsOrEmpty()) {
+      Map<String, Object> target =
+          files.stream()
+              .filter(file -> edit.path().equals(String.valueOf(file.get("path"))))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new BusinessException(
+                          ErrorCode.INVALID_PARAMETER,
+                          "error.generation.edit-unknown-path",
+                          edit.path()));
+
+      target.put("contents", edit.contents());
+      // The status was computed against the working copy when the proposal was made, and an edit
+      // can only have moved the body further from it. An UNCHANGED file that was edited is a real
+      // change now, so it must be written and committed rather than skipped as a no-op.
+      if ("UNCHANGED".equals(String.valueOf(target.get("status")))) {
+        target.put("status", "MODIFIED");
+      }
+    }
   }
 
   /**

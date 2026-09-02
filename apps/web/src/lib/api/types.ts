@@ -634,7 +634,17 @@ export type CodeGeneration = {
   decidedAt: string | null;
 };
 
-export type ApplyGenerationInput = { message?: string; push?: boolean };
+/**
+ * A body a reviewer corrected before accepting. Sent with the apply rather than saved against
+ * the proposal, which stays as the record of what the model actually produced.
+ */
+export type EditedFile = { path: string; contents: string };
+
+export type ApplyGenerationInput = {
+  message?: string;
+  push?: boolean;
+  edits?: EditedFile[];
+};
 
 // ── Runs ─────────────────────────────────────────────────────────────────────
 

@@ -762,7 +762,13 @@
       "rejected": "Proposal rejected; nothing was written",
       "appliedAndPushed": "Committed as {sha} and pushed"
     },
-    "pushAfterApply": "Push after committing"
+    "pushAfterApply": "Push after committing",
+    "edit": "Edit",
+    "viewDiff": "View diff",
+    "edited": "Edited",
+    "revertEdit": "Revert",
+    "editorLabel": "File contents",
+    "editedCount": "{count, plural, one {# file edited} other {# files edited}}"
   },
   "runs": {
     "title": "Runs",
