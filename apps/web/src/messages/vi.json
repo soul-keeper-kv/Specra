@@ -827,6 +827,30 @@
       "generic": "Đã có lỗi xảy ra. Hãy thử lại."
     }
   },
+  "analysis": {
+    "analyse": "Phân tích thất bại này",
+    "reanalyse": "Phân tích lại",
+    "confidence": "Độ tin cậy {value}%",
+    "lowConfidence": "Bằng chứng chỉ hỗ trợ một phần kết luận này. Hãy đọc kỹ trước khi làm theo.",
+    "suggestion": "Nên làm gì",
+    "rootCause": {
+      "LOCATOR_DRIFT": "Phần tử đã thay đổi",
+      "TIMING": "Lệch nhịp thời gian",
+      "APPLICATION_CHANGED": "Ứng dụng đã thay đổi",
+      "TEST_DATA": "Dữ liệu kiểm thử",
+      "PRODUCT_BUG": "Ứng dụng của bạn đang lỗi",
+      "UNKNOWN": "Chưa rõ"
+    },
+    "productBug": {
+      "title": "Đây không phải lỗi của bài kiểm thử",
+      "description": "Bài kiểm thử yêu cầu đúng nhưng ứng dụng không làm đúng. Ở đây cố tình không đề xuất sửa gì — làm cho bài kiểm thử này xanh đồng nghĩa với hạ thấp yêu cầu của nó."
+    },
+    "problems": {
+      "conflict": "Không thể phân tích thất bại này.",
+      "provider": "Nhà cung cấp AI không khả dụng. Hãy kiểm tra thiết lập AI của không gian làm việc.",
+      "generic": "Không thể thực hiện phân tích."
+    }
+  },
   "environments": {
     "title": "Môi trường",
     "subtitle": "Nơi các lần chạy của dự án này trỏ tới, và các biến chúng mang theo.",

@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FailureAnalysisPanel } from "@/features/analysis/components/failure-analysis-panel";
 import { useArtifactLinks, useCancelRun, useRun } from "@/features/runs/api/runs";
 import { RunItemStatusBadge, RunStatusBadge } from "@/features/runs/components/run-badges";
 import type { ArtifactKind, RunItem } from "@/lib/api/types";
@@ -138,6 +139,10 @@ function RunItemRow({ item }: { item: RunItem }) {
           </pre>
         </div>
       ) : null}
+
+      {/* Only a FAILED cell: an ERROR never reached the application, so there is nothing about
+          it a model could read. */}
+      <FailureAnalysisPanel itemId={item.id} analysable={item.status === "FAILED"} />
 
       {item.artifacts.length > 0 ? (
         showEvidence ? (

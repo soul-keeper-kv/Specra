@@ -827,6 +827,30 @@
       "generic": "Something went wrong. Try again."
     }
   },
+  "analysis": {
+    "analyse": "Analyse this failure",
+    "reanalyse": "Analyse again",
+    "confidence": "{value}% confidence",
+    "lowConfidence": "The evidence only partly supports this. Read it before acting on it.",
+    "suggestion": "What to do",
+    "rootCause": {
+      "LOCATOR_DRIFT": "The element moved",
+      "TIMING": "A timing race",
+      "APPLICATION_CHANGED": "The application changed",
+      "TEST_DATA": "Test data",
+      "PRODUCT_BUG": "Your application is broken",
+      "UNKNOWN": "Not clear"
+    },
+    "productBug": {
+      "title": "This is not a test to fix",
+      "description": "The test asked for the right thing and the application did not do it. Nothing is proposed here on purpose — making this test pass would mean expecting less than it should."
+    },
+    "problems": {
+      "conflict": "This failure cannot be analysed.",
+      "provider": "The AI provider is not available. Check the workspace's AI settings.",
+      "generic": "The analysis could not be made."
+    }
+  },
   "environments": {
     "title": "Environments",
     "subtitle": "Where this project's runs point, and the variables they carry.",

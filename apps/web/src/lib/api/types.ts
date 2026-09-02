@@ -722,6 +722,30 @@ export type ArtifactLink = {
   expiresAt: string;
 };
 
+// ── Failure analysis ─────────────────────────────────────────────────────────
+
+export type RootCause =
+  "LOCATOR_DRIFT" | "TIMING" | "APPLICATION_CHANGED" | "TEST_DATA" | "PRODUCT_BUG" | "UNKNOWN";
+
+export type FailureAnalysis = {
+  id: string;
+  testRunItemId: string;
+  testCaseId: string;
+  rootCause: RootCause;
+  /** 0..100. Shown rather than hidden — a guess presented as a finding is the thing to avoid. */
+  confidence: number;
+  summary: string;
+  rationale: string;
+  /** Null when the answer is "nothing, in the test" — a product bug, or an unreadable failure. */
+  suggestion: string | null;
+  /**
+   * Whether a repair may be proposed at all. The API decides this, never the client: a UI that
+   * worked it out for itself would eventually disagree with the endpoint that enforces it.
+   */
+  repairable: boolean;
+  createdAt: string;
+};
+
 // ── Environments ─────────────────────────────────────────────────────────────
 
 export type EnvironmentVariable = {
