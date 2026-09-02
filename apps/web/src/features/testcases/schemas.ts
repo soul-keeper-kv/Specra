@@ -22,6 +22,7 @@ export function buildTestCaseSchema(t: TestCaseValidationMessages) {
             .trim()
             .min(1, t("stepActionRequired"))
             .max(2000, t("stepActionMax")),
+          data: z.string().trim().max(2000, t("stepDataMax")),
           expected: z.string().trim().max(2000, t("stepExpectedMax")),
         }),
       )

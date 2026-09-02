@@ -24,6 +24,9 @@ final class TestCaseText {
       text.append("\n\nSteps:");
       for (TestCaseStepResponse step : testCase.steps()) {
         text.append('\n').append(step.position()).append(". ").append(step.action());
+        if (StringUtils.hasText(step.data())) {
+          text.append(" [data: ").append(step.data()).append(']');
+        }
         if (StringUtils.hasText(step.expected())) {
           text.append(" => ").append(step.expected());
         }

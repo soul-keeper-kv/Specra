@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Loader2, Plug, Unplug } from "lucide-react";
+import { ArrowRight, ExternalLink, Loader2, Plug, Search, Unplug } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
 
@@ -26,16 +26,28 @@ import {
   useVerifyTestManagement,
 } from "@/features/testmanagement/api/test-management";
 import { useActiveWorkspace } from "@/features/workspaces/api/workspaces";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { Link } from "@/i18n/navigation";
+
+const PAGE_SIZE = 20;
 
 export function TestManagementView({ projectId }: { projectId: string }) {
   const t = useTranslations("testManagement");
+  const tActions = useTranslations("actions");
   const active = useActiveWorkspace();
   const binding = useTestManagementBinding(projectId);
   const createConnection = useCreateTestManagementConnection(active.workspace?.id);
   const bind = useBindTestManagement(projectId);
   const unbind = useUnbindTestManagement(projectId);
   const verify = useVerifyTestManagement(projectId);
-  const tests = useExternalTests(projectId, Boolean(binding.data));
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const debouncedSearch = useDebouncedValue(search);
+  const tests = useExternalTests(
+    projectId,
+    { q: debouncedSearch || undefined, page, size: PAGE_SIZE },
+    Boolean(binding.data),
+  );
 
   const [name, setName] = useState("Company Xray");
   const [baseUrl, setBaseUrl] = useState("");
@@ -177,16 +189,33 @@ export function TestManagementView({ projectId }: { projectId: string }) {
           <CardTitle>{t("tests.title")}</CardTitle>
           <CardDescription>{t("tests.description")}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-4">
+          <div className="relative max-w-sm">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(0);
+              }}
+              placeholder={t("tests.searchPlaceholder")}
+              aria-label={tActions("search")}
+              className="pl-9"
+            />
+          </div>
           {tests.isPending ? <Skeleton className="h-28 w-full" /> : null}
           {tests.isError ? (
             <ErrorState error={tests.error} onRetry={() => void tests.refetch()} />
           ) : null}
-          {tests.data?.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("tests.empty")}</p>
+          {tests.data?.content.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {debouncedSearch
+                ? t("tests.noMatch", { query: debouncedSearch })
+                : t("tests.empty")}
+            </p>
           ) : null}
           <div className="grid divide-y">
-            {tests.data?.map((test) => (
+            {tests.data?.content.map((test) => (
               <div
                 key={test.externalId}
                 className="flex items-center justify-between gap-4 py-3"
@@ -197,19 +226,61 @@ export function TestManagementView({ projectId }: { projectId: string }) {
                     {test.externalId} · {test.status}
                   </p>
                 </div>
-                <Button asChild variant="ghost" size="icon-sm">
-                  <a
-                    href={test.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={t("tests.open", { id: test.externalId })}
-                  >
-                    <ExternalLink className="size-4" />
-                  </a>
-                </Button>
+                <div className="flex shrink-0 gap-1">
+                  <Button asChild variant="ghost" size="icon-sm">
+                    <a
+                      href={test.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={t("tests.open", { id: test.externalId })}
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/projects/${projectId}/automation/${test.externalId}`}>
+                      {t("tests.automate")}
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
+          {tests.data && tests.data.totalElements > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="text-muted-foreground">
+                {t("tests.count", { count: tests.data.totalElements })}
+                {tests.isFetching ? (
+                  <Loader2 className="ml-2 inline size-3 animate-spin" />
+                ) : null}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={tests.data.first}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                >
+                  {tActions("previous")}
+                </Button>
+                <span className="text-muted-foreground tabular-nums">
+                  {t("tests.pagination", {
+                    page: tests.data.page + 1,
+                    total: Math.max(1, tests.data.totalPages),
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={tests.data.last}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  {tActions("next")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

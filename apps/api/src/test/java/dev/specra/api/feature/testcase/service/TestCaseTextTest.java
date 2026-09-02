@@ -25,12 +25,16 @@ class TestCaseTextTest {
             "Người dùng đã đăng ký đăng nhập được.",
             null,
             "Vào được Dashboard",
+            null,
+            null,
+            null,
+            null,
             TestCasePriority.HIGH,
             AutomationStatus.NOT_AUTOMATED,
             false,
             List.of(
-                new TestCaseStepResponse(1, "Mở trang đăng nhập", null),
-                new TestCaseStepResponse(2, "Nhập thông tin", "Nút bật")),
+                new TestCaseStepResponse(1, "Mở trang đăng nhập", null, null),
+                new TestCaseStepResponse(2, "Nhập thông tin", "demo@acme.dev", "Nút bật")),
             Set.of("auth"),
             null,
             Instant.now(),
@@ -41,7 +45,8 @@ class TestCaseTextTest {
     assertThat(text)
         .startsWith("TC-4 — Đăng nhập hợp lệ")
         .contains("Người dùng đã đăng ký đăng nhập được.")
-        .contains("Steps:\n1. Mở trang đăng nhập\n2. Nhập thông tin => Nút bật")
+        .contains(
+            "Steps:\n1. Mở trang đăng nhập\n2. Nhập thông tin [data: demo@acme.dev] => Nút bật")
         .contains("Expected result: Vào được Dashboard")
         .doesNotContain("Preconditions");
   }

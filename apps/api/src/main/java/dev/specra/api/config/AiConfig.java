@@ -8,6 +8,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -50,6 +51,20 @@ public class AiConfig {
         .defaultTools(contentTools)
         .defaultAdvisors(
             MessageChatMemoryAdvisor.builder(chatMemory).build(), new SimpleLoggerAdvisor())
+        .build();
+  }
+
+  /**
+   * Modelling client: no memory, no tools, and the temperature pinned low. It answers one
+   * structured question — "what does this test case intend" — and the answer is validated against a
+   * schema, so the last thing wanted is variety. Options are the vendor-neutral kind; whichever
+   * provider is active reads them.
+   */
+  @Bean
+  public ChatClient modellingChatClient(ChatModel chatModel) {
+    return ChatClient.builder(chatModel)
+        .defaultOptions(ChatOptions.builder().temperature(0.1).build())
+        .defaultAdvisors(new SimpleLoggerAdvisor())
         .build();
   }
 

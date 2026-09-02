@@ -190,7 +190,119 @@
       "title": "Ca kiểm thử bên ngoài",
       "description": "Đọc trực tiếp từ nhà cung cấp. Specra chỉ giữ thông tin truy vết cần cho tự động hóa.",
       "empty": "Dự án này chưa trả về ca kiểm thử nào.",
-      "open": "Mở {id} trong hệ thống bên ngoài"
+      "open": "Mở {id} trong hệ thống bên ngoài",
+      "automate": "Tự động hóa",
+      "searchPlaceholder": "Tìm theo mã, tiêu đề hoặc mô tả…",
+      "noMatch": "Không có ca kiểm thử nào khớp với \"{query}\" trong dự án này.",
+      "count": "{count, plural, other {# ca kiểm thử}}",
+      "pagination": "Trang {page} / {total}"
+    },
+    "workspace": {
+      "title": "Không gian tự động hóa",
+      "back": "Tích hợp",
+      "openSource": "Mở trong Xray",
+      "prepare": "Chuẩn bị automation",
+      "model": "Mô hình hóa test này",
+      "remodel": "Tạo lại mô hình",
+      "modelling": "Đang mô hình hóa…",
+      "stepCount": "{count, plural, =0 {Chưa có bước} other {# bước}}",
+      "source": {
+        "external": "bước đọc từ Xray",
+        "specra": "bước đã import vào {reference}"
+      },
+      "tabs": {
+        "case": "Test case",
+        "model": "Test Model",
+        "script": "Test script"
+      },
+      "steps": {
+        "covered": "Đã mô hình hóa",
+        "uncovered": "Chưa mô hình hóa",
+        "derived": "Suy ra"
+      },
+      "modelTab": {
+        "empty": "Chưa có Test Model",
+        "hint": "Mô hình hóa test này để biến các bước thủ công thành ý định độc lập engine, review tại đây trước khi có bất kỳ dòng code nào.",
+        "version": "Phiên bản {version} · {count, plural, other {# bước}}",
+        "section": {
+          "setup": "Chuẩn bị",
+          "steps": "Các bước",
+          "teardown": "Dọn dẹp"
+        }
+      },
+      "script": {
+        "empty": "Test script",
+        "hint": "Đề xuất và diff hiển thị ở khung giữa."
+      },
+      "canvas": {
+        "title": "Bước hiện tại",
+        "reviewMode": "Đang review thủ công",
+        "step": "Bước {current}/{total}",
+        "modelStep": "Bước mô hình {id}",
+        "application": "Ứng dụng cần kiểm thử",
+        "currentAction": "Thao tác thủ công",
+        "data": "Dữ liệu kiểm thử",
+        "expected": "Kết quả mong đợi",
+        "noSteps": "Test này chưa có bước thủ công.",
+        "runnerHint": "Ứng dụng thật và điều khiển chạy test sẽ xuất hiện tại đây sau khi kết nối environment và runner.",
+        "modelSteps": "Các bước mô hình sinh từ bước thủ công này",
+        "noModelSteps": "Test Model không có bước nào cho bước thủ công này. Hãy làm rõ bước trong test case rồi tạo lại.",
+        "notModelled": "Mô hình hóa test này để xem AI hiểu bước này thế nào.",
+        "target": "Đối tượng",
+        "to": "Đích thả",
+        "value": "Giá trị",
+        "assertion": "Kiểm chứng",
+        "flow": "Luồng",
+        "literal": "giá trị cố định",
+        "param": "tham số",
+        "secret": "bí mật · giá trị không bao giờ được lưu",
+        "expectedValue": "mong đợi",
+        "attribute": "thuộc tính",
+        "sourceSteps": "Từ bước thủ công",
+        "derived": "Suy ra: không bước thủ công nào yêu cầu — test case ngầm giả định."
+      },
+      "details": {
+        "title": "Chi tiết test",
+        "description": "Mô tả",
+        "noDescription": "Xray chưa có mô tả cho test này.",
+        "priority": "Độ ưu tiên",
+        "labels": "Nhãn",
+        "unset": "Chưa đặt"
+      },
+      "pipeline": {
+        "title": "Quy trình automation",
+        "source": "Đã tải test case từ Xray",
+        "imported": "Đã import thành {reference}",
+        "notImported": "Chưa import vào Specra",
+        "model": "Test Model v{version}",
+        "noModel": "Chưa tạo Test Model",
+        "script": "Đề xuất test script",
+        "run": "Bằng chứng thực thi"
+      },
+      "pages": {
+        "title": "Page object",
+        "needsInspection": "Cần inspect",
+        "empty": "Mô hình chưa tham chiếu trang nào.",
+        "elements": "{count, plural, =0 {chưa có phần tử} other {# phần tử}}"
+      },
+      "parameters": {
+        "title": "Tham số",
+        "empty": "Chưa khai báo tham số.",
+        "secret": "bí mật"
+      },
+      "problems": {
+        "ambiguous": "AI cần làm rõ trước khi mô hình hóa test này",
+        "ambiguousHint": "Hãy trả lời trong test case rồi mô hình hóa lại.",
+        "invalid": "AI tạo ra Test Model không qua được kiểm tra",
+        "invalidHint": "Chưa lưu gì cả. Hãy chỉnh lại test case rồi thử lại.",
+        "editCase": "Sửa test case",
+        "step": "Bước {id}",
+        "wholeCase": "Toàn bộ ca"
+      },
+      "toast": {
+        "imported": "Đã import thành {reference}",
+        "modelled": "Test Model v{version} đã sẵn sàng để review"
+      }
     }
   },
   "testcases": {
@@ -249,6 +361,8 @@
       "noSteps": "Chưa có bước nào — thêm bước đầu tiên.",
       "stepAction": "Bước {position}: thao tác",
       "stepActionPlaceholder": "Người kiểm thử làm gì…",
+      "stepData": "Bước {position}: dữ liệu kiểm thử",
+      "stepDataPlaceholder": "Dữ liệu nhập, tài khoản hoặc fixture (không bắt buộc)…",
       "stepExpected": "Bước {position}: kết quả mong đợi",
       "stepExpectedPlaceholder": "Điều họ sẽ thấy (không bắt buộc)…",
       "moveStepUp": "Chuyển bước {position} lên",
@@ -268,6 +382,7 @@
       "expectedResultMax": "Tối đa 10000 ký tự",
       "stepActionRequired": "Bước cần có nội dung thao tác",
       "stepActionMax": "Tối đa 2000 ký tự",
+      "stepDataMax": "Tối đa 2000 ký tự",
       "stepExpectedMax": "Tối đa 2000 ký tự",
       "stepsMax": "Tối đa 100 bước",
       "tagMax": "Mỗi thẻ tối đa 64 ký tự",

@@ -107,6 +107,14 @@ public class TestCaseService {
     return mapper.toResponse(requireVisible(id, Permission.CONTENT_VIEW));
   }
 
+  public TestCaseResponse findImported(UUID projectId, String externalSource, String externalId) {
+    projects.requireAccess(projectId, Permission.CONTENT_VIEW);
+    return repository
+        .findByProjectIdAndExternalSourceAndExternalId(projectId, externalSource, externalId)
+        .map(mapper::toResponse)
+        .orElse(null);
+  }
+
   /**
    * Loads a case only if the caller belongs to its workspace and may do this there.
    *
@@ -143,6 +151,35 @@ public class TestCaseService {
     return mapper.toResponse(repository.save(testCase));
   }
 
+  /** Creates the local automation input once while the external system remains authoritative. */
+  @Transactional
+  public TestCaseResponse importExternal(
+      UUID projectId,
+      TestCaseRequest request,
+      String externalSource,
+      String externalId,
+      String externalUrl) {
+    projects.requireAccess(projectId, Permission.CONTENT_EDIT);
+    TestCase existing =
+        repository
+            .findByProjectIdAndExternalSourceAndExternalId(projectId, externalSource, externalId)
+            .orElse(null);
+    if (existing != null) {
+      return mapper.toResponse(existing);
+    }
+
+    TestCase testCase = new TestCase();
+    testCase.setWorkspaceId(projects.workspaceOf(projectId));
+    testCase.setProjectId(projectId);
+    testCase.setReference(projects.nextTestCaseReference(projectId));
+    testCase.setExternalSource(externalSource);
+    testCase.setExternalId(externalId);
+    testCase.setExternalUrl(externalUrl);
+    testCase.setImportedAt(Instant.now());
+    apply(testCase, request);
+    return mapper.toResponse(repository.save(testCase));
+  }
+
   @Transactional
   public TestCaseResponse update(UUID id, TestCaseRequest request) {
     TestCase testCase = requireVisible(id, Permission.CONTENT_EDIT);
@@ -172,6 +209,33 @@ public class TestCaseService {
     return mapper.toResponse(repository.save(testCase));
   }
 
+  /**
+   * Records that an IR now exists for the case's current text; {@code TestModelStore} calls it in
+   * the same transaction that stores the version. A case that had already got further keeps its
+   * status — the code is now behind the new model, and regeneration is what catches it up.
+   */
+  @Transactional
+  public TestCaseResponse markModelled(UUID id) {
+    TestCase testCase = require(id);
+    if (testCase.getAutomationStatus() == AutomationStatus.NOT_AUTOMATED) {
+      testCase.setAutomationStatus(AutomationStatus.MODELLED);
+    }
+    testCase.setOutOfDate(false);
+    return mapper.toResponse(repository.save(testCase));
+  }
+
+  /**
+   * The case's code is in the repository now. Called when a person applies a generation, which is
+   * the only path to this state — nothing sets it on the model's say-so.
+   */
+  @Transactional
+  public TestCaseResponse markCommitted(UUID id) {
+    TestCase testCase = require(id);
+    testCase.setAutomationStatus(AutomationStatus.COMMITTED);
+    testCase.setOutOfDate(false);
+    return mapper.toResponse(repository.save(testCase));
+  }
+
   private void apply(TestCase testCase, TestCaseRequest request) {
     testCase.setTitle(request.title().trim());
     testCase.setDescription(trimToNull(request.description()));
@@ -192,6 +256,7 @@ public class TestCaseService {
     for (TestCaseStepRequest request : requests) {
       TestCaseStep step = new TestCaseStep();
       step.setActionText(request.action().trim());
+      step.setTestData(trimToNull(request.data()));
       step.setExpectedText(trimToNull(request.expected()));
       steps.add(step);
     }

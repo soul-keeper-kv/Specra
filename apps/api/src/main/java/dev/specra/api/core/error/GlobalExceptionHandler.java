@@ -62,7 +62,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(BusinessException.class)
   public ProblemDetail handleBusiness(BusinessException ex) {
     log.debug("{} -> {}", ex.getClass().getSimpleName(), ex.messageKey());
-    return problems.of(ex.errorCode(), ex.messageKey(), ex.messageArgs());
+    ProblemDetail problem = problems.of(ex.errorCode(), ex.messageKey(), ex.messageArgs());
+    ex.extensions().forEach(problem::setProperty);
+    return problem;
   }
 
   /**

@@ -190,7 +190,119 @@
       "title": "External tests",
       "description": "Read directly from the provider. Specra keeps only the traceability needed for automation.",
       "empty": "No tests were returned by this project.",
-      "open": "Open {id} in the external system"
+      "open": "Open {id} in the external system",
+      "automate": "Automate",
+      "searchPlaceholder": "Search by key, title or description…",
+      "noMatch": "No test matches \"{query}\" in this project.",
+      "count": "{count, plural, =0 {No tests} one {# test} other {# tests}}",
+      "pagination": "Page {page} of {total}"
+    },
+    "workspace": {
+      "title": "Automation workspace",
+      "back": "Integrations",
+      "openSource": "Open in Xray",
+      "prepare": "Prepare automation",
+      "model": "Model this test",
+      "remodel": "Regenerate model",
+      "modelling": "Modelling…",
+      "stepCount": "{count, plural, =0 {No steps} one {# step} other {# steps}}",
+      "source": {
+        "external": "steps as read from Xray",
+        "specra": "steps as imported into {reference}"
+      },
+      "tabs": {
+        "case": "Test case",
+        "model": "Test Model",
+        "script": "Test script"
+      },
+      "steps": {
+        "covered": "Modelled",
+        "uncovered": "Not modelled",
+        "derived": "Derived"
+      },
+      "modelTab": {
+        "empty": "No Test Model yet",
+        "hint": "Model this test to turn its manual steps into engine-independent intent you review here before any code exists.",
+        "version": "Version {version} · {count, plural, one {# step} other {# steps}}",
+        "section": {
+          "setup": "Setup",
+          "steps": "Steps",
+          "teardown": "Teardown"
+        }
+      },
+      "script": {
+        "empty": "Test script",
+        "hint": "The proposal and its diff open in the centre."
+      },
+      "canvas": {
+        "title": "Current step",
+        "reviewMode": "Manual review",
+        "step": "Step {current} of {total}",
+        "modelStep": "Model step {id}",
+        "application": "Application under test",
+        "currentAction": "Manual action",
+        "data": "Test data",
+        "expected": "Expected result",
+        "noSteps": "This test has no manual steps.",
+        "runnerHint": "The live application and execution controls appear here after an environment and runner are connected.",
+        "modelSteps": "Model steps from this manual step",
+        "noModelSteps": "The Test Model has no step for this manual step. Clarify it in the test case and regenerate.",
+        "notModelled": "Model this test to see how AI reads this step.",
+        "target": "Target",
+        "to": "Drop target",
+        "value": "Value",
+        "assertion": "Assertion",
+        "flow": "Flow",
+        "literal": "literal",
+        "param": "parameter",
+        "secret": "secret · value never stored",
+        "expectedValue": "expected",
+        "attribute": "attribute",
+        "sourceSteps": "From manual step",
+        "derived": "Derived: no manual step asked for this — the case assumes it."
+      },
+      "details": {
+        "title": "Test details",
+        "description": "Description",
+        "noDescription": "No description was provided in Xray.",
+        "priority": "Priority",
+        "labels": "Labels",
+        "unset": "Not set"
+      },
+      "pipeline": {
+        "title": "Automation pipeline",
+        "source": "Xray case loaded",
+        "imported": "Imported as {reference}",
+        "notImported": "Not imported into Specra yet",
+        "model": "Test Model v{version}",
+        "noModel": "Test Model not derived yet",
+        "script": "Test script proposal",
+        "run": "Execution evidence"
+      },
+      "pages": {
+        "title": "Page objects",
+        "needsInspection": "Needs inspection",
+        "empty": "The model references no page yet.",
+        "elements": "{count, plural, =0 {no elements} one {# element} other {# elements}}"
+      },
+      "parameters": {
+        "title": "Parameters",
+        "empty": "No parameters declared.",
+        "secret": "secret"
+      },
+      "problems": {
+        "ambiguous": "AI needs clarification before it can model this test",
+        "ambiguousHint": "Answer these in the test case, then model it again.",
+        "invalid": "AI produced a Test Model that failed validation",
+        "invalidHint": "Nothing was stored. Refine the test case and try again.",
+        "editCase": "Edit test case",
+        "step": "Step {id}",
+        "wholeCase": "Whole case"
+      },
+      "toast": {
+        "imported": "Imported as {reference}",
+        "modelled": "Test Model v{version} is ready to review"
+      }
     }
   },
   "testcases": {
@@ -249,6 +361,8 @@
       "noSteps": "No steps yet — add the first one.",
       "stepAction": "Step {position}: action",
       "stepActionPlaceholder": "What the tester does…",
+      "stepData": "Step {position}: test data",
+      "stepDataPlaceholder": "Input, account or fixture data (optional)…",
       "stepExpected": "Step {position}: expected",
       "stepExpectedPlaceholder": "What they should see (optional)…",
       "moveStepUp": "Move step {position} up",
@@ -268,6 +382,7 @@
       "expectedResultMax": "Max 10000 characters",
       "stepActionRequired": "A step needs an action",
       "stepActionMax": "Max 2000 characters",
+      "stepDataMax": "Max 2000 characters",
       "stepExpectedMax": "Max 2000 characters",
       "stepsMax": "At most 100 steps",
       "tagMax": "Tags are limited to 64 characters",

@@ -1,6 +1,7 @@
 package dev.specra.api.core.error;
 
 import java.util.Arrays;
+import java.util.Map;
 import org.springframework.lang.Nullable;
 
 /**
@@ -46,5 +47,14 @@ public class BusinessException extends RuntimeException {
 
   public Object[] messageArgs() {
     return messageArgs.clone();
+  }
+
+  /**
+   * Extra members the problem document should carry, beyond the standard ones {@code
+   * ProblemFactory} always sets. Empty by default; a subclass overrides it when a client needs
+   * structured data — which step was ambiguous, which violations — rather than a sentence.
+   */
+  public Map<String, Object> extensions() {
+    return Map.of();
   }
 }

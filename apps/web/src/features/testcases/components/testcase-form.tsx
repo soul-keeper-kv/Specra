@@ -162,7 +162,7 @@ export function TestCaseForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => field.pushValue({ action: "", expected: "" })}
+                onClick={() => field.pushValue({ action: "", data: "", expected: "" })}
               >
                 <Plus className="size-4" />
                 {t("addStep")}
@@ -178,7 +178,7 @@ export function TestCaseForm({
                 {field.state.value.map((_, index) => (
                   <li
                     key={index}
-                    className="grid gap-2 rounded-lg border bg-card p-3 sm:grid-cols-[2rem_1fr_1fr_auto] sm:items-start"
+                    className="grid gap-2 rounded-lg border bg-card p-3 sm:grid-cols-[2rem_1fr_1fr_1fr_auto] sm:items-start"
                   >
                     <span className="pt-2 text-sm font-medium text-muted-foreground tabular-nums">
                       {index + 1}.
@@ -199,6 +199,26 @@ export function TestCaseForm({
                           <FieldError
                             messages={subField.state.meta.errors}
                             serverMessage={serverErrors?.[`steps[${index}].action`]}
+                          />
+                        </div>
+                      )}
+                    </form.Field>
+
+                    <form.Field name={`steps[${index}].data`}>
+                      {(subField) => (
+                        <div className="grid gap-1">
+                          <Textarea
+                            rows={2}
+                            value={subField.state.value}
+                            onBlur={subField.handleBlur}
+                            onChange={(event) => subField.handleChange(event.target.value)}
+                            placeholder={t("stepDataPlaceholder")}
+                            aria-label={t("stepData", { position: index + 1 })}
+                            aria-invalid={subField.state.meta.errors.length > 0}
+                          />
+                          <FieldError
+                            messages={subField.state.meta.errors}
+                            serverMessage={serverErrors?.[`steps[${index}].data`]}
                           />
                         </div>
                       )}

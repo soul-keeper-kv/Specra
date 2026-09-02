@@ -2,8 +2,12 @@ package dev.specra.api.feature.testmanagement.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import dev.specra.api.core.error.ConflictException;
 import dev.specra.api.core.error.ErrorCode;
+import dev.specra.api.core.web.PageResponse;
+import dev.specra.api.feature.testmanagement.dto.ExternalTestDetail;
+import dev.specra.api.feature.testmanagement.dto.ExternalTestStep;
 import dev.specra.api.feature.testmanagement.dto.ExternalTestSummary;
 import dev.specra.api.feature.testmanagement.dto.TestManagementVerifyResponse;
 import java.io.IOException;
@@ -19,12 +23,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /** Jira Data Center/Xray implementation. All Jira vocabulary is contained in this adapter. */
 @Component
 public class XrayTestManagementProvider implements TestManagementProvider {
+  private static final Logger log = LoggerFactory.getLogger(XrayTestManagementProvider.class);
+
+  /** A Jira key, so "key = …" is only added to the JQL when the term could actually be one. */
+  private static final Pattern ISSUE_KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_]*-[0-9]+");
+
   static final String BASE_URL = "baseUrl";
   static final String TOKEN = "token";
 
@@ -59,8 +72,8 @@ public class XrayTestManagementProvider implements TestManagementProvider {
   @Override
   public TestManagementVerifyResponse verify(
       ProviderConnection connection, String remoteProjectId) {
-    JsonNode identity = get(connection, "/rest/api/2/myself");
-    JsonNode project = get(connection, "/rest/api/2/project/" + encode(remoteProjectId));
+    JsonNode identity = get(connection, "/rest/api/2/myself", null);
+    JsonNode project = get(connection, "/rest/api/2/project/" + encode(remoteProjectId), null);
     long count = search(connection, remoteProjectId, null, 0, 1).path("total").asLong();
     return new TestManagementVerifyResponse(
         identity.path("displayName").asText(identity.path("name").asText()),
@@ -70,7 +83,7 @@ public class XrayTestManagementProvider implements TestManagementProvider {
   }
 
   @Override
-  public List<ExternalTestSummary> tests(
+  public PageResponse<ExternalTestSummary> tests(
       ProviderConnection connection, String remoteProjectId, String query, int page, int size) {
     JsonNode node = search(connection, remoteProjectId, query, page * size, size);
     List<ExternalTestSummary> tests = new ArrayList<>();
@@ -88,7 +101,81 @@ public class XrayTestManagementProvider implements TestManagementProvider {
               List.copyOf(labels),
               baseUrl(connection) + "/browse/" + key));
     }
-    return List.copyOf(tests);
+    return PageResponse.of(
+        List.copyOf(tests), PageRequest.of(page, size), node.path("total").asLong());
+  }
+
+  @Override
+  public ExternalTestDetail test(
+      ProviderConnection connection, String remoteProjectId, String externalId) {
+    JsonNode issue =
+        get(
+            connection,
+            "/rest/api/2/issue/"
+                + encode(externalId)
+                + "?fields=summary%2Cdescription%2Cpriority%2Clabels%2Cproject",
+            externalId);
+    JsonNode fields = issue.path("fields");
+    String actualProject = fields.path("project").path("key").asText();
+    if (!remoteProjectId.equalsIgnoreCase(actualProject)) {
+      // Jira knows the issue, but it belongs to a project this binding does not cover. Reported as
+      // "not found" rather than "wrong project": which keys exist elsewhere in Jira is not
+      // something a caller bound to one project should be able to probe for.
+      log.info(
+          "Xray test {} belongs to project {}, not the bound {}",
+          externalId,
+          actualProject,
+          remoteProjectId);
+      throw new TestManagementRemoteException(ErrorCode.EXTERNAL_TEST_NOT_FOUND, externalId);
+    }
+
+    List<ExternalTestStep> steps = new ArrayList<>();
+    int position = 1;
+    for (JsonNode step : steps(connection, externalId)) {
+      JsonNode stepFields = step.path("fields");
+      steps.add(
+          new ExternalTestStep(
+              position++,
+              stepText(step, stepFields, "Action", "step", "action"),
+              stepText(step, stepFields, "Input Data", "data"),
+              stepText(step, stepFields, "Output Data", "result", "expectedResult")));
+    }
+
+    List<String> labels = new ArrayList<>();
+    fields.path("labels").forEach(label -> labels.add(label.asText()));
+    String key = issue.path("key").asText(externalId);
+    return new ExternalTestDetail(
+        key,
+        fields.path("summary").asText(),
+        nullableText(fields.path("description")),
+        fields.path("priority").path("name").asText(),
+        List.copyOf(labels),
+        baseUrl(connection) + "/browse/" + key,
+        List.copyOf(steps));
+  }
+
+  /**
+   * The manual steps, or none.
+   *
+   * <p>Xray answers 404 here for an issue it does not hold steps for — a Cucumber or Generic test,
+   * an issue type that is not Test, or simply a Test nobody has written steps into yet. None of
+   * those mean the test is missing: the issue was already fetched and its project checked, so the
+   * key is known to be good. A step list is optional in Specra too ({@code TestCaseRequest} calls
+   * an empty one a valid draft), so this degrades to no steps instead of failing the whole read —
+   * reporting "not found" for a key that plainly exists sends the user hunting for the wrong bug.
+   */
+  private JsonNode steps(ProviderConnection connection, String externalId) {
+    try {
+      JsonNode raw =
+          get(connection, "/rest/raven/2.0/api/test/" + encode(externalId) + "/steps", externalId);
+      return raw.isArray() ? raw : raw.path("steps");
+    } catch (TestManagementRemoteException e) {
+      if (e.errorCode() == ErrorCode.EXTERNAL_TEST_NOT_FOUND) {
+        log.info("Xray holds no manual steps for {}; importing it without them", externalId);
+        return MissingNode.getInstance();
+      }
+      throw e;
+    }
   }
 
   private JsonNode search(
@@ -102,8 +189,19 @@ public class XrayTestManagementProvider implements TestManagementProvider {
             .append(escapeJql(remoteProjectId))
             .append("\" AND issuetype = Test");
     if (StringUtils.hasText(query)) {
-      jql.append(" AND summary ~ \"").append(escapeJql(query.trim())).append("\"");
+      // A QA searching an external system types either words from the title or the key they were
+      // given in a ticket. Matching only the summary makes "XRAY-123" return nothing, which reads
+      // as "the test is not there". "key = X" is only valid JQL for a well-formed key, so it is
+      // added conditionally rather than always.
+      String term = query.trim();
+      jql.append(" AND (summary ~ \"").append(escapeJql(term)).append("\"");
+      jql.append(" OR description ~ \"").append(escapeJql(term)).append("\"");
+      if (ISSUE_KEY.matcher(term).matches()) {
+        jql.append(" OR key = \"").append(escapeJql(term.toUpperCase(Locale.ROOT))).append("\"");
+      }
+      jql.append(")");
     }
+    jql.append(" ORDER BY key ASC");
     return get(
         connection,
         "/rest/api/2/search?jql="
@@ -112,10 +210,18 @@ public class XrayTestManagementProvider implements TestManagementProvider {
             + startAt
             + "&maxResults="
             + maxResults
-            + "&fields=summary%2Cstatus%2Cpriority%2Clabels");
+            + "&fields=summary%2Cstatus%2Cpriority%2Clabels",
+        null);
   }
 
-  private JsonNode get(ProviderConnection connection, String path) {
+  /**
+   * One authenticated GET against Jira.
+   *
+   * <p>{@code externalId} names the test being fetched, or is null when the call is not about one.
+   * It decides how a 404 is reported: a missing test is the caller's 404, while a 404 on any other
+   * path means the configured base URL or the Jira/Xray install is wrong, which is a 502.
+   */
+  private JsonNode get(ProviderConnection connection, String path, String externalId) {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create(baseUrl(connection) + path))
             .timeout(Duration.ofSeconds(30))
@@ -127,19 +233,63 @@ public class XrayTestManagementProvider implements TestManagementProvider {
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
-        throw remoteError(response.statusCode());
+        // The status is the one fact that separates "wrong key" from "Xray is misconfigured",
+        // and the problem document deliberately does not carry it — so it is logged here. The
+        // path is safe to log; the token travels in a header and never appears in it.
+        log.warn("Jira/Xray answered {} for {}", response.statusCode(), path);
+        throw remoteError(response.statusCode(), externalId);
       }
       return objectMapper.readTree(response.body());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new TestManagementRemoteException(ErrorCode.INTEGRATION_UNAVAILABLE);
     } catch (IOException e) {
+      log.warn("Jira/Xray unreachable for {}: {}", path, e.toString());
       throw new TestManagementRemoteException(ErrorCode.INTEGRATION_UNAVAILABLE);
     }
   }
 
   private static String baseUrl(ProviderConnection connection) {
     return connection.configuration().get(BASE_URL).trim().replaceAll("/+$", "");
+  }
+
+  /**
+   * One step field, from whichever shape this Xray answered with.
+   *
+   * <p>Xray 2.0 nests everything under {@code fields}, names them {@code Action} / {@code Input
+   * Data} / {@code Output Data}, and wraps a wiki field again as {@code value.raw} with the
+   * rendered HTML beside it — the raw text is what a test case wants, not the markup. Older and
+   * flatter payloads put a plain string at the top level, so both are tried before giving up.
+   */
+  private static String stepText(
+      JsonNode step, JsonNode fields, String xrayName, String... legacy) {
+    JsonNode field = fields.path(xrayName);
+    if (!field.isMissingNode()) {
+      JsonNode value = field.path("value");
+      String raw = nullableText(value.isObject() ? value.path("raw") : value);
+      if (raw != null) {
+        return raw;
+      }
+    }
+    return text(step, legacy);
+  }
+
+  private static String text(JsonNode node, String... names) {
+    for (String name : names) {
+      String value = nullableText(node.path(name));
+      if (value != null) {
+        return value;
+      }
+    }
+    return "";
+  }
+
+  private static String nullableText(JsonNode node) {
+    if (node.isMissingNode() || node.isNull()) {
+      return null;
+    }
+    String value = node.asText();
+    return StringUtils.hasText(value) ? value : null;
   }
 
   private static boolean validHttpUrl(String input) {
@@ -160,10 +310,13 @@ public class XrayTestManagementProvider implements TestManagementProvider {
     return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
   }
 
-  private static TestManagementRemoteException remoteError(int status) {
-    return new TestManagementRemoteException(
-        status == 401 || status == 403
-            ? ErrorCode.INTEGRATION_AUTH_FAILED
-            : ErrorCode.INTEGRATION_PROVIDER_ERROR);
+  private static TestManagementRemoteException remoteError(int status, String externalId) {
+    if (status == 401 || status == 403) {
+      return new TestManagementRemoteException(ErrorCode.INTEGRATION_AUTH_FAILED);
+    }
+    if (status == 404 && externalId != null) {
+      return new TestManagementRemoteException(ErrorCode.EXTERNAL_TEST_NOT_FOUND, externalId);
+    }
+    return new TestManagementRemoteException(ErrorCode.INTEGRATION_PROVIDER_ERROR);
   }
 }

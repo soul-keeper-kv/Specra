@@ -83,6 +83,7 @@ export function TestCaseEditorView({
         priority: values.priority,
         steps: values.steps.map((step) => ({
           action: step.action,
+          data: step.data || undefined,
           expected: step.expected || undefined,
         })),
         tags: values.tags,
@@ -190,6 +191,7 @@ function toFormValues(testCase: TestCase): TestCaseFormValues {
     priority: testCase.priority,
     steps: testCase.steps.map((step) => ({
       action: step.action,
+      data: step.data ?? "",
       expected: step.expected ?? "",
     })),
     tags: testCase.tags,

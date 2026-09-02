@@ -2,9 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { testCaseKeys } from "@/features/testcases/api/testcases";
 import { ApiError, http } from "@/lib/api/client";
 import type {
+  ExternalTestQuery,
   ExternalTestSummary,
+  ExternalTestDetail,
+  PageResponse,
+  TestCase,
   TestManagementBinding,
   TestManagementConnection,
   TestManagementConnectionInput,
@@ -17,6 +22,12 @@ export const testManagementKeys = {
     [...testManagementKeys.all, "connections", workspaceId] as const,
   binding: (projectId: string) => [...testManagementKeys.all, "binding", projectId] as const,
   tests: (projectId: string) => [...testManagementKeys.all, "tests", projectId] as const,
+  testList: (projectId: string, query: ExternalTestQuery) =>
+    [...testManagementKeys.tests(projectId), "list", query] as const,
+  test: (projectId: string, externalId: string) =>
+    [...testManagementKeys.tests(projectId), externalId] as const,
+  importedTestCase: (projectId: string, externalId: string) =>
+    [...testManagementKeys.test(projectId, externalId), "test-case"] as const,
 };
 
 export function useTestManagementConnections(workspaceId: string | undefined) {
@@ -93,13 +104,70 @@ export function useVerifyTestManagement(projectId: string) {
   });
 }
 
-export function useExternalTests(projectId: string, enabled: boolean) {
+export function useExternalTests(
+  projectId: string,
+  query: ExternalTestQuery,
+  enabled: boolean,
+) {
   return useQuery({
-    queryKey: testManagementKeys.tests(projectId),
+    queryKey: testManagementKeys.testList(projectId, query),
     queryFn: ({ signal }) =>
-      http.get<ExternalTestSummary[]>(`/api/v1/projects/${projectId}/test-management/tests`, {
-        signal,
-      }),
+      http.get<PageResponse<ExternalTestSummary>>(
+        `/api/v1/projects/${projectId}/test-management/tests`,
+        {
+          signal,
+          // The search runs against the provider, not against Specra — a blank q would be sent
+          // as an empty JQL term, so it is dropped rather than passed through.
+          params: { q: query.q || undefined, page: query.page ?? 0, size: query.size ?? 20 },
+        },
+      ),
     enabled,
+    placeholderData: (previous) => previous, // no flash of skeleton on every keystroke
+  });
+}
+
+export function useExternalTest(projectId: string, externalId: string) {
+  return useQuery({
+    queryKey: testManagementKeys.test(projectId, externalId),
+    queryFn: ({ signal }) =>
+      http.get<ExternalTestDetail>(
+        `/api/v1/projects/${projectId}/test-management/tests/${encodeURIComponent(externalId)}`,
+        { signal },
+      ),
+  });
+}
+
+/** The Specra case this external test was imported as, or null while it has not been — a state. */
+export function useImportedTestCase(projectId: string, externalId: string) {
+  return useQuery({
+    queryKey: testManagementKeys.importedTestCase(projectId, externalId),
+    queryFn: async ({ signal }) => {
+      try {
+        return await http.get<TestCase>(
+          `/api/v1/projects/${projectId}/test-management/tests/${encodeURIComponent(externalId)}/test-case`,
+          { signal },
+        );
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+  });
+}
+
+export function useImportExternalTest(projectId: string, externalId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      http.post<TestCase>(
+        `/api/v1/projects/${projectId}/test-management/tests/${encodeURIComponent(externalId)}/import`,
+      ),
+    onSuccess: (testCase) => {
+      qc.setQueryData(testManagementKeys.importedTestCase(projectId, externalId), testCase);
+      qc.setQueryData(testCaseKeys.detail(testCase.id), testCase);
+      void qc.invalidateQueries({ queryKey: testCaseKeys.lists() });
+    },
   });
 }

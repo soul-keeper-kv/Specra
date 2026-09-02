@@ -40,6 +40,14 @@ public enum ErrorCode {
   ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN),
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND),
   ENDPOINT_NOT_FOUND(HttpStatus.NOT_FOUND),
+  /**
+   * The bound Jira/Xray project has no such test. A 404 and not an {@link
+   * #INTEGRATION_PROVIDER_ERROR} 502: nothing upstream is broken — the key is wrong, invisible to
+   * the stored token, or lives in another project. The caller can act on that; a 502 tells them
+   * only to wait. Declared after {@link #RESOURCE_NOT_FOUND} so {@link #forStatus} keeps returning
+   * the general 404.
+   */
+  EXTERNAL_TEST_NOT_FOUND(HttpStatus.NOT_FOUND),
   METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED),
   CONFLICT(HttpStatus.CONFLICT),
   /**
@@ -59,6 +67,18 @@ public enum ErrorCode {
   /** A git operation on a project that has no repository connected yet. */
   REPOSITORY_NOT_CONNECTED(HttpStatus.CONFLICT),
   UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+  /**
+   * The model produced an IR that failed schema, referential or semantic validation, even after the
+   * one repair round the pipeline allows. The violations travel with the problem so the UI can
+   * point at the step. Declared first of the 422s so {@link #forStatus} keeps the general one.
+   */
+  TEST_MODEL_INVALID(HttpStatus.UNPROCESSABLE_ENTITY),
+  /**
+   * Understanding could not turn a manual step into an action without guessing, and guessing is
+   * exactly what it must not do. The questions travel with the problem; answering them in the test
+   * case is the fix.
+   */
+  TEST_CASE_AMBIGUOUS(HttpStatus.UNPROCESSABLE_ENTITY),
   PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE),
   RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
   /** The model provider answered, but refused the request (bad key, quota, unknown model). */

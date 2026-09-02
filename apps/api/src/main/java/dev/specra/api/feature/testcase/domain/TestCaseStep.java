@@ -44,6 +44,9 @@ public class TestCaseStep {
   @Column(name = "action_text", nullable = false, columnDefinition = "text")
   private String actionText;
 
+  @Column(name = "test_data", columnDefinition = "text")
+  private String testData;
+
   @Column(name = "expected_text", columnDefinition = "text")
   private String expectedText;
 }

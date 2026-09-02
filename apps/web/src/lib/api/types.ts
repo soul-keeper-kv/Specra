@@ -36,6 +36,10 @@ export type ApiProblem = {
   requestId?: string;
   /** Present only when `code` is "validation-failed". Keyed by field name. */
   fieldErrors?: Record<string, string>;
+  /** Present only when `code` is "test-case-ambiguous": what the tester has to clarify. */
+  questions?: AmbiguityQuestion[];
+  /** Present only when `code` is "test-model-invalid": what the schema or semantics rejected. */
+  violations?: SchemaViolation[];
 };
 
 export type ChatReply = {
@@ -128,6 +132,7 @@ export type AutomationStatus = "NOT_AUTOMATED" | "MODELLED" | "GENERATED" | "COM
 export type TestCaseStep = {
   position: number;
   action: string;
+  data: string | null;
   expected: string | null;
 };
 
@@ -140,6 +145,10 @@ export type TestCase = {
   description: string | null;
   preconditions: string | null;
   expectedResult: string | null;
+  externalSource: string | null;
+  externalId: string | null;
+  externalUrl: string | null;
+  importedAt: string | null;
   priority: TestCasePriority;
   automationStatus: AutomationStatus;
   /** True when the case was edited after its IR was generated. */
@@ -165,6 +174,7 @@ export type TestCaseSummary = {
 
 export type TestCaseStepInput = {
   action: string;
+  data?: string;
   expected?: string;
 };
 
@@ -434,6 +444,13 @@ export type TestManagementVerify = {
   testCount: number;
 };
 
+/** What a search of the external system is narrowed by; the provider interprets the term. */
+export type ExternalTestQuery = {
+  q?: string;
+  page?: number;
+  size?: number;
+};
+
 export type ExternalTestSummary = {
   externalId: string;
   title: string;
@@ -442,3 +459,139 @@ export type ExternalTestSummary = {
   labels: string[];
   url: string;
 };
+
+export type ExternalTestStep = {
+  position: number;
+  action: string;
+  data: string | null;
+  expected: string | null;
+};
+
+export type ExternalTestDetail = {
+  externalId: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  labels: string[];
+  url: string;
+  steps: ExternalTestStep[];
+};
+
+// ── Test Model (the IR) ──────────────────────────────────────────────────────
+// A read-side mirror of packages/test-model. The schema there is the contract; these types exist
+// so the workspace can render a document without re-deriving its shape.
+
+export type TestModelAction =
+  | "navigate"
+  | "reload"
+  | "goBack"
+  | "goForward"
+  | "fill"
+  | "clear"
+  | "press"
+  | "select"
+  | "check"
+  | "uncheck"
+  | "upload"
+  | "click"
+  | "doubleClick"
+  | "rightClick"
+  | "hover"
+  | "dragTo"
+  | "waitFor"
+  | "assert"
+  | "useFlow";
+
+export type TestModelCondition =
+  | "visible"
+  | "hidden"
+  | "enabled"
+  | "disabled"
+  | "checked"
+  | "textEquals"
+  | "textContains"
+  | "valueEquals"
+  | "countEquals"
+  | "urlMatches"
+  | "attributeEquals";
+
+export type TestModelValue =
+  | { kind: "literal"; value: string | number | boolean; name?: undefined }
+  | { kind: "param" | "secret"; name: string; value?: undefined };
+
+export type TestModelTarget = {
+  page?: string;
+  element?: string;
+  /** The escape hatch: a raw locator, recorded as debt. */
+  selector?: { strategy: "css" | "xpath"; value: string };
+};
+
+export type TestModelAssertion = {
+  condition: TestModelCondition;
+  expected?: string | number | boolean;
+  attribute?: string;
+};
+
+export type TestModelStep = {
+  id: string;
+  /** The manual steps this came from (`ts-1`); empty only when `derived`. */
+  sourceStepIds: string[];
+  derived?: boolean;
+  description?: string;
+  action: TestModelAction;
+  target?: TestModelTarget;
+  to?: TestModelTarget;
+  value?: TestModelValue;
+  assertion?: TestModelAssertion;
+  flow?: string;
+};
+
+export type TestModelParameter = {
+  name: string;
+  type: "string" | "number" | "boolean";
+  required?: boolean;
+  secret?: boolean;
+  description?: string;
+};
+
+export type TestModelDocument = {
+  irVersion: number;
+  name: string;
+  description?: string;
+  tags: string[];
+  parameters: TestModelParameter[];
+  setup: TestModelStep[];
+  steps: TestModelStep[];
+  teardown: TestModelStep[];
+};
+
+/** A page the model names, and through which steps — a proposal until inspection resolves it. */
+export type PageReference = { name: string; elements: string[]; stepIds: string[] };
+
+/** Which model steps a manual step became; empty means the model dropped it. */
+export type SourceCoverage = { sourceStepId: string; position: number; modelStepIds: string[] };
+
+export type TestModel = {
+  id: string;
+  testCaseId: string;
+  version: number;
+  irVersion: number;
+  document: TestModelDocument;
+  checksum: string;
+  createdAt: string;
+  pages: PageReference[];
+  coverage: SourceCoverage[];
+};
+
+export type TestModelVersionSummary = {
+  id: string;
+  version: number;
+  irVersion: number;
+  checksum: string;
+  createdAt: string;
+  stepCount: number;
+};
+
+export type AmbiguityQuestion = { sourceStepId: string | null; question: string };
+
+export type SchemaViolation = { path: string; message: string };

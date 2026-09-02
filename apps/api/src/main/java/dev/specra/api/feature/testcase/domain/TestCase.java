@@ -73,6 +73,19 @@ public class TestCase {
   @Column(name = "expected_result", columnDefinition = "text")
   private String expectedResult;
 
+  /** Provider-neutral traceability. The external system keeps owning the manual case. */
+  @Column(name = "external_source", length = 64)
+  private String externalSource;
+
+  @Column(name = "external_id", length = 200)
+  private String externalId;
+
+  @Column(name = "external_url", length = 1000)
+  private String externalUrl;
+
+  @Column(name = "imported_at")
+  private Instant importedAt;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 16)
   private TestCasePriority priority = TestCasePriority.MEDIUM;

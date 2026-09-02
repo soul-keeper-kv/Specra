@@ -58,15 +58,40 @@ class TestCaseServiceTest {
             request(
                 "Đăng nhập hợp lệ",
                 List.of(
-                    new TestCaseStepRequest("Mở trang đăng nhập", null),
-                    new TestCaseStepRequest("Nhập email và mật khẩu", "Nút Đăng nhập bật"))));
+                    new TestCaseStepRequest("Mở trang đăng nhập", null, null),
+                    new TestCaseStepRequest(
+                        "Nhập email và mật khẩu", "demo@acme.dev", "Nút Đăng nhập bật"))));
 
     assertThat(response.reference()).isEqualTo("TC-1");
     assertThat(response.automationStatus()).isEqualTo(AutomationStatus.NOT_AUTOMATED);
     assertThat(response.steps()).hasSize(2);
     assertThat(response.steps().get(0).position()).isEqualTo(1);
     assertThat(response.steps().get(1).position()).isEqualTo(2);
+    assertThat(response.steps().get(1).data()).isEqualTo("demo@acme.dev");
     assertThat(response.steps().get(1).expected()).isEqualTo("Nút Đăng nhập bật");
+  }
+
+  @Test
+  void importingAnExternalCaseKeepsTraceabilityAndIsIdempotent() {
+    when(projects.workspaceOf(PROJECT)).thenReturn(WORKSPACE);
+    when(projects.nextTestCaseReference(PROJECT)).thenReturn("TC-2");
+    when(repository.findByProjectIdAndExternalSourceAndExternalId(PROJECT, "xray", "QA-18"))
+        .thenReturn(Optional.empty());
+    saveReturnsWhatItWasGiven();
+
+    var imported =
+        service.importExternal(
+            PROJECT,
+            request("Checkout", List.of(new TestCaseStepRequest("Pay", null, "Order created"))),
+            "xray",
+            "QA-18",
+            "https://jira.example.com/browse/QA-18");
+
+    assertThat(imported.reference()).isEqualTo("TC-2");
+    assertThat(imported.externalSource()).isEqualTo("xray");
+    assertThat(imported.externalId()).isEqualTo("QA-18");
+    assertThat(imported.externalUrl()).endsWith("/QA-18");
+    assertThat(imported.importedAt()).isNotNull();
   }
 
   /** Editing a case nothing was generated from is just editing; there is nothing to be behind. */
@@ -113,7 +138,8 @@ class TestCaseServiceTest {
     var response =
         service.update(
             id,
-            request("Edited", List.of(new TestCaseStepRequest("Only step left", "Still works"))));
+            request(
+                "Edited", List.of(new TestCaseStepRequest("Only step left", null, "Still works"))));
 
     assertThat(response.steps()).hasSize(1);
     assertThat(response.steps().get(0).position()).isEqualTo(1);

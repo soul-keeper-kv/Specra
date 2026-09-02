@@ -1,5 +1,8 @@
 package dev.specra.api.feature.testmanagement.web;
 
+import dev.specra.api.core.web.PageResponse;
+import dev.specra.api.feature.testcase.dto.TestCaseResponse;
+import dev.specra.api.feature.testmanagement.dto.ExternalTestDetail;
 import dev.specra.api.feature.testmanagement.dto.ExternalTestSummary;
 import dev.specra.api.feature.testmanagement.dto.TestManagementBindingRequest;
 import dev.specra.api.feature.testmanagement.dto.TestManagementBindingResponse;
@@ -10,13 +13,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,12 +65,32 @@ public class TestManagementController {
 
   @GetMapping("/tests")
   @Operation(summary = "Search external tests without copying ownership into Specra")
-  public List<ExternalTestSummary> tests(
+  public PageResponse<ExternalTestSummary> tests(
       @PathVariable UUID projectId,
       @RequestParam(required = false) String q,
       @RequestParam(defaultValue = "0") @Min(value = 0, message = "{validation.page.min}") int page,
       @RequestParam(defaultValue = "20")
           @Min(value = 1, message = "{validation.page-size.min}") @Max(value = 100, message = "{validation.page-size.max}") int size) {
     return service.tests(projectId, q, page, size);
+  }
+
+  @GetMapping("/tests/{externalId}")
+  @Operation(summary = "Get an external test with its manual steps")
+  public ExternalTestDetail test(@PathVariable UUID projectId, @PathVariable String externalId) {
+    return service.test(projectId, externalId);
+  }
+
+  @GetMapping("/tests/{externalId}/test-case")
+  @Operation(summary = "The Specra test case this external test was imported as, or 404")
+  public TestCaseResponse importedTestCase(
+      @PathVariable UUID projectId, @PathVariable String externalId) {
+    return service.importedTestCase(projectId, externalId);
+  }
+
+  @PostMapping("/tests/{externalId}/import")
+  @Operation(summary = "Import and link an external test as an automation input")
+  public TestCaseResponse importTest(
+      @PathVariable UUID projectId, @PathVariable String externalId) {
+    return service.importTest(projectId, externalId);
   }
 }

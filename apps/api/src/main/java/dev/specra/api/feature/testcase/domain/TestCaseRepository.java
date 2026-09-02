@@ -1,6 +1,7 @@
 package dev.specra.api.feature.testcase.domain;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TestCaseRepository extends JpaRepository<TestCase, UUID> {
+
+  Optional<TestCase> findByProjectIdAndExternalSourceAndExternalId(
+      UUID projectId, String externalSource, String externalId);
 
   /**
    * The cast on {@code :q} is load-bearing, exactly as in the other repositories: {@code concat}

@@ -16,6 +16,7 @@ import org.mapstruct.Mapping;
 public interface TestCaseMapper {
 
   @Mapping(target = "action", source = "actionText")
+  @Mapping(target = "data", source = "testData")
   @Mapping(target = "expected", source = "expectedText")
   TestCaseStepResponse toStepResponse(TestCaseStep step);
 
