@@ -77,6 +77,7 @@ class CodeGenerationServiceTest {
   @Mock RunnerClient runner;
   @Mock dev.specra.api.feature.run.service.AutomationTestService automationTests;
   @Mock AiGenerationService generations;
+  @Mock dev.specra.api.feature.pageobject.service.PageObjectService pageObjects;
 
   CodeGenerationService service;
 
@@ -92,7 +93,7 @@ class CodeGenerationServiceTest {
             automationTests,
             runner,
             generations,
-            new PageObjectCatalogue(),
+            new PageObjectCatalogue(pageObjects),
             new ObjectMapper());
     lenient().when(testCases.get(CASE)).thenReturn(testCase(AutomationStatus.MODELLED));
     lenient().when(projects.workspaceOf(PROJECT)).thenReturn(WORKSPACE);
