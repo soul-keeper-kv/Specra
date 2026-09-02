@@ -8,6 +8,7 @@
 
 import { generate } from "../codegen/generate.js";
 import { formatFiles } from "../codegen/validate.js";
+import { verifyProject } from "../codegen/verify.js";
 import {
   JOB_KINDS,
   PayloadError,
@@ -47,18 +48,53 @@ export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
 }
 
 /**
- * Generate, then format.
+ * Generate, format, then verify.
  *
  * Prettier is the authority on how the output is written, and it is async, so it runs here
  * rather than inside `generate()` — which stays a pure, synchronous projection with golden
  * files over it. The user receives what prettier would have written, which is what makes
  * "the generated project passes `prettier --check`" true by construction instead of by a
  * template author remembering where the line breaks go.
+ *
+ * Verification then decides whether this is a proposal at all. `06-execution.md`: a generation
+ * that does not compile never reaches the user as a proposal. It is a refusal rather than a
+ * crash — 422 with the compiler's own words — because if valid IR produced uncompilable code
+ * that is an adapter bug for us to fix with a golden file, and the user needs to be told it
+ * failed rather than shown a spec that will not run.
+ *
+ * `verified` on the result says which of the three happened: the tools ran and passed, or they
+ * were skipped because the engine's types are not installed, or skipped because the generation
+ * has unresolved targets and is not expected to compile yet. A caller that cannot tell "checked
+ * and fine" from "not checked" will eventually trust the wrong one.
  */
 async function runCodegen(payload: unknown): Promise<JobResponse<unknown>> {
   try {
     const result = generate(parseCodegenPayload(payload));
-    return { ok: true, result: { ...result, files: await formatFiles(result.files) } };
+    const files = await formatFiles(result.files);
+
+    // A generation with unresolved targets is *known* not to compile: the spec references
+    // `page.element` for an element nobody has inspected, so the page object has no such getter.
+    // That is the designed outcome until inspection lands (M8) — `unresolved` is the actionable
+    // warning "inspect these pages first", and running the compiler over it would turn every
+    // proposal into a TS2339 the user can do nothing with. Verify only what can be judged.
+    const verification =
+      result.unresolved.length > 0
+        ? { ok: true, skipped: true, problems: [] }
+        : await verifyProject(files);
+    if (!verification.ok) {
+      return {
+        ok: false,
+        error: {
+          code: "generation-failed",
+          message: [
+            "The generated project does not compile, so it was not proposed:",
+            ...verification.problems.map((problem) => `  ${problem.path} ${problem.message}`),
+          ].join("\n"),
+        },
+      };
+    }
+
+    return { ok: true, result: { ...result, files, verified: !verification.skipped } };
   } catch (error) {
     // A refusal is a result, not a crash: an invalid IR, an uninspected page, an element whose
     // name collides. The API turns each into something the user can act on, so the message

@@ -75,6 +75,30 @@ describe("POST /jobs", () => {
     ]);
   });
 
+  /**
+   * The interaction between the two gates, which is the easy thing to get backwards.
+   *
+   * A generation with unresolved targets cannot compile — the spec calls `page.element` for an
+   * element nobody inspected, so the page object has no such getter. Running the compiler over
+   * it would turn the actionable "inspect these pages first" into a TS2339 the user can do
+   * nothing about, and until inspection lands (M8) that is *every* real generation. So
+   * verification is skipped for those, and `verified` says so rather than claiming a pass.
+   */
+  it("does not typecheck a generation whose targets are unresolved", async () => {
+    const { status, body } = await post({
+      kind: "codegen",
+      payload: {
+        model: irFixture("login"),
+        pages: LOGIN_PAGES.filter((page) => page.name !== "DashboardPage"),
+        options: { reference: "TC-104", adapterVersion: "0.1.0" },
+      },
+    });
+
+    expect(status).toBe(200);
+    expect(body.result.unresolved.length).toBeGreaterThan(0);
+    expect(body.result.verified).toBe(false);
+  });
+
   it("refuses an invalid Test Model with the violation, not a stack trace", async () => {
     const { status, body } = await post({
       kind: "codegen",

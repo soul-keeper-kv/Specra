@@ -15,7 +15,14 @@ import { describe, expect, it } from "vitest";
 const SRC = path.dirname(fileURLToPath(import.meta.url));
 const ADAPTER = path.join(SRC, "adapters", "playwright");
 
-/** Words that only mean something to an execution engine. */
+/**
+ * Words that only mean something to an execution engine.
+ *
+ * Each is matched on a word boundary rather than as a bare substring: `cy.` as a substring also
+ * matches "dependency." in an English sentence, and a containment rule that fires on prose is a
+ * rule people learn to suppress. The boundary keeps it firing on `cy.visit(` and not on a
+ * comment explaining why this package avoids the engine.
+ */
 const ENGINE_VOCABULARY = [
   "@playwright/test",
   "getByRole",
@@ -27,6 +34,13 @@ const ENGINE_VOCABULARY = [
   "webdriver",
   "selenium",
 ];
+
+/** `cy.` must not match "dependency."; `@playwright/test` has no word character to its left. */
+function mentions(source: string, word: string): boolean {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const leftBoundary = /^\w/.test(word) ? "\\b" : "";
+  return new RegExp(`${leftBoundary}${escaped}`).test(source);
+}
 
 function sourceFiles(dir: string): string[] {
   const found: string[] = [];
@@ -67,8 +81,15 @@ describe("engine containment", () => {
 
   it.each(ENGINE_VOCABULARY)("no file outside the adapter mentions %s", (word) => {
     const offenders = outsideAdapter.filter((file) =>
-      readFileSync(file, "utf8").includes(word),
+      mentions(readFileSync(file, "utf8"), word),
     );
     expect(offenders.map((file) => path.relative(SRC, file))).toEqual([]);
+  });
+
+  it("still catches the vocabulary it is meant to catch", () => {
+    // The rule has just been narrowed, so prove the narrowing did not defeat it.
+    expect(mentions("await cy.visit('/')", "cy.")).toBe(true);
+    expect(mentions("the engine's dependency. Instead", "cy.")).toBe(false);
+    expect(mentions('import { test } from "@playwright/test";', "@playwright/test")).toBe(true);
   });
 });
