@@ -527,6 +527,7 @@
     "subtitle": "Tuỳ chọn cho không gian làm việc này. Lưu trong trình duyệt của bạn.",
     "tabs": {
       "profile": "Hồ sơ",
+      "security": "Bảo mật",
       "appearance": "Hiển thị",
       "language": "Ngôn ngữ",
       "ai": "Trợ lý AI",
@@ -541,6 +542,30 @@
       "emailHint": "Đổi email cần bước xác minh, tính năng này chưa được xây dựng.",
       "save": "Lưu thay đổi",
       "saved": "Đã lưu"
+    },
+    "security": {
+      "password": {
+        "title": "Mật khẩu",
+        "description": "Đổi mật khẩu sẽ kết thúc phiên của mọi thiết bị khác. Thiết bị này vẫn đăng nhập.",
+        "current": "Mật khẩu hiện tại",
+        "new": "Mật khẩu mới",
+        "hint": "Ít nhất 10 ký tự. Dài hơn tốt hơn là phức tạp hơn.",
+        "submit": "Đổi mật khẩu",
+        "changed": "Đã đổi mật khẩu. Các thiết bị khác sẽ phải đăng nhập lại."
+      },
+      "sessions": {
+        "title": "Nơi bạn đang đăng nhập",
+        "description": "Mọi thiết bị đang giữ phiên hợp lệ của tài khoản này. Hãy thu hồi thiết bị bạn không nhận ra.",
+        "thisDevice": "Thiết bị này",
+        "unknownDevice": "Thiết bị không rõ",
+        "lastUsed": "Dùng lần cuối {when}",
+        "revoke": "Đăng xuất",
+        "revokeTitle": "Đăng xuất thiết bị này?",
+        "revokeDescription": "Thiết bị đó sẽ phải đăng nhập lại. Mọi việc đang dở sẽ mất.",
+        "revoked": "Đã đăng xuất thiết bị",
+        "revokeFailed": "Không thể đăng xuất thiết bị.",
+        "cancel": "Huỷ"
+      }
     },
     "appearance": {
       "title": "Hiển thị",
@@ -664,7 +689,8 @@
       "emailInvalid": "Địa chỉ email không hợp lệ",
       "passwordRequired": "Mật khẩu là bắt buộc",
       "passwordMin": "Mật khẩu tối thiểu {min} ký tự",
-      "passwordMax": "Mật khẩu tối đa {max} ký tự"
+      "passwordMax": "Mật khẩu tối đa {max} ký tự",
+      "passwordUnchanged": "Mật khẩu mới phải khác mật khẩu hiện tại"
     }
   },
   "commandPalette": {

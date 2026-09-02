@@ -32,5 +32,36 @@ export function buildSignUpSchema(t: AuthValidationMessages) {
   });
 }
 
+/**
+ * Changing a password from inside the account.
+ *
+ * The current password carries no length rule, for the same reason sign-in does not: it is being
+ * checked, not chosen, and "too short" would be a hint about a password the user already has. The
+ * new one carries the full rule, plus one the API has no counterpart for — it must differ from
+ * the current one, because re-submitting the same password looks like it worked and changes
+ * nothing.
+ */
+export function buildChangePasswordSchema(t: AuthValidationMessages) {
+  return z
+    .object({
+      currentPassword: z.string().min(1, t("passwordRequired")),
+      newPassword: z
+        .string()
+        .min(PASSWORD_MIN, t("passwordMin", { min: PASSWORD_MIN }))
+        .max(PASSWORD_MAX, t("passwordMax", { max: PASSWORD_MAX })),
+    })
+    .check((ctx) => {
+      if (ctx.value.currentPassword && ctx.value.currentPassword === ctx.value.newPassword) {
+        ctx.issues.push({
+          code: "custom",
+          input: ctx.value.newPassword,
+          message: t("passwordUnchanged"),
+          path: ["newPassword"],
+        });
+      }
+    });
+}
+
 export type SignInFormValues = z.infer<ReturnType<typeof buildSignInSchema>>;
 export type SignUpFormValues = z.infer<ReturnType<typeof buildSignUpSchema>>;
+export type ChangePasswordFormValues = z.infer<ReturnType<typeof buildChangePasswordSchema>>;

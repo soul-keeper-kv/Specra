@@ -527,6 +527,7 @@
     "subtitle": "Preferences for this workspace. Stored in your browser.",
     "tabs": {
       "profile": "Profile",
+      "security": "Security",
       "appearance": "Appearance",
       "language": "Language",
       "ai": "AI assistant",
@@ -541,6 +542,30 @@
       "emailHint": "Changing an email needs a verification step, which is not built yet.",
       "save": "Save changes",
       "saved": "Saved"
+    },
+    "security": {
+      "password": {
+        "title": "Password",
+        "description": "Changing it ends every other device’s session. This one stays signed in.",
+        "current": "Current password",
+        "new": "New password",
+        "hint": "At least 10 characters. Longer is better than more complicated.",
+        "submit": "Change password",
+        "changed": "Password changed. Other devices will have to sign in again."
+      },
+      "sessions": {
+        "title": "Where you are signed in",
+        "description": "Every device holding a valid session for this account. Revoke any you do not recognise.",
+        "thisDevice": "This device",
+        "unknownDevice": "Unknown device",
+        "lastUsed": "Last used {when}",
+        "revoke": "Sign out",
+        "revokeTitle": "Sign out this device?",
+        "revokeDescription": "That device will have to sign in again. Anything it was in the middle of is lost.",
+        "revoked": "Device signed out",
+        "revokeFailed": "The device could not be signed out.",
+        "cancel": "Cancel"
+      }
     },
     "appearance": {
       "title": "Appearance",
@@ -664,7 +689,8 @@
       "emailInvalid": "That does not look like an email address",
       "passwordRequired": "Password is required",
       "passwordMin": "A password must be at least {min} characters",
-      "passwordMax": "A password must be at most {max} characters"
+      "passwordMax": "A password must be at most {max} characters",
+      "passwordUnchanged": "The new password must differ from the current one"
     }
   },
   "commandPalette": {
