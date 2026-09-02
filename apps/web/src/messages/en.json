@@ -233,6 +233,13 @@
           "teardown": "Teardown"
         }
       },
+      "history": {
+        "action": "History",
+        "title": "Test Model versions",
+        "current": "current",
+        "steps": "{count, plural, one {# step} other {# steps}}",
+        "failed": "The versions could not be loaded."
+      },
       "script": {
         "empty": "No script proposal yet",
         "hint": "The approved Test Model becomes a reviewable Git diff here once code generation is connected.",

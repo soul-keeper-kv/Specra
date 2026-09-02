@@ -233,6 +233,13 @@
           "teardown": "Dọn dẹp"
         }
       },
+      "history": {
+        "action": "Lịch sử",
+        "title": "Các phiên bản Test Model",
+        "current": "hiện tại",
+        "steps": "{count, plural, other {# bước}}",
+        "failed": "Không tải được danh sách phiên bản."
+      },
       "script": {
         "empty": "Chưa có đề xuất test script",
         "hint": "Test Model sau khi được duyệt sẽ trở thành Git diff có thể review tại đây khi sinh code được kết nối.",

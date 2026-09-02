@@ -35,6 +35,7 @@ import {
   useImportedTestCase,
 } from "@/features/testmanagement/api/test-management";
 import { CodeProposalPanel } from "@/features/codegen/components/code-proposal-panel";
+import { ModelHistory } from "@/features/testmodel/components/model-history";
 import { useModelTestCase, useTestModel } from "@/features/testmodel/api/test-models";
 import { Link } from "@/i18n/navigation";
 import { ApiError } from "@/lib/api/client";
@@ -277,9 +278,12 @@ export function ExternalTestWorkspace({
               {current ? (
                 <>
                   <div className="border-y px-4 py-3">
-                    <p className="line-clamp-2 text-sm font-semibold">
-                      {current.document.name}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-2 text-sm font-semibold">
+                        {current.document.name}
+                      </p>
+                      <ModelHistory testCaseId={testCaseId} currentVersion={current.version} />
+                    </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {t("modelTab.version", {
                         version: current.version,
