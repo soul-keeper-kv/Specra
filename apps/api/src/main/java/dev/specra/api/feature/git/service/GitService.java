@@ -307,6 +307,57 @@ public class GitService {
 
   // ── plumbing ──────────────────────────────────────────────────────────────
 
+  /**
+   * The working copy a run executes in, brought up to date and pinned to a commit.
+   *
+   * <p>Returns a path and the sha that path is at, rather than doing the work itself, because a run
+   * takes minutes and {@link WorkingCopies#withProjectLock} must not be held for minutes — every
+   * other git operation on the project would queue behind it. The lock is taken to materialise and
+   * read the head, and released; the runner then only reads the directory.
+   *
+   * <p>That leaves a window in which somebody commits or checks out while a run is reading, and the
+   * sha recorded with the run is what makes it survivable: the result says which commit it
+   * describes, so a run and its evidence stay interpretable even if the copy has moved on. Real
+   * isolation is a container per run, which is a separate change.
+   *
+   * <p>Uncommitted changes are allowed but recorded: {@code dirtyDiff} is the diff the run actually
+   * executed against, so a green run of unpushed work can still be reproduced.
+   */
+  public WorkingCopyAt materialise(UUID projectId) {
+    GitRepository repository = requireForRead(projectId);
+    return workingCopies.withProjectLock(
+        projectId,
+        () -> {
+          GitProvider provider = provider(repository);
+          Path copy = workingCopies.ensure(provider, refFor(repository), projectId);
+          String wanted = repository.effectiveBranch();
+          GitStatus status = provider.status(copy);
+          if (!wanted.equals(status.branch())) {
+            provider.checkout(copy, wanted);
+            status = provider.status(copy);
+          }
+          String head =
+              provider
+                  .history(copy, null, org.springframework.data.domain.PageRequest.of(0, 1))
+                  .stream()
+                  .findFirst()
+                  .map(commit -> commit.sha())
+                  .orElseThrow(
+                      () ->
+                          new BusinessException(
+                              ErrorCode.REPOSITORY_NOT_CONNECTED, "error.run.no-commit"));
+          String dirty = status.clean() ? null : provider.diff(copy, null);
+          return new WorkingCopyAt(copy.toAbsolutePath().toString(), head, dirty);
+        });
+  }
+
+  /**
+   * @param path an absolute directory the runner can read
+   * @param commitSha what that directory is checked out at; recorded on the run
+   * @param dirtyDiff uncommitted changes the run will execute, or null when the copy is clean
+   */
+  public record WorkingCopyAt(String path, String commitSha, String dirtyDiff) {}
+
   /** What a caller runs against the project's checked-out copy, holding the project's lock. */
   @FunctionalInterface
   private interface CopyWork<T> {

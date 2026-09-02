@@ -68,7 +68,8 @@ public final class TestProperties {
 
   /** A runner nothing in a unit test actually calls; the URL only has to parse. */
   private static SpecraProperties.Runner runner() {
-    return new SpecraProperties.Runner("http://127.0.0.1:8090", Duration.ofSeconds(30));
+    return new SpecraProperties.Runner(
+        "http://127.0.0.1:8090", Duration.ofSeconds(30), Duration.ofMinutes(20), 3);
   }
 
   /** Working copies under target/ so a test run never writes outside the build directory. */

@@ -60,6 +60,10 @@ public class Project {
   @Column(name = "test_case_sequence", nullable = false)
   private int testCaseSequence;
 
+  /** The same, for {@code RUN-n}. A separate counter: they are separate things people quote. */
+  @Column(name = "test_run_sequence", nullable = false)
+  private int testRunSequence;
+
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

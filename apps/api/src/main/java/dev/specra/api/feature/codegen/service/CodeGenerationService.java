@@ -22,6 +22,7 @@ import dev.specra.api.feature.git.dto.CommitRequest;
 import dev.specra.api.feature.git.dto.FileWriteRequest;
 import dev.specra.api.feature.git.service.GitService;
 import dev.specra.api.feature.project.service.ProjectService;
+import dev.specra.api.feature.run.service.AutomationTestService;
 import dev.specra.api.feature.testcase.dto.TestCaseResponse;
 import dev.specra.api.feature.testcase.service.TestCaseService;
 import dev.specra.api.feature.testmodel.dto.TestModelResponse;
@@ -63,6 +64,7 @@ public class CodeGenerationService {
   private final TestModelStore models;
   private final ProjectService projects;
   private final GitService git;
+  private final AutomationTestService automationTests;
   private final RunnerClient runner;
   private final AiGenerationService generations;
   private final PageObjectCatalogue pageObjects;
@@ -74,6 +76,7 @@ public class CodeGenerationService {
       TestModelStore models,
       ProjectService projects,
       GitService git,
+      AutomationTestService automationTests,
       RunnerClient runner,
       AiGenerationService generations,
       PageObjectCatalogue pageObjects,
@@ -83,6 +86,7 @@ public class CodeGenerationService {
     this.models = models;
     this.projects = projects;
     this.git = git;
+    this.automationTests = automationTests;
     this.runner = runner;
     this.generations = generations;
     this.pageObjects = pageObjects;
@@ -229,7 +233,35 @@ public class CodeGenerationService {
       git.push(generation.getProjectId());
     }
 
+    // The case now has code in the repository, and a run needs to know which file holds it.
+    // Recorded here rather than at generation time because until a person applied it, nothing
+    // was in the repository to run.
+    specPathOf(files)
+        .ifPresent(
+            specPath ->
+                automationTests.record(
+                    projects.workspaceOf(generation.getProjectId()),
+                    testCase.id(),
+                    specPath,
+                    testCase.title(),
+                    generation.getTestModelId(),
+                    commit.sha()));
+
     return complete(generation.getId(), CodeGenerationStatus.APPLIED, commit.sha(), testCase);
+  }
+
+  /**
+   * The spec file among the generated ones — the file that actually holds the test.
+   *
+   * <p>A generation writes page objects, fixtures and config too; only the SPEC is what a run
+   * executes. Empty when a generation somehow produced none, in which case nothing is recorded and
+   * the case simply stays unrunnable rather than pointing a run at a page object.
+   */
+  private static java.util.Optional<String> specPathOf(List<Map<String, Object>> files) {
+    return files.stream()
+        .filter(file -> "SPEC".equals(String.valueOf(file.get("role"))))
+        .map(file -> String.valueOf(file.get("path")))
+        .findFirst();
   }
 
   public CodeGenerationResponse reject(UUID generationId) {

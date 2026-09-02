@@ -90,6 +90,17 @@ public class ProjectService {
     return "TC-" + project.getTestCaseSequence();
   }
 
+  /** {@code RUN-n}, minted the same way and for the same reason as {@code TC-n} above. */
+  @Transactional
+  public String nextTestRunReference(UUID projectId) {
+    Project project =
+        repository
+            .lockById(projectId)
+            .orElseThrow(() -> new ResourceNotFoundException("resource.project", projectId));
+    project.setTestRunSequence(project.getTestRunSequence() + 1);
+    return "RUN-" + project.getTestRunSequence();
+  }
+
   @Transactional
   public ProjectResponse create(UUID workspaceId, ProjectRequest request) {
     workspaces.requireAccess(workspaceId, Permission.CONTENT_EDIT);

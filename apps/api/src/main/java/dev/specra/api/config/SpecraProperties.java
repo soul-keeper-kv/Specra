@@ -142,10 +142,17 @@ public record SpecraProperties(
    * Where the toolchain plane lives, and how long to wait for it.
    *
    * <p>A codegen job is a pure function over data already in memory, so it answers in milliseconds;
-   * the timeout is generous enough for a cold start and short enough that a hung runner surfaces as
-   * a reported state rather than a request nobody ever gets an answer to.
+   * {@code timeout} is generous enough for a cold start and short enough that a hung runner
+   * surfaces as a reported state rather than a request nobody ever gets an answer to.
+   *
+   * @param runTimeout what a run gets instead. A suite takes minutes, so it is dispatched on its
+   *     own executor and the 30-second ceiling above would kill every real one.
+   * @param maxConcurrentPerWorkspace how many runs one workspace may have queued or running. Per
+   *     workspace rather than global, so a tenant that queues fifty slows only itself.
    */
   public record Runner(
       @NotBlank @DefaultValue("http://127.0.0.1:8090") String baseUrl,
-      @DefaultValue("PT30S") Duration timeout) {}
+      @DefaultValue("PT30S") Duration timeout,
+      @NotNull @DurationMin(minutes = 1) @DefaultValue("PT20M") Duration runTimeout,
+      @Min(1) @Max(50) @DefaultValue("3") int maxConcurrentPerWorkspace) {}
 }

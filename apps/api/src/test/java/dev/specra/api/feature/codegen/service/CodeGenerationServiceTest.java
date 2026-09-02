@@ -73,6 +73,7 @@ class CodeGenerationServiceTest {
   @Mock ProjectService projects;
   @Mock GitService git;
   @Mock RunnerClient runner;
+  @Mock dev.specra.api.feature.run.service.AutomationTestService automationTests;
   @Mock AiGenerationService generations;
 
   CodeGenerationService service;
@@ -86,6 +87,7 @@ class CodeGenerationServiceTest {
             models,
             projects,
             git,
+            automationTests,
             runner,
             generations,
             new PageObjectCatalogue(),

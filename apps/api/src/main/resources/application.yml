@@ -218,6 +218,10 @@ specra:
     # it yet; `pnpm --filter specra-runner start` is what listens here in development.
     base-url: ${RUNNER_BASE_URL:http://127.0.0.1:8090}
     timeout: ${RUNNER_TIMEOUT:PT30S}
+    # What a *run* gets instead: a suite is minutes, so the ceiling above would kill every one.
+    run-timeout: ${SPECRA_RUN_TIMEOUT:PT20M}
+    # Queued or running, per workspace. A tenant that queues fifty runs slows only itself.
+    max-concurrent-per-workspace: ${SPECRA_RUN_CONCURRENCY:3}
 
   ai:
     system-prompt: >

@@ -57,6 +57,10 @@ CREATE TABLE test_run_items (
     -- test case id below is what the UI actually groups and links by.
     automation_test_id uuid        REFERENCES automation_tests (id) ON DELETE SET NULL,
     test_case_id       uuid        NOT NULL REFERENCES test_cases (id) ON DELETE CASCADE,
+    -- Copied onto the row rather than read through automation_test_id, because that reference
+    -- is nullable on purpose: the result must still say which file it executed after the
+    -- automation test has been deleted or regenerated to a different path.
+    spec_path          varchar(500) NOT NULL,
     browser            varchar(32) NOT NULL,
     status             varchar(16) NOT NULL,
     duration_ms        integer,
