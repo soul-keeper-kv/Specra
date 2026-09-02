@@ -168,27 +168,43 @@ GET    /api/v1/projects/{id}/git/file          ?path=   one text file from the w
 PUT    /api/v1/projects/{id}/git/file          { path, content }  a human edits it
 ```
 
-## Runs — planned (M6)
+## Runs — built
 
 ```http
 POST   /api/v1/projects/{id}/runs   { testCaseIds[] | all, browsers[], environmentId } → 202
 GET    /api/v1/projects/{id}/runs
 GET    /api/v1/runs/{id}
-GET    /api/v1/runs/{id}/stream                SSE: item status transitions, live log
+GET    /api/v1/runs/{id}/stream                SSE — still to come; the UI polls while a run is in flight
 POST   /api/v1/runs/{id}/cancel
 GET    /api/v1/run-items/{id}
 GET    /api/v1/run-items/{id}/artifacts        signed, expiring URLs — never raw bytes
 ```
 
-## Failure analysis — planned (M7)
+## Failure analysis — the reading is built, the repair is not
 
 ```http
-POST   /api/v1/run-items/{id}/analyse          → 202, AiGeneration of kind FIX
+GET    /api/v1/run-items/{id}/analysis         the stored reading, 404 if none was made
+POST   /api/v1/run-items/{id}/analysis         classify this failure
+POST   /api/v1/run-items/{id}/analysis?reanalyse=true    ignore the stored one and ask again
 ```
 
-The result is a `FIX` generation carrying a root cause, a rationale and a diff. Applying it
-goes through the same apply endpoint as any other proposal — there is no separate
-"heal" endpoint, because healing is not a separate mechanism.
+Answers `{ rootCause, confidence, summary, rationale, suggestion, repairable }`. `rootCause` is
+one of `LOCATOR_DRIFT`, `TIMING`, `APPLICATION_CHANGED`, `TEST_DATA`, `PRODUCT_BUG`, `UNKNOWN` —
+the table in [08](08-ai-pipeline.md).
+
+**`suggestion` is null and `repairable` is false for `PRODUCT_BUG` and `UNKNOWN`**, stripped by
+the server rather than left to the model's discretion. `repairable` is the API's answer, not the
+client's inference: a UI that worked it out for itself would eventually disagree with the
+endpoint that enforces it.
+
+`POST` is idempotent without `reanalyse` — the evidence cannot change once a run has finished, so
+a second press returns the stored reading rather than buying a second opinion. Only a **FAILED**
+item can be analysed; **ERROR** is a 409, because a run that could not complete says nothing about
+the application under test.
+
+Still to come: the `FIX` generation itself. It will be a row in `code_generations` with
+`kind = 'FIX'`, applied through the same apply endpoint as any other proposal — there is no
+separate "heal" endpoint, because healing is not a separate mechanism.
 
 ## Error codes
 

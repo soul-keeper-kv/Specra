@@ -250,11 +250,36 @@ under "Later".
 
 ## M7 — Analysis and repair
 
-- Migration V6 for `FIX` generations, role 5, the evidence bundle.
+- Migration V13 (the bullet used to say "V6"; the numbering has moved) — `failure_analyses`,
+  plus `kind` and `failure_analysis_id` on `code_generations`.
+- Role 5 and the evidence bundle.
 - Web: root cause, proposed diff, apply, re-run.
 
 **Done when** a locator change in the target application produces a correct one-line proposal
 that a user accepts and re-runs green — the loop closes.
+
+**Half done: the reading.** `POST /run-items/{id}/analysis` classifies one failed cell into the
+six causes of [08](08-ai-pipeline.md) with a confidence, a summary, a rationale tied to the
+evidence, and a suggestion in words. The run detail offers it per cell.
+
+Three decisions carry the feature. **Only FAILED is analysable** — ERROR means the run could not
+complete, which is ours to fix and says nothing about the application; V12 made that a column
+precisely so this could rely on it. **The reading is stored, not recomputed**: the evidence is
+immutable once a run finishes, so a second press returns what is there rather than paying for a
+possibly different answer to an identical question, and `reanalyse=true` is the deliberate
+override. And **`PRODUCT_BUG` carries no suggestion**, stripped in the service rather than merely
+discouraged in the prompt — invariant 7 is worth nothing if it depends on a model's good mood, so
+a model that helpfully offers "relax the assertion" has it dropped on the way to the database.
+
+The evidence bundle is a record, not a map, so what a model may see is auditable at a glance: the
+error, its deterministic pre-classification, the failed IR step, the manual step it traces back
+to, and an excerpt of the generated code. No environment values, secret or otherwise. There is no
+DOM snapshot — that arrives with M8, and until then the prompt says so rather than letting a
+rationale describe a page nobody looked at.
+
+Still open here: the FIX generation itself. It reuses `code_generations` rather than getting its
+own table, so it inherits the one propose/review/apply path — a second route into a user's
+repository is how "a human approves every write" quietly stops being true.
 
 ## M8 — Inspection and locator planning
 

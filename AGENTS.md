@@ -149,6 +149,11 @@ apps/api/src/main/java/dev/specra/api/
     │   ├── service/ EnvironmentService — the only class that decrypts one, for dispatch
     │   ├── domain/  Environment, EnvironmentVariable
     │   └── dto/     EnvironmentRequest/Response, EnvironmentVariableRequest/Response
+    ├── analysis/    role 5: why a cell failed. PRODUCT_BUG proposes nothing, on purpose
+    │   ├── web/     FailureAnalysisController
+    │   ├── service/ FailureAnalysisService, EvidenceCollector, FailureAnalysisPrompt
+    │   ├── domain/  FailureAnalysis, RootCause
+    │   └── dto/     FailureAnalysisResponse
     ├── run/         execution, its matrix and its evidence
     │   ├── web/     RunController, ArtifactController — artifacts are signed links, never bytes
     │   ├── service/ RunService, RunExecutor, ArtifactService, ArtifactRetention,
@@ -166,8 +171,8 @@ apps/web/src/
 ├── app/[locale]/    (marketing) · (auth) · (app) route groups; layouts only
 ├── i18n/            routing, navigation, request config
 ├── messages/        en.json, vi.json
-├── features/        projects · testcases · testmodel · codegen · runs · environments · git ·
-│                    testmanagement · workspaces · chat · auth · settings · dashboard
+├── features/        projects · testcases · testmodel · codegen · runs · analysis · environments ·
+│                    git · testmanagement · workspaces · chat · auth · settings · dashboard
 │                    — each api/ + components/ + schemas
 ├── components/      ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
 ├── lib/             api/ (client, types) · config/ (site, navigation) · utils
