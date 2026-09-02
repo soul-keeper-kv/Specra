@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Loader2,
   MoreVertical,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -51,6 +52,7 @@ import {
   useDeleteProject,
   useProjects,
 } from "@/features/projects/api/projects";
+import { ProjectEditDialog } from "@/features/projects/components/project-edit-dialog";
 import { ProjectForm } from "@/features/projects/components/project-form";
 import { useActiveWorkspace, useCreateWorkspace } from "@/features/workspaces/api/workspaces";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -175,6 +177,7 @@ function ProjectList({
   const [page, setPage] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
+  const [editing, setEditing] = useState<Project | null>(null);
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -310,6 +313,10 @@ function ProjectList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setEditing(project)}>
+                          <Pencil className="size-4" />
+                          {tActions("edit")}
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
                           onSelect={() => setPendingDelete(project)}
@@ -366,6 +373,15 @@ function ProjectList({
       )}
 
       {/* Deleting a project takes its test cases with it; that is worth one confirmation. */}
+      {/* Keyed on the id so switching projects rebuilds the form rather than reusing its state. */}
+      {editing ? (
+        <ProjectEditDialog
+          key={editing.id}
+          project={editing}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+
       <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => (open ? null : setPendingDelete(null))}

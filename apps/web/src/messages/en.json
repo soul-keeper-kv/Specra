@@ -127,6 +127,13 @@
       "description": "Name it after the application under test. The key is the short handle quoted in references like ACME.",
       "submit": "Create project"
     },
+    "edit": {
+      "title": "Edit project",
+      "description": "The key cannot change: generated files and commit messages already carry it.",
+      "submit": "Save changes",
+      "saved": "{name} saved",
+      "failed": "The project could not be saved."
+    },
     "form": {
       "name": "Name",
       "namePlaceholder": "Acme storefront",
@@ -134,7 +141,8 @@
       "keyPlaceholder": "ACME",
       "keyHint": "Optional — derived from the name when left empty. Once created it never changes.",
       "description": "Description",
-      "descriptionPlaceholder": "Checkout and account journeys for the public storefront."
+      "descriptionPlaceholder": "Checkout and account journeys for the public storefront.",
+      "keyLocked": "Fixed once the project exists."
     },
     "validation": {
       "nameRequired": "Name is required",

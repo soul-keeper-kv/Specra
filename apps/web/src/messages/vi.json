@@ -127,6 +127,13 @@
       "description": "Đặt tên theo ứng dụng cần kiểm thử. Mã dự án là định danh ngắn xuất hiện trong các tham chiếu như ACME.",
       "submit": "Tạo dự án"
     },
+    "edit": {
+      "title": "Sửa dự án",
+      "description": "Không đổi được mã dự án: mã sinh ra và nội dung commit đã mang nó.",
+      "submit": "Lưu thay đổi",
+      "saved": "Đã lưu {name}",
+      "failed": "Không thể lưu dự án."
+    },
     "form": {
       "name": "Tên",
       "namePlaceholder": "Cửa hàng Acme",
@@ -134,7 +141,8 @@
       "keyPlaceholder": "ACME",
       "keyHint": "Không bắt buộc — để trống sẽ được suy ra từ tên. Tạo xong sẽ không đổi được.",
       "description": "Mô tả",
-      "descriptionPlaceholder": "Các luồng thanh toán và tài khoản của cửa hàng."
+      "descriptionPlaceholder": "Các luồng thanh toán và tài khoản của cửa hàng.",
+      "keyLocked": "Cố định sau khi dự án được tạo."
     },
     "validation": {
       "nameRequired": "Tên là bắt buộc",

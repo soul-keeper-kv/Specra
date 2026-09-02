@@ -17,6 +17,11 @@ type Props = {
   pending?: boolean;
   /** Field-level errors returned by the API's bean validation, keyed by field name. */
   serverErrors?: Record<string, string>;
+  /**
+   * Locks the key. It is immutable once a project exists — generated files and commit messages
+   * carry it — so an editable input that the API would ignore is worse than a disabled one.
+   */
+  keyLocked?: boolean;
   onSubmit: (values: ProjectFormValues) => void | Promise<void>;
 };
 
@@ -27,6 +32,7 @@ export function ProjectForm({
   submitLabel,
   pending,
   serverErrors,
+  keyLocked,
   onSubmit,
 }: Props) {
   const t = useTranslations("projects.form");
@@ -78,10 +84,13 @@ export function ProjectForm({
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value.toUpperCase())}
               placeholder={t("keyPlaceholder")}
+              disabled={keyLocked}
               className="max-w-40 font-mono uppercase"
               aria-invalid={field.state.meta.errors.length > 0 || Boolean(serverErrors?.key)}
             />
-            <p className="text-xs text-muted-foreground">{t("keyHint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {keyLocked ? t("keyLocked") : t("keyHint")}
+            </p>
             <FieldError messages={field.state.meta.errors} serverMessage={serverErrors?.key} />
           </div>
         )}
