@@ -58,10 +58,10 @@ public class ArtifactController {
    * that is simply no longer valid, and telling them it does not exist would send them looking for
    * the wrong problem.
    */
-  @GetMapping("/artifacts/{key}")
+  @GetMapping("/artifacts")
   @Operation(summary = "Fetch an artifact with a signed link. No Authorization header required.")
   public ResponseEntity<InputStreamResource> download(
-      @PathVariable String key, @RequestParam long expires, @RequestParam("sig") String signature) {
+      @RequestParam String key, @RequestParam long expires, @RequestParam("sig") String signature) {
     if (!signatures.isSignatureValid(key, expires, signature)) {
       throw new BusinessException(ErrorCode.FORBIDDEN, "error.artifact.link-invalid");
     }

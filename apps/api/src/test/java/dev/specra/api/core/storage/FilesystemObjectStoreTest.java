@@ -64,6 +64,22 @@ class FilesystemObjectStoreTest {
     assertThat(store.isSignatureValid("runs/r1/i1/trace.zip", expires, signature)).isTrue();
   }
 
+  /**
+   * The key is a query parameter, never a path segment.
+   *
+   * <p>A storage key contains slashes, and Tomcat rejects an encoded slash inside a path with a 400
+   * before any handler runs — which made every artifact link undownloadable, valid or not. Caught
+   * by requesting one from a running server; this pins the shape so it cannot come back.
+   */
+  @Test
+  void putsTheKeyInTheQueryStringSoASlashSurvives() {
+    String url = store().url("runs/r1/i1/trace.zip", Duration.ofMinutes(15)).orElseThrow();
+
+    assertThat(url).startsWith("/api/v1/artifacts?");
+    assertThat(url.substring(0, url.indexOf('?'))).doesNotContain("%2F");
+    assertThat(paramOf(url, "key")).isEqualTo("runs%2Fr1%2Fi1%2Ftrace.zip");
+  }
+
   /** The point of signing: the key cannot be swapped for somebody else's. */
   @Test
   void aSignatureDoesNotTransferToAnotherKey() {

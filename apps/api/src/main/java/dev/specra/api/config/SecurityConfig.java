@@ -65,7 +65,7 @@ public class SecurityConfig {
    * tag, in a new tab, through the trace viewer — sends no header at all, and proxying the bytes
    * through an authenticated endpoint is exactly what 06-execution.md rules out.
    */
-  private static final String[] SIGNED_ENDPOINTS = {"/api/v1/artifacts/**"};
+  private static final String[] SIGNED_ENDPOINTS = {"/api/v1/artifacts"};
 
   /**
    * The OpenAPI document and its UI. Public because a client generates its types from it before it

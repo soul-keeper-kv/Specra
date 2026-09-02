@@ -79,10 +79,14 @@ public class FilesystemObjectStore implements ObjectStore {
   public Optional<String> url(String key, Duration ttl) {
     long expires = Instant.now().plus(ttl).getEpochSecond();
     String signature = sign(key, expires);
+    // The key travels as a query parameter, not a path segment. A storage key contains slashes
+    // (`runs/{run}/{item}/trace.zip`), and Tomcat rejects `%2F` inside a path with a 400 before
+    // any handler sees it — which made every artifact link, valid or not, undownloadable.
+    // Found by requesting one against a running server; no unit test would have shown it.
     return Optional.of(
-        "/api/v1/artifacts/"
+        "/api/v1/artifacts?key="
             + java.net.URLEncoder.encode(key, StandardCharsets.UTF_8)
-            + "?expires="
+            + "&expires="
             + expires
             + "&sig="
             + signature);
