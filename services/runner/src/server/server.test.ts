@@ -6,6 +6,8 @@
  * means the runner itself is broken.
  */
 
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -129,12 +131,62 @@ describe("POST /jobs", () => {
     expect(body.error.code).toBe("unknown-job-kind");
   });
 
-  it("says the jobs it has not built yet are not built yet", async () => {
-    for (const kind of ["inspect", "execute"]) {
-      const { status, body } = await post({ kind, payload: {} });
-      expect(status).toBe(422);
-      expect(body.error.code).toBe("not-implemented");
-    }
+  it("says the job it has not built yet is not built yet", async () => {
+    const { status, body } = await post({ kind: "inspect", payload: {} });
+
+    expect(status).toBe(422);
+    expect(body.error.code).toBe("not-implemented");
+  });
+
+  /**
+   * The runner is handed a path; it never clones, because the API holds the credentials. A
+   * payload without one cannot be run and is refused before any process is spawned.
+   */
+  it("refuses an execute job that does not say where the working copy is", async () => {
+    const { status, body } = await post({
+      kind: "execute",
+      payload: { baseUrl: "https://staging.acme.dev", browsers: ["chromium"] },
+    });
+
+    expect(status).toBe(422);
+    expect(body.error.code).toBe("malformed-payload");
+    expect(body.error.message).toMatch(/projectDir/);
+  });
+
+  it("refuses an execute job naming a browser it cannot run", async () => {
+    const { status, body } = await post({
+      kind: "execute",
+      payload: {
+        projectDir: ".",
+        baseUrl: "https://staging.acme.dev",
+        browsers: ["internet-explorer"],
+      },
+    });
+
+    expect(status).toBe(422);
+    expect(body.error.code).toBe("malformed-payload");
+  });
+
+  /**
+   * A working copy that is not there is an ERROR *result*, not a refusal: the job was
+   * well-formed and the runner has something to report about it. The distinction is the one
+   * the API branches on to tell "your test failed" from "the runner is broken".
+   */
+  it("reports a missing working copy as a result rather than a refusal", async () => {
+    const { status, body } = await post({
+      kind: "execute",
+      payload: {
+        projectDir: path.join(tmpdir(), "specra-does-not-exist-", String(Date.now())),
+        baseUrl: "https://staging.acme.dev",
+        browsers: ["chromium"],
+      },
+    });
+
+    expect(status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.result.status).toBe("ERROR");
+    expect(body.result.errorMessage).toMatch(/working copy/);
+    expect(body.result.items).toEqual([]);
   });
 
   it("has a health probe, so the API can report the runner as a state", async () => {

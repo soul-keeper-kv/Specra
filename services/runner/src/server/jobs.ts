@@ -9,6 +9,7 @@
  */
 
 import type { CodegenRequest, CodegenResult } from "../codegen/types.js";
+import { BROWSERS, type ExecuteRequest, type ExecuteResult } from "../execute/types.js";
 
 export const JOB_KINDS = ["codegen", "inspect", "execute"] as const;
 
@@ -27,6 +28,8 @@ export type JobResponse<T> =
   { ok: true; result: T } | { ok: false; error: { code: JobErrorCode; message: string } };
 
 export type CodegenJobResult = CodegenResult;
+
+export type ExecuteJobResult = ExecuteResult;
 
 /**
  * A payload is JSON from another runtime, so it is validated rather than cast. The IR itself is
@@ -58,6 +61,41 @@ export function parseCodegenPayload(payload: unknown): CodegenRequest {
     throw new PayloadError("options.adapterVersion is required");
   }
   return candidate as CodegenRequest;
+}
+
+/**
+ * The execute payload, checked the same way — it arrives as JSON from another runtime.
+ *
+ * `variables` is deliberately not logged or echoed anywhere: it carries decrypted secrets for
+ * the length of one job, and the result never contains it.
+ */
+export function parseExecutePayload(payload: unknown): ExecuteRequest {
+  if (typeof payload !== "object" || payload === null) {
+    throw new PayloadError("the payload must be an object");
+  }
+  const candidate = payload as Partial<ExecuteRequest>;
+
+  if (typeof candidate.projectDir !== "string" || candidate.projectDir.trim() === "") {
+    throw new PayloadError(
+      "projectDir is required: the runner does not clone, it is given a path",
+    );
+  }
+  if (typeof candidate.baseUrl !== "string" || candidate.baseUrl.trim() === "") {
+    throw new PayloadError("baseUrl is required; it becomes BASE_URL for the suite");
+  }
+  if (!Array.isArray(candidate.browsers) || candidate.browsers.length === 0) {
+    throw new PayloadError("browsers is required and must name at least one browser");
+  }
+  for (const browser of candidate.browsers) {
+    if (!(BROWSERS as readonly string[]).includes(browser)) {
+      throw new PayloadError(`unknown browser ${String(browser)}`);
+    }
+  }
+  if (candidate.specs !== undefined && !Array.isArray(candidate.specs)) {
+    throw new PayloadError("specs must be an array of repo-relative paths when present");
+  }
+
+  return candidate as ExecuteRequest;
 }
 
 export class PayloadError extends Error {

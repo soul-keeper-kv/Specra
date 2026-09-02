@@ -9,10 +9,12 @@
 import { generate } from "../codegen/generate.js";
 import { formatFiles } from "../codegen/validate.js";
 import { verifyProject } from "../codegen/verify.js";
+import { execute } from "../execute/run.js";
 import {
   JOB_KINDS,
   PayloadError,
   parseCodegenPayload,
+  parseExecutePayload,
   type Job,
   type JobKind,
   type JobResponse,
@@ -26,10 +28,11 @@ export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
   switch (job.kind) {
     case "codegen":
       return runCodegen(job.payload);
-    // Both land with their milestones; answering "not implemented" beats a 404 that reads like
-    // the runner is missing entirely.
-    case "inspect":
     case "execute":
+      return runExecute(job.payload);
+    // Lands with M8; answering "not implemented" beats a 404 that reads like the runner is
+    // missing entirely.
+    case "inspect":
       return {
         ok: false,
         error: {
@@ -67,6 +70,26 @@ export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
  * has unresolved targets and is not expected to compile yet. A caller that cannot tell "checked
  * and fine" from "not checked" will eventually trust the wrong one.
  */
+/**
+ * Runs a suite and answers with results and evidence.
+ *
+ * A run that finished with failing tests is a **success** at this layer — `ok: true` with a
+ * FAILED status — because the job did what it was asked. Only a malformed payload is a refusal.
+ * Getting that backwards would turn "your test found a bug" into "the runner is broken", and
+ * the API would report the wrong thing to the user.
+ */
+async function runExecute(payload: unknown): Promise<JobResponse<unknown>> {
+  try {
+    return { ok: true, result: await execute(parseExecutePayload(payload)) };
+  } catch (error) {
+    const code = error instanceof PayloadError ? error.code : "generation-failed";
+    return {
+      ok: false,
+      error: { code, message: error instanceof Error ? error.message : String(error) },
+    };
+  }
+}
+
 async function runCodegen(payload: unknown): Promise<JobResponse<unknown>> {
   try {
     const result = generate(parseCodegenPayload(payload));
