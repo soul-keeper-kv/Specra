@@ -1,5 +1,6 @@
 package dev.specra.api.feature.testmodel.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import dev.specra.api.feature.testmodel.dto.TestModelResponse;
 import dev.specra.api.feature.testmodel.dto.TestModelVersionResponse;
 import dev.specra.api.feature.testmodel.service.TestModelStore;
@@ -11,6 +12,8 @@ import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,6 +46,15 @@ public class TestModelController {
               + " the violations.")
   public TestModelResponse model(@PathVariable UUID id) {
     return modelling.model(id);
+  }
+
+  @PutMapping
+  @Operation(
+      summary =
+          "Replace the Test Model with an edited one, stored as the next version. Validated"
+              + " exactly as a generated model is; 422 test-model-invalid carries the violations.")
+  public TestModelResponse replace(@PathVariable UUID id, @RequestBody JsonNode document) {
+    return store.replace(id, document);
   }
 
   @GetMapping

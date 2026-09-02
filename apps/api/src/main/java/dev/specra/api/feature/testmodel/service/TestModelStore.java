@@ -1,9 +1,12 @@
 package dev.specra.api.feature.testmodel.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import dev.specra.api.core.error.ResourceNotFoundException;
+import dev.specra.api.core.security.Permission;
 import dev.specra.api.core.testmodel.TestModel;
 import dev.specra.api.core.testmodel.TestModelJson;
+import dev.specra.api.core.testmodel.TestModelValidation;
 import dev.specra.api.feature.project.service.ProjectService;
 import dev.specra.api.feature.testcase.dto.TestCaseResponse;
 import dev.specra.api.feature.testcase.service.TestCaseService;
@@ -31,12 +34,17 @@ public class TestModelStore {
   private final TestModelVersionRepository repository;
   private final TestCaseService testCases;
   private final ProjectService projects;
+  private final TestModelValidation validation;
 
   public TestModelStore(
-      TestModelVersionRepository repository, TestCaseService testCases, ProjectService projects) {
+      TestModelVersionRepository repository,
+      TestCaseService testCases,
+      ProjectService projects,
+      TestModelValidation validation) {
     this.repository = repository;
     this.testCases = testCases;
     this.projects = projects;
+    this.validation = validation;
   }
 
   public TestModelResponse current(UUID testCaseId) {
@@ -60,6 +68,31 @@ public class TestModelStore {
     return repository.findByTestCaseIdOrderByVersionDesc(testCaseId).stream()
         .map(TestModelViews::toVersion)
         .toList();
+  }
+
+  /**
+   * Replaces the current Test Model with one a person edited, as a new version.
+   *
+   * <p>The point of the IR being reviewable is that a reviewer can correct it — a product that
+   * shows someone a wrong step and offers only "generate again" has made the model the author and
+   * the human the spectator, which is the inversion invariant 4 exists to prevent.
+   *
+   * <p>It edits rather than overwrites: a hand-edited IR is version n+1 with the previous one
+   * intact, because regeneration and impact analysis both diff against what came before. The
+   * document goes through {@link TestModelValidation} — the same schema, binding and semantic gates
+   * a generated one does — so the hand-written path cannot be the one that stores a document the
+   * adapter will choke on.
+   */
+  @Transactional
+  public TestModelResponse replace(UUID testCaseId, JsonNode document) {
+    TestCaseResponse testCase = testCases.get(testCaseId);
+    projects.requireAccess(testCase.projectId(), Permission.CONTENT_EDIT);
+
+    TestModelValidation.Result result = validation.validate(document);
+    if (!result.ok()) {
+      throw new TestModelInvalidException(result.violations());
+    }
+    return store(testCase, result.model());
   }
 
   /**

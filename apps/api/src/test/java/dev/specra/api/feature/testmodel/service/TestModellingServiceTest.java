@@ -14,6 +14,7 @@ import dev.specra.api.core.testmodel.SchemaViolation;
 import dev.specra.api.core.testmodel.TestModel;
 import dev.specra.api.core.testmodel.TestModelSchema;
 import dev.specra.api.core.testmodel.TestModelSemantics;
+import dev.specra.api.core.testmodel.TestModelValidation;
 import dev.specra.api.feature.ai.domain.AiGenerationStatus;
 import dev.specra.api.feature.ai.dto.AiGenerationRecord;
 import dev.specra.api.feature.ai.service.AiFailures;
@@ -80,8 +81,7 @@ class TestModellingServiceTest {
             testCases,
             projects,
             store,
-            new TestModelSchema(),
-            new TestModelSemantics(),
+            new TestModelValidation(new TestModelSchema(), new TestModelSemantics()),
             (system, user) -> {
               prompts.add(user);
               return new ChatResponse(List.of(new Generation(new AssistantMessage(answers.pop()))));

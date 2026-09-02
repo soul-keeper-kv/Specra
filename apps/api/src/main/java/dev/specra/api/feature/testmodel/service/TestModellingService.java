@@ -6,8 +6,7 @@ import dev.specra.api.core.security.Permission;
 import dev.specra.api.core.testmodel.SchemaViolation;
 import dev.specra.api.core.testmodel.TestModel;
 import dev.specra.api.core.testmodel.TestModelJson;
-import dev.specra.api.core.testmodel.TestModelSchema;
-import dev.specra.api.core.testmodel.TestModelSemantics;
+import dev.specra.api.core.testmodel.TestModelValidation;
 import dev.specra.api.feature.ai.domain.AiGenerationKind;
 import dev.specra.api.feature.ai.domain.AiGenerationStatus;
 import dev.specra.api.feature.ai.dto.AiGenerationRecord;
@@ -53,8 +52,7 @@ public class TestModellingService {
   private final TestCaseService testCases;
   private final ProjectService projects;
   private final TestModelStore store;
-  private final TestModelSchema schema;
-  private final TestModelSemantics semantics;
+  private final TestModelValidation validation;
   private final ChatClientPort chat;
   private final AiFailures failures;
   private final AiProviders providers;
@@ -66,8 +64,7 @@ public class TestModellingService {
       TestCaseService testCases,
       ProjectService projects,
       TestModelStore store,
-      TestModelSchema schema,
-      TestModelSemantics semantics,
+      TestModelValidation validation,
       @Qualifier("modellingChatClient") org.springframework.ai.chat.client.ChatClient chatClient,
       AiFailures failures,
       AiProviders providers,
@@ -76,8 +73,7 @@ public class TestModellingService {
         testCases,
         projects,
         store,
-        schema,
-        semantics,
+        validation,
         (system, user) -> chatClient.prompt().system(system).user(user).call().chatResponse(),
         failures,
         providers,
@@ -88,8 +84,7 @@ public class TestModellingService {
       TestCaseService testCases,
       ProjectService projects,
       TestModelStore store,
-      TestModelSchema schema,
-      TestModelSemantics semantics,
+      TestModelValidation validation,
       ChatClientPort chat,
       AiFailures failures,
       AiProviders providers,
@@ -97,8 +92,7 @@ public class TestModellingService {
     this.testCases = testCases;
     this.projects = projects;
     this.store = store;
-    this.schema = schema;
-    this.semantics = semantics;
+    this.validation = validation;
     this.chat = chat;
     this.failures = failures;
     this.providers = providers;
@@ -172,7 +166,13 @@ public class TestModellingService {
     throw new TestCaseAmbiguousException(answer.ambiguities());
   }
 
-  /** Schema, then binding, then semantics — the order 02-test-model-ir.md fixes. */
+  /**
+   * The model's answer, through the shared chain in {@link TestModelValidation}.
+   *
+   * <p>Only the two failures that are peculiar to a model — it said nothing usable, or it returned
+   * prose instead of a document — are handled here; everything after that is the same validation a
+   * hand-edited IR goes through.
+   */
   private Validated validate(Answer answer) {
     if (answer.problem() != null) {
       return Validated.invalid(List.of(new SchemaViolation("/", answer.problem())));
@@ -184,19 +184,8 @@ public class TestModellingService {
               new SchemaViolation(
                   "/model", "no Test Model was produced and no ambiguity was reported")));
     }
-    List<SchemaViolation> structural = schema.validate(node);
-    if (!structural.isEmpty()) {
-      return Validated.invalid(structural);
-    }
-    TestModel model;
-    try {
-      model = TestModelJson.read(node);
-    } catch (JsonProcessingException e) {
-      return Validated.invalid(
-          List.of(new SchemaViolation("/", "does not bind: " + e.getOriginalMessage())));
-    }
-    List<SchemaViolation> semantic = semantics.validate(model);
-    return semantic.isEmpty() ? Validated.ok(model) : Validated.invalid(semantic);
+    TestModelValidation.Result result = validation.validate(node);
+    return new Validated(result.model(), result.violations());
   }
 
   private static String describe(List<SchemaViolation> violations) {

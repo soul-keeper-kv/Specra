@@ -93,17 +93,31 @@ repository over `file://`, which drives the same transport code a GitHub URL doe
 **Done when** a hand-written IR fixture generates a project that passes `tsc`, `eslint` and
 `prettier --check`, byte-identically on every run.
 
-**In flight**: the package exists as `specra-runner` with the adapter
+**Done for `codegen`**: the package exists as `specra-runner` with the adapter
 (`src/adapters/playwright/`), `generate()` as a pure `(IR, page objects, options) → files`, and
-41 tests. Determinism is held by golden files over the shared `fixtures/valid/` IRs; portability
+53 tests. Determinism is held by golden files over the shared `fixtures/valid/` IRs; portability
 is held by a test that writes two generations into one temp project and runs the real `tsc`
 against the real engine types — which is what caught a flow referencing a page object it never
 constructed, and a second generation clobbering `fixtures/environment.ts`. Engine vocabulary is
 contained by `containment.test.ts` with a two-entry exemption list. Generation refuses rather
 than guesses: an uninspected page comes back in `unresolved`, an element named `page`/`goto`
-is rejected, duplicate page names are rejected. The job server landed with M5: `POST /jobs { kind, payload }` over HTTP, serving `codegen`
-while `inspect`/`execute` answer `not-implemented`. Still open here: `eslint` and `prettier`
-over the output (only `tsc` runs today), and those two jobs.
+is rejected, duplicate page names are rejected. The job server landed with M5:
+`POST /jobs { kind, payload }` over HTTP, serving `codegen` while `inspect`/`execute` answer
+`not-implemented`.
+
+All three tools now run over the output. **Prettier is the authority on the bytes, not a check
+on them**: it formats in the job layer (`runCodegen`) rather than inside `generate()`, because
+prettier 3 is async-only and awaiting inside the one function the product's determinism rests
+on would ripple `await` through every call site to change nothing about the result. So the
+golden files record post-prettier bytes — what actually lands in the user's repository — and
+`checkFormatting` then asserts the adapter and prettier agree, which turns a drifted template
+into a failing test instead of a reformatted file in someone's first commit. `eslint` runs
+typed, over a materialised project, with the rules that catch a template bug (unused imports,
+floating promises) and none about style, which is prettier's. `require-await` is off with a
+reason: an uninspected page's `goto()` throws rather than guessing a URL, and it stays `async`
+because inspection later fills in a real navigation.
+
+Still open here: the `inspect` and `execute` jobs, which land with M8 and M6.
 
 ## M4 — Understanding and modelling
 
@@ -121,8 +135,19 @@ round, `test_models` versions, and the `ai_generations` audit (V10). Refusals ar
 `test-case-ambiguous` with the questions and `test-model-invalid` with the violations, both as
 problem extensions. The web side is the automation workspace reached from an Xray test: manual
 steps on the left, the model step beside the manual step it came from in the middle, pages
-awaiting inspection on the right. Still open here: `PUT …/model` (a human editing the IR),
-and referential validation against page objects, which waits for M8 to have any.
+awaiting inspection on the right.
+
+`PUT …/model` now lets a person correct the IR directly, which is what keeps invariant 4 from
+being decorative: a reviewer shown a wrong step and offered only "generate again" is a
+spectator, not the author. The edit is stored as version n+1 rather than overwriting what it
+corrected, because regeneration and impact analysis both diff against what came before. It
+validates through `TestModelValidation` in `core/testmodel` — the schema, binding and semantic
+chain extracted from `TestModellingService` so both callers use one gate. That extraction is
+the point of the change: a hand-written path with its own slightly different validation is
+exactly how "the stored IR is always valid" quietly stops being true, and the human path must
+not be the lenient one.
+
+Still open here: referential validation against page objects, which waits for M8 to have any.
 
 ## M5 — Generate, review, commit
 
