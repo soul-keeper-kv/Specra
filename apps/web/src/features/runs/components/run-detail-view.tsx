@@ -6,6 +6,7 @@ import {
   FileVideo,
   Image as ImageIcon,
   Loader2,
+  RotateCcw,
   ScrollText,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
@@ -17,9 +18,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FailureAnalysisPanel } from "@/features/analysis/components/failure-analysis-panel";
-import { useArtifactLinks, useCancelRun, useRun } from "@/features/runs/api/runs";
+import {
+  useArtifactLinks,
+  useCancelRun,
+  useRequestRun,
+  useRun,
+} from "@/features/runs/api/runs";
 import { RunItemStatusBadge, RunStatusBadge } from "@/features/runs/components/run-badges";
-import type { ArtifactKind, RunItem } from "@/lib/api/types";
+import { useRouter } from "@/i18n/navigation";
+import type { ArtifactKind, Run, RunItem } from "@/lib/api/types";
 
 /**
  * One run: every matrix cell, why each failed, and the evidence it left.
@@ -94,17 +101,46 @@ export function RunDetailView({ runId }: { runId: string }) {
 
       <ul className="grid gap-2">
         {current.items.map((item) => (
-          <RunItemRow key={item.id} item={item} />
+          <RunItemRow key={item.id} item={item} run={current} />
         ))}
       </ul>
     </div>
   );
 }
 
-function RunItemRow({ item }: { item: RunItem }) {
+function RunItemRow({ item, run }: { item: RunItem; run: Run }) {
   const t = useTranslations("runs");
+  const router = useRouter();
   const [showEvidence, setShowEvidence] = useState(false);
+  const rerun = useRequestRun(run.projectId);
   const failed = item.status === "FAILED" || item.status === "ERROR";
+
+  /**
+   * Runs this one cell again — the same case, the same browser, the same environment.
+   *
+   * Scoped rather than re-running the whole matrix: after applying a fix, the question is
+   * whether *this* test passes now, and re-running twelve cells to answer it wastes minutes and
+   * buries the answer.
+   */
+  function runAgain() {
+    rerun.mutate(
+      {
+        testCaseIds: [item.testCaseId],
+        browsers: [item.browser],
+        // The same deployment the failure came from. A fix verified against a different
+        // environment has not been verified.
+        environmentId: run.environmentId,
+      },
+      {
+        onSuccess: (queued) => {
+          toast.success(t("toast.queued", { reference: queued.reference }));
+          // Straight to the new run: the reason for pressing this is to watch the result.
+          router.push(`/runs/${queued.id}`);
+        },
+        onError: () => toast.error(t("problems.generic")),
+      },
+    );
+  }
 
   return (
     <li className="grid gap-2 rounded-lg border p-3">
@@ -144,20 +180,30 @@ function RunItemRow({ item }: { item: RunItem }) {
           it a model could read. */}
       <FailureAnalysisPanel itemId={item.id} analysable={item.status === "FAILED"} />
 
-      {item.artifacts.length > 0 ? (
-        showEvidence ? (
-          <Evidence itemId={item.id} />
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="justify-self-start"
-            onClick={() => setShowEvidence(true)}
-          >
-            {t("evidence.show", { count: item.artifacts.length })}
+      <div className="flex flex-wrap items-center gap-2">
+        {item.artifacts.length > 0 ? (
+          showEvidence ? null : (
+            <Button size="sm" variant="outline" onClick={() => setShowEvidence(true)}>
+              {t("evidence.show", { count: item.artifacts.length })}
+            </Button>
+          )
+        ) : null}
+
+        {/* Only where something went wrong. Re-running a green cell answers a question nobody
+            asked, and this button exists to close the loop after a fix. */}
+        {failed ? (
+          <Button size="sm" variant="ghost" disabled={rerun.isPending} onClick={runAgain}>
+            {rerun.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RotateCcw className="size-4" />
+            )}
+            {t("runAgain")}
           </Button>
-        )
-      ) : null}
+        ) : null}
+      </div>
+
+      {showEvidence && item.artifacts.length > 0 ? <Evidence itemId={item.id} /> : null}
     </li>
   );
 }

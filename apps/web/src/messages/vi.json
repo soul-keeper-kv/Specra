@@ -822,6 +822,7 @@
     "detailTitle": "Lần chạy",
     "subtitle": "Các test đã commit, chạy trên một môi trường.",
     "run": "Chạy test",
+    "runAgain": "Chạy lại",
     "cancel": "Hủy",
     "totals": "{passed}/{total} đạt",
     "dirty": "có thay đổi chưa commit",

@@ -822,6 +822,7 @@
     "detailTitle": "Run",
     "subtitle": "Committed tests, executed against an environment.",
     "run": "Run tests",
+    "runAgain": "Run again",
     "cancel": "Cancel",
     "totals": "{passed} of {total} passed",
     "dirty": "uncommitted changes",
