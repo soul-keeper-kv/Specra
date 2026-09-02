@@ -6,6 +6,7 @@ import {
   Eye,
   FileCode2,
   GitCommitHorizontal,
+  GitCompare,
   Loader2,
   Pencil,
   RefreshCw,
@@ -35,7 +36,7 @@ import {
 } from "@/features/codegen/api/code-generations";
 import { FileDiff } from "@/features/codegen/components/file-diff";
 import { ApiError } from "@/lib/api/client";
-import type { GeneratedFile } from "@/lib/api/types";
+import type { GeneratedFile, Impact, StepChange } from "@/lib/api/types";
 
 /**
  * The review surface: what AI proposes, what it would change, and the two buttons only a person
@@ -227,6 +228,11 @@ export function CodeProposalPanel({
             </span>
           </div>
 
+          {/* What moved in the test case, before the file diff. A reviewer who knows three
+              steps changed reads the diff looking for three things; without it they are
+              re-deriving the change from the code. */}
+          {current.impact ? <ImpactSummary impact={current.impact} /> : null}
+
           {current.unresolved.length > 0 ? (
             <Alert>
               <ScanSearch className="size-4" />
@@ -351,6 +357,71 @@ export function CodeProposalPanel({
     </div>
   );
 }
+
+/**
+ * What changed in the test case since the code in the repository was written.
+ *
+ * The projection is whole and deterministic — it has to be, or it would not be reproducible — so
+ * this is the other half of "regeneration is a diff, not a rewrite": the file diff shows what the
+ * code does, and this says what the *test case* did, which is the thing a reviewer actually
+ * decided to change.
+ */
+function ImpactSummary({ impact }: { impact: Impact }) {
+  const t = useTranslations("codegen.impact");
+
+  return (
+    <div className="grid gap-2 rounded-md border bg-muted/30 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <GitCompare className="size-4 text-muted-foreground" />
+        <span className="text-xs font-medium">
+          {t("summary", { changed: impact.steps.length, unchanged: impact.unchanged })}
+        </span>
+        {/* A large diff on a minor change means the projection moved, not the test case — worth
+            saying, because it is the reviewer's cue that something else is going on. */}
+        {impact.minor ? (
+          <Badge variant="secondary" className="font-normal">
+            {t("minor")}
+          </Badge>
+        ) : null}
+      </div>
+
+      <ul className="grid gap-1">
+        {impact.steps.map((delta) => (
+          <li key={delta.stepId} className="flex flex-wrap items-center gap-2 text-xs">
+            <span className={`font-mono ${CHANGE_COLOUR[delta.change]}`}>
+              {CHANGE_MARK[delta.change]}
+            </span>
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono">{delta.stepId}</span>
+            <span className="text-muted-foreground">{delta.description}</span>
+            {delta.page ? (
+              <span className="font-mono text-muted-foreground">{delta.page}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      {impact.pages.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {t("pages", { pages: impact.pages.join(", ") })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+const CHANGE_MARK: Record<StepChange, string> = {
+  ADDED: "+",
+  REMOVED: "-",
+  MODIFIED: "~",
+  UNCHANGED: "=",
+};
+
+const CHANGE_COLOUR: Record<StepChange, string> = {
+  ADDED: "text-emerald-600 dark:text-emerald-400",
+  REMOVED: "text-destructive",
+  MODIFIED: "text-amber-600 dark:text-amber-400",
+  UNCHANGED: "text-muted-foreground",
+};
 
 /** A runner refusal names the thing to fix; anything else falls through to the ordinary state. */
 function GenerationProblem({ error }: { error: unknown }) {

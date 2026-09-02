@@ -620,6 +620,33 @@ export type UnresolvedTarget = { stepId: string; page: string; element: string |
 
 export type CodeGenerationStatus = "PROPOSED" | "APPLIED" | "REJECTED" | "SUPERSEDED";
 
+/** How one IR step differs from the version the repository holds. */
+export type StepChange = "ADDED" | "REMOVED" | "MODIFIED" | "UNCHANGED";
+
+export type StepDelta = {
+  /** The IR step id — the same id a run reports as the failing step. */
+  stepId: string;
+  change: StepChange;
+  page: string | null;
+  description: string;
+};
+
+/**
+ * What changed in the Test Model since the code in the repository was projected.
+ *
+ * Null on a first generation: there is no previous version, and "14 steps added" would be true
+ * and useless. The projection itself stays whole and deterministic — this is the rationale that
+ * tells a reviewer what to look for in the file diff.
+ */
+export type Impact = {
+  steps: StepDelta[];
+  /** The pages the changed steps touch — where a locator problem would surface. */
+  pages: string[];
+  unchanged: number;
+  /** True when a large file diff would mean the projection moved, not the test case. */
+  minor: boolean;
+};
+
 export type CodeGeneration = {
   id: string;
   testCaseId: string;
@@ -629,6 +656,7 @@ export type CodeGeneration = {
   adapterVersion: string;
   files: GeneratedFile[];
   unresolved: UnresolvedTarget[];
+  impact: Impact | null;
   commitSha: string | null;
   createdAt: string;
   decidedAt: string | null;

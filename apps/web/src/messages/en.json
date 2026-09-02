@@ -745,6 +745,11 @@
       "title": "Some pages have not been inspected",
       "hint": "These elements have no locator yet, so the generated code cannot reach them. Inspect the pages, then regenerate."
     },
+    "impact": {
+      "summary": "{changed, plural, one {# step changed} other {# steps changed}}, {unchanged} unchanged",
+      "minor": "Small change",
+      "pages": "Pages involved: {pages}"
+    },
     "empty": {
       "noProposal": "No test script proposed yet",
       "noProposalHint": "Generate one from the approved Test Model. Nothing reaches your repository until you apply it.",

@@ -745,6 +745,11 @@
       "title": "Một số trang chưa được inspect",
       "hint": "Các phần tử này chưa có locator nên mã sinh ra không truy cập được. Hãy inspect các trang rồi tạo lại."
     },
+    "impact": {
+      "summary": "{changed, plural, other {# bước thay đổi}}, {unchanged} bước giữ nguyên",
+      "minor": "Thay đổi nhỏ",
+      "pages": "Trang liên quan: {pages}"
+    },
     "empty": {
       "noProposal": "Chưa có đề xuất test script",
       "noProposalHint": "Hãy sinh từ Test Model đã duyệt. Không có gì vào repository cho tới khi bạn áp dụng.",

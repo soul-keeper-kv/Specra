@@ -23,6 +23,7 @@ public record CodeGenerationResponse(
     String adapterVersion,
     List<GeneratedFileResponse> files,
     List<UnresolvedTargetResponse> unresolved,
+    ImpactResponse impact,
     String commitSha,
     Instant createdAt,
     Instant decidedAt) {}

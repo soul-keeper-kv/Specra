@@ -9,6 +9,8 @@ import dev.specra.api.core.error.ResourceNotFoundException;
 import dev.specra.api.core.runner.RunnerClient;
 import dev.specra.api.core.security.CurrentUser;
 import dev.specra.api.core.security.Permission;
+import dev.specra.api.core.testmodel.TestModel;
+import dev.specra.api.core.testmodel.TestModelDiff;
 import dev.specra.api.feature.ai.domain.AiGenerationKind;
 import dev.specra.api.feature.ai.domain.AiGenerationStatus;
 import dev.specra.api.feature.ai.dto.AiGenerationRecord;
@@ -181,7 +183,7 @@ public class CodeGenerationService {
     generation.setUnresolved(write(result.getOrDefault("unresolved", List.of())));
     CodeGeneration saved = repository.save(generation);
 
-    return describe(saved, model.version(), testCase);
+    return describe(saved, model.version(), testCase, impactOf(testCase.id(), model));
   }
 
   /**
@@ -383,11 +385,77 @@ public class CodeGenerationService {
   }
 
   /**
+   * What changed in the IR since the version the repository actually holds.
+   *
+   * <p>08-ai-pipeline.md asks that regeneration be "a diff, not a rewrite". The projection itself
+   * stays whole and deterministic — invariant 3 forbids a model call in the adapter, and a
+   * hand-patched projection would not be reproducible — so this is the other half of that
+   * requirement: the rationale. It says which steps moved and which pages they touch, so a reviewer
+   * reading a file diff knows what to look for rather than re-deriving it from the code.
+   *
+   * <p>The baseline is the last **applied** generation, not the last one made. A superseded or
+   * rejected proposal was never in anyone's repository, so diffing against one would describe a
+   * change that never happened.
+   *
+   * <p>Null when there is no baseline: a first generation has nothing to have changed from, and an
+   * impact reading "14 steps added" would be true and useless.
+   */
+  private dev.specra.api.feature.codegen.dto.ImpactResponse impactOf(
+      UUID testCaseId, TestModelResponse current) {
+    UUID appliedModelId =
+        repository
+            .findFirstByTestCaseIdAndStatusOrderByDecidedAtDesc(
+                testCaseId, CodeGenerationStatus.APPLIED)
+            .map(CodeGeneration::getTestModelId)
+            .orElse(null);
+
+    // A FIX carries no model id: it patched committed code rather than projecting an IR. There is
+    // nothing to diff against, which is honest — the code in the repository is no longer exactly
+    // any IR version's projection.
+    if (appliedModelId == null || appliedModelId.equals(current.id())) {
+      return null;
+    }
+
+    TestModel previous;
+    try {
+      previous = models.byId(appliedModelId).document();
+    } catch (RuntimeException e) {
+      // The version was deleted, or the case was re-imported. The generation is still valid; only
+      // the explanation of what changed is missing, and saying nothing beats guessing.
+      log.debug("No baseline model {} for impact: {}", appliedModelId, e.toString());
+      return null;
+    }
+
+    TestModelDiff.Impact impact = TestModelDiff.between(previous, current.document());
+    if (impact.isEmpty()) {
+      return null;
+    }
+    return new dev.specra.api.feature.codegen.dto.ImpactResponse(
+        impact.steps().stream()
+            .map(
+                delta ->
+                    new dev.specra.api.feature.codegen.dto.StepDeltaResponse(
+                        delta.stepId(), delta.change(), delta.page(), delta.description()))
+            .toList(),
+        impact.pages(),
+        impact.unchanged(),
+        impact.isMinor());
+  }
+
+  /**
    * Fills in what the reviewer sees, including the current contents of each file so the UI can
    * render a diff without a second round trip per path.
    */
   private CodeGenerationResponse describe(
       CodeGeneration generation, int modelVersion, TestCaseResponse testCase) {
+    return describe(generation, modelVersion, testCase, null);
+  }
+
+  private CodeGenerationResponse describe(
+      CodeGeneration generation,
+      int modelVersion,
+      TestCaseResponse testCase,
+      dev.specra.api.feature.codegen.dto.ImpactResponse impact) {
     List<Map<String, Object>> files = read(generation.getFiles());
     List<dev.specra.api.feature.codegen.dto.GeneratedFileResponse> described = new ArrayList<>();
     for (Map<String, Object> file : files) {
@@ -423,6 +491,7 @@ public class CodeGenerationService {
         generation.getAdapterVersion(),
         List.copyOf(described),
         unresolved,
+        impact,
         generation.getCommitSha(),
         generation.getCreatedAt(),
         generation.getDecidedAt());

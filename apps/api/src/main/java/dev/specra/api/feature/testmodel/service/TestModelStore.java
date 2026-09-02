@@ -63,6 +63,21 @@ public class TestModelStore {
         .orElseThrow(() -> new ResourceNotFoundException("resource.test-model", testCaseId));
   }
 
+  /**
+   * One stored version by its own id.
+   *
+   * <p>For a caller holding a reference to a specific version rather than a case and a number —
+   * {@code code_generations.test_model_id} is exactly that, and it is what makes "what changed
+   * since the code was written" answerable.
+   */
+  public TestModelResponse byId(UUID id) {
+    TestModelVersion row =
+        repository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("resource.test-model", id));
+    return TestModelViews.toResponse(row, testCases.get(row.getTestCaseId()));
+  }
+
   public List<TestModelVersionResponse> versions(UUID testCaseId) {
     testCases.get(testCaseId);
     return repository.findByTestCaseIdOrderByVersionDesc(testCaseId).stream()
