@@ -17,6 +17,7 @@ import dev.specra.api.feature.run.domain.RunStatus;
 import dev.specra.api.feature.run.domain.RunTrigger;
 import dev.specra.api.feature.run.domain.TestRun;
 import dev.specra.api.feature.run.domain.TestRunItem;
+import dev.specra.api.feature.run.domain.TestRunItemRepository;
 import dev.specra.api.feature.run.domain.TestRunRepository;
 import dev.specra.api.feature.run.dto.RunRequest;
 import dev.specra.api.feature.run.dto.RunResponse;
@@ -47,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RunService {
 
   private final TestRunRepository runs;
+  private final TestRunItemRepository items;
   private final AutomationTestRepository automationTests;
   private final ProjectService projects;
   private final EnvironmentService environments;
@@ -57,6 +59,7 @@ public class RunService {
 
   public RunService(
       TestRunRepository runs,
+      TestRunItemRepository items,
       AutomationTestRepository automationTests,
       ProjectService projects,
       EnvironmentService environments,
@@ -65,6 +68,7 @@ public class RunService {
       RunViews views,
       dev.specra.api.config.SpecraProperties properties) {
     this.runs = runs;
+    this.items = items;
     this.automationTests = automationTests;
     this.projects = projects;
     this.environments = environments;
@@ -170,6 +174,18 @@ public class RunService {
 
   private TestRun require(UUID id) {
     return runs.findById(id).orElseThrow(() -> new ResourceNotFoundException("resource.run", id));
+  }
+
+  /**
+   * One matrix cell, for the endpoints addressed by item rather than by run.
+   *
+   * <p>Access is not checked here: the caller does it against the item's project, which is the only
+   * place that knows what the caller is about to do with it.
+   */
+  public TestRunItem requireItem(UUID itemId) {
+    return items
+        .findById(itemId)
+        .orElseThrow(() -> new ResourceNotFoundException("resource.run-item", itemId));
   }
 
   /**

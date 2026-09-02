@@ -57,6 +57,17 @@ public class SecurityConfig {
   };
 
   /**
+   * Artifact downloads, which carry their own authorisation in the URL.
+   *
+   * <p>Public to Spring Security, not public in fact: the link is HMAC-signed over its key and its
+   * expiry, and the controller refuses anything unsigned or expired. It has to be reachable without
+   * the Authorization header because a browser fetching a video or a trace — in a &lt;video&gt;
+   * tag, in a new tab, through the trace viewer — sends no header at all, and proxying the bytes
+   * through an authenticated endpoint is exactly what 06-execution.md rules out.
+   */
+  private static final String[] SIGNED_ENDPOINTS = {"/api/v1/artifacts/**"};
+
+  /**
    * The OpenAPI document and its UI. Public because a client generates its types from it before it
    * has an account, and because the document describes the shape of the API rather than its data.
    */
@@ -98,6 +109,8 @@ public class SecurityConfig {
                     .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR)
                     .permitAll()
                     .requestMatchers(PUBLIC_ENDPOINTS)
+                    .permitAll()
+                    .requestMatchers(SIGNED_ENDPOINTS)
                     .permitAll()
                     .requestMatchers(PUBLIC_DOCS)
                     .permitAll()

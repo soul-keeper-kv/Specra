@@ -38,6 +38,7 @@ class RunExecutorTest {
   @Mock TestRunRepository runs;
   @Mock EnvironmentService environments;
   @Mock RunnerClient runner;
+  @Mock ArtifactService artifacts;
 
   RunExecutor executor;
 
@@ -47,7 +48,12 @@ class RunExecutorTest {
     // asserting on state does not need one.
     executor =
         new RunExecutor(
-            runs, environments, runner, null, TestProperties.withContentKind("testcase"));
+            runs,
+            environments,
+            runner,
+            artifacts,
+            null,
+            TestProperties.withContentKind("testcase"));
     lenient().when(runs.save(any(TestRun.class))).thenAnswer(inv -> inv.getArgument(0));
   }
 

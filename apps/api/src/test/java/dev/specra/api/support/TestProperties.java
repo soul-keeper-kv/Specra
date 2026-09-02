@@ -39,7 +39,8 @@ public final class TestProperties {
         defaults.logging(),
         security(base64Key, defaults.security().lockout()),
         git(),
-        runner());
+        runner(),
+        storage("target/test-artifacts"));
   }
 
   /** For tests about sign-in throttling, which vary only the lockout policy. */
@@ -52,7 +53,8 @@ public final class TestProperties {
         defaults.logging(),
         security("", new SpecraProperties.Security.Lockout(maxAttempts, duration)),
         git(),
-        runner());
+        runner(),
+        storage("target/test-artifacts"));
   }
 
   /** For tests about the AI health probe, which vary only its timings. */
@@ -73,6 +75,24 @@ public final class TestProperties {
   }
 
   /** Working copies under target/ so a test run never writes outside the build directory. */
+  /** For tests about the object store, which vary only where it writes. */
+  public static SpecraProperties withStorageDir(String dir) {
+    SpecraProperties defaults = withContentKind("testcase");
+    return new SpecraProperties(
+        defaults.cors(),
+        defaults.ai(),
+        defaults.content(),
+        defaults.logging(),
+        defaults.security(),
+        defaults.git(),
+        defaults.runner(),
+        storage(dir));
+  }
+
+  private static SpecraProperties.Storage storage(String dir) {
+    return new SpecraProperties.Storage(dir, Duration.ofMinutes(15), Duration.ofDays(30));
+  }
+
   private static SpecraProperties.Git git() {
     return new SpecraProperties.Git("target/test-repos", "Specra", "bot@specra.dev");
   }
@@ -98,6 +118,7 @@ public final class TestProperties {
         new SpecraProperties.Logging(new SpecraProperties.Logging.Access(true, 1000)),
         security("", new SpecraProperties.Security.Lockout(5, Duration.ofMinutes(15))),
         git(),
-        runner());
+        runner(),
+        storage("target/test-artifacts"));
   }
 }

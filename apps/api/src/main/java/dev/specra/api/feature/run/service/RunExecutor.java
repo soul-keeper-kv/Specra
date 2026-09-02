@@ -47,6 +47,7 @@ public class RunExecutor {
   private final TestRunRepository runs;
   private final EnvironmentService environments;
   private final RunnerClient runner;
+  private final ArtifactService artifacts;
   private final RunExecutor self;
   private final ExecutorService pool;
   private final long runTimeoutMs;
@@ -55,11 +56,13 @@ public class RunExecutor {
       TestRunRepository runs,
       EnvironmentService environments,
       RunnerClient runner,
+      ArtifactService artifacts,
       @org.springframework.context.annotation.Lazy RunExecutor self,
       SpecraProperties properties) {
     this.runs = runs;
     this.environments = environments;
     this.runner = runner;
+    this.artifacts = artifacts;
     // Through the proxy, so the @Transactional boundaries below actually apply: a self-call on
     // `this` would bypass them and run the writes outside a transaction.
     this.self = self;
@@ -156,6 +159,14 @@ public class RunExecutor {
       item.setErrorMessage(stringOf(reported.get("errorMessage")));
       item.setErrorType(stringOf(reported.get("errorType")));
       item.setCompletedAt(Instant.now());
+
+      // Copied out now, because the runner is about to delete the directory it wrote them to.
+      // The trace is what M7's failure analysis reads, so losing it here would mean losing the
+      // only record of what the browser actually saw.
+      String outputDir = stringOf(result.get("outputDir"));
+      if (outputDir != null) {
+        artifacts.store(item, outputDir, artifactsOf(reported));
+      }
     }
 
     run.setStatus(rollUp(run));
@@ -214,6 +225,12 @@ public class RunExecutor {
   private static List<Map<String, Object>> itemsOf(Map<String, Object> result) {
     Object items = result.get("items");
     return items instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> artifactsOf(Map<String, Object> item) {
+    Object artifacts = item.get("artifacts");
+    return artifacts instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
   }
 
   private static ItemStatus statusOf(Object value) {

@@ -263,6 +263,16 @@ specra:
       enabled: true
       # Above this, the access log line is a WARN rather than an INFO.
       slow-request-millis: 1000
+  storage:
+    # Run evidence — traces, videos, screenshots. Outside the database on purpose: a trace is
+    # megabytes and Postgres is not a file server. The default is the filesystem with genuinely
+    # signed links, so development exercises the same path production does; S3 is a second
+    # ObjectStore implementation, not a change above it.
+    dir: ${SPECRA_ARTIFACT_DIR:data/artifacts}
+    # How long a signed link stays valid. Minutes: it is handed to a browser about to fetch it.
+    url-ttl: ${SPECRA_ARTIFACT_URL_TTL:PT15M}
+    # How long evidence is kept. Traces are large and a QA team runs a lot of tests.
+    retention: ${SPECRA_ARTIFACT_RETENTION:P30D}
   git:
     # Working copies, one directory per (project, branch). A cache by contract: safe to
     # delete at any time, re-cloned on demand, never pointed into by the database. The

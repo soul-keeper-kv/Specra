@@ -29,7 +29,8 @@ public record SpecraProperties(
     @DefaultValue Logging logging,
     @DefaultValue Security security,
     @DefaultValue Git git,
-    @DefaultValue Runner runner) {
+    @DefaultValue Runner runner,
+    @DefaultValue Storage storage) {
 
   /** Origins allowed to call {@code /api/**} from a browser. */
   public record Cors(
@@ -155,4 +156,22 @@ public record SpecraProperties(
       @DefaultValue("PT30S") Duration timeout,
       @NotNull @DurationMin(minutes = 1) @DefaultValue("PT20M") Duration runTimeout,
       @Min(1) @Max(50) @DefaultValue("3") int maxConcurrentPerWorkspace) {}
+
+  /**
+   * Where run evidence is kept, and for how long.
+   *
+   * @param dir the filesystem store's root. Like the git working copies it is a cache of things
+   *     that can be produced again by re-running, so it is safe to delete — but unlike them it is
+   *     the *only* copy of what a particular run saw, which is why it has an expiry rather than
+   *     being cleared on a whim.
+   * @param urlTtl how long a signed artifact link stays valid. Minutes, not days: it is handed to a
+   *     browser that is about to fetch it, and a link that outlives the page it was rendered on is
+   *     a permanent handle to someone's test evidence.
+   * @param retention how long artifacts are kept before a sweep may remove them. Traces are large
+   *     and a QA team runs a lot of tests, so this is a cost dial with a real default.
+   */
+  public record Storage(
+      @NotBlank @DefaultValue("data/artifacts") String dir,
+      @NotNull @DurationMin(seconds = 30) @DefaultValue("PT15M") Duration urlTtl,
+      @NotNull @DurationMin(days = 1) @DefaultValue("P30D") Duration retention) {}
 }
