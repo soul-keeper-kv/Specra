@@ -165,7 +165,8 @@
     "tabs": {
       "testCases": "Ca kiểm thử",
       "source": "Mã nguồn",
-      "integrations": "Tích hợp"
+      "integrations": "Tích hợp",
+      "runs": "Lần chạy"
     }
   },
   "testManagement": {
@@ -761,5 +762,57 @@
       "appliedAndPushed": "Đã commit {sha} và push"
     },
     "pushAfterApply": "Push sau khi commit"
+  },
+  "runs": {
+    "title": "Lần chạy",
+    "detailTitle": "Lần chạy",
+    "subtitle": "Các test đã commit, chạy trên một môi trường.",
+    "run": "Chạy test",
+    "cancel": "Hủy",
+    "totals": "{passed}/{total} đạt",
+    "dirty": "có thay đổi chưa commit",
+    "commit": "Commit",
+    "queued": "Vào hàng đợi",
+    "errored": "Lần chạy không hoàn tất",
+    "failedAt": "Lỗi ở bước",
+    "status": {
+      "QUEUED": "Chờ",
+      "RUNNING": "Đang chạy",
+      "PASSED": "Đạt",
+      "FAILED": "Không đạt",
+      "ERROR": "Lỗi",
+      "CANCELLED": "Đã hủy"
+    },
+    "itemStatus": {
+      "QUEUED": "Chờ",
+      "RUNNING": "Đang chạy",
+      "PASSED": "Đạt",
+      "FAILED": "Không đạt",
+      "ERROR": "Lỗi",
+      "SKIPPED": "Bỏ qua"
+    },
+    "evidence": {
+      "show": "Bằng chứng ({count})",
+      "kind": {
+        "SCREENSHOT": "Ảnh chụp",
+        "VIDEO": "Video",
+        "TRACE": "Trace",
+        "LOG": "Nhật ký",
+        "DOM": "DOM"
+      }
+    },
+    "empty": {
+      "title": "Chưa có lần chạy nào",
+      "description": "Hãy commit một test đã sinh, rồi chạy nó trên một môi trường để xem kết quả ở đây."
+    },
+    "toast": {
+      "queued": "Đã đưa {reference} vào hàng đợi",
+      "cancelled": "Đã hủy lần chạy"
+    },
+    "problems": {
+      "conflict": "Lần chạy này chưa thể bắt đầu.",
+      "noEnvironment": "Hãy thêm một môi trường cho dự án này trước, để lần chạy biết trỏ vào đâu.",
+      "generic": "Đã có lỗi xảy ra. Hãy thử lại."
+    }
   }
 }

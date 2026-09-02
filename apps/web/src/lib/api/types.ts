@@ -635,3 +635,107 @@ export type CodeGeneration = {
 };
 
 export type ApplyGenerationInput = { message?: string; push?: boolean };
+
+// ── Runs ─────────────────────────────────────────────────────────────────────
+
+export type RunStatus = "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR" | "CANCELLED";
+
+export type RunItemStatus = "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR" | "SKIPPED";
+
+export type ArtifactKind = "SCREENSHOT" | "VIDEO" | "TRACE" | "LOG" | "DOM";
+
+export type RunTotals = {
+  total: number;
+  passed: number;
+  failed: number;
+  errored: number;
+  skipped: number;
+};
+
+export type RunArtifact = {
+  id: string;
+  kind: ArtifactKind;
+  contentType: string | null;
+  sizeBytes: number | null;
+  expiresAt: string | null;
+};
+
+export type RunItem = {
+  id: string;
+  testCaseId: string;
+  testCaseReference: string | null;
+  specPath: string;
+  title: string;
+  browser: string;
+  status: RunItemStatus;
+  durationMs: number | null;
+  /** An IR step id, so the UI can point at the manual step the user wrote. */
+  failedStepId: string | null;
+  errorMessage: string | null;
+  errorType: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  artifacts: RunArtifact[];
+};
+
+export type Run = {
+  id: string;
+  projectId: string;
+  reference: string;
+  environmentId: string;
+  commitSha: string;
+  /** True when the run included uncommitted changes; the diff is kept with the run. */
+  dirty: boolean;
+  trigger: "MANUAL" | "SCHEDULE" | "CI";
+  status: RunStatus;
+  queuedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorMessage: string | null;
+  totals: RunTotals;
+  items: RunItem[];
+};
+
+export type RunInput = {
+  testCaseIds?: string[];
+  browsers?: string[];
+  environmentId?: string;
+};
+
+/** A short-lived link the browser fetches directly; the API never proxies the bytes. */
+export type ArtifactLink = {
+  id: string;
+  kind: ArtifactKind;
+  url: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  expiresAt: string;
+};
+
+// ── Environments ─────────────────────────────────────────────────────────────
+
+export type EnvironmentVariable = {
+  key: string;
+  /** Null for a secret: the API never returns one. `valueSet` is all a reader may learn. */
+  value: string | null;
+  secret: boolean;
+  valueSet: boolean;
+};
+
+export type Environment = {
+  id: string;
+  projectId: string;
+  name: string;
+  baseUrl: string;
+  isDefault: boolean;
+  variables: EnvironmentVariable[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EnvironmentInput = {
+  name: string;
+  baseUrl: string;
+  isDefault?: boolean;
+  variables: { key: string; value?: string; secret?: boolean }[];
+};

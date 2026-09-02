@@ -165,7 +165,8 @@
     "tabs": {
       "testCases": "Test cases",
       "source": "Source control",
-      "integrations": "Integrations"
+      "integrations": "Integrations",
+      "runs": "Runs"
     }
   },
   "testManagement": {
@@ -761,5 +762,57 @@
       "appliedAndPushed": "Committed as {sha} and pushed"
     },
     "pushAfterApply": "Push after committing"
+  },
+  "runs": {
+    "title": "Runs",
+    "detailTitle": "Run",
+    "subtitle": "Committed tests, executed against an environment.",
+    "run": "Run tests",
+    "cancel": "Cancel",
+    "totals": "{passed} of {total} passed",
+    "dirty": "uncommitted changes",
+    "commit": "Commit",
+    "queued": "Queued",
+    "errored": "The run could not complete",
+    "failedAt": "Failed at step",
+    "status": {
+      "QUEUED": "Queued",
+      "RUNNING": "Running",
+      "PASSED": "Passed",
+      "FAILED": "Failed",
+      "ERROR": "Error",
+      "CANCELLED": "Cancelled"
+    },
+    "itemStatus": {
+      "QUEUED": "Queued",
+      "RUNNING": "Running",
+      "PASSED": "Passed",
+      "FAILED": "Failed",
+      "ERROR": "Error",
+      "SKIPPED": "Skipped"
+    },
+    "evidence": {
+      "show": "Evidence ({count})",
+      "kind": {
+        "SCREENSHOT": "Screenshot",
+        "VIDEO": "Video",
+        "TRACE": "Trace",
+        "LOG": "Log",
+        "DOM": "DOM"
+      }
+    },
+    "empty": {
+      "title": "No runs yet",
+      "description": "Commit a generated test, then run it against an environment to see results here."
+    },
+    "toast": {
+      "queued": "{reference} queued",
+      "cancelled": "Run cancelled"
+    },
+    "problems": {
+      "conflict": "This run cannot start yet.",
+      "noEnvironment": "Add an environment to this project first, so a run knows where to point.",
+      "generic": "Something went wrong. Try again."
+    }
   }
 }
