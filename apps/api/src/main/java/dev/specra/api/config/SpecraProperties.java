@@ -28,7 +28,8 @@ public record SpecraProperties(
     @DefaultValue Content content,
     @DefaultValue Logging logging,
     @DefaultValue Security security,
-    @DefaultValue Git git) {
+    @DefaultValue Git git,
+    @DefaultValue Runner runner) {
 
   /** Origins allowed to call {@code /api/**} from a browser. */
   public record Cors(
@@ -136,4 +137,15 @@ public record SpecraProperties(
       @NotBlank @DefaultValue("data/repos") String reposDir,
       @NotBlank @DefaultValue("Specra") String committerName,
       @NotBlank @DefaultValue("bot@specra.dev") String committerEmail) {}
+
+  /**
+   * Where the toolchain plane lives, and how long to wait for it.
+   *
+   * <p>A codegen job is a pure function over data already in memory, so it answers in milliseconds;
+   * the timeout is generous enough for a cold start and short enough that a hung runner surfaces as
+   * a reported state rather than a request nobody ever gets an answer to.
+   */
+  public record Runner(
+      @NotBlank @DefaultValue("http://127.0.0.1:8090") String baseUrl,
+      @DefaultValue("PT30S") Duration timeout) {}
 }

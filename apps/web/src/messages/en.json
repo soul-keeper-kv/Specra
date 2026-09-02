@@ -231,8 +231,10 @@
         }
       },
       "script": {
-        "empty": "Test script",
-        "hint": "The proposal and its diff open in the centre."
+        "empty": "No script proposal yet",
+        "hint": "The approved Test Model becomes a reviewable Git diff here once code generation is connected.",
+        "rail": "Test script",
+        "railHint": "The proposal and its diff open in the centre."
       },
       "canvas": {
         "title": "Current step",
@@ -259,7 +261,9 @@
         "expectedValue": "expected",
         "attribute": "attribute",
         "sourceSteps": "From manual step",
-        "derived": "Derived: no manual step asked for this — the case assumes it."
+        "derived": "Derived: no manual step asked for this — the case assumes it.",
+        "scriptTitle": "Test script",
+        "scriptMode": "Review the diff before it reaches your repository"
       },
       "details": {
         "title": "Test details",
@@ -713,6 +717,47 @@
       "description": "{name} loses access to this workspace and everything in it. Their account and their other workspaces are untouched.",
       "cancel": "Cancel",
       "confirm": "Remove"
+    }
+  },
+  "codegen": {
+    "generate": "Generate test script",
+    "regenerate": "Regenerate",
+    "apply": "Apply and commit",
+    "reject": "Reject",
+    "summary": "{files} files, {changed} changed",
+    "fromModel": "from Test Model v{version}",
+    "applyHint": "Applying writes these files into your repository and commits them as you.",
+    "status": {
+      "proposed": "Awaiting review"
+    },
+    "fileStatus": {
+      "NEW": "New file",
+      "MODIFIED": "Modified",
+      "UNCHANGED": "Unchanged"
+    },
+    "diff": {
+      "unchanged": "This file already matches what the repository has."
+    },
+    "unresolved": {
+      "title": "Some pages have not been inspected",
+      "hint": "These elements have no locator yet, so the generated code cannot reach them. Inspect the pages, then regenerate."
+    },
+    "empty": {
+      "noProposal": "No test script proposed yet",
+      "noProposalHint": "Generate one from the approved Test Model. Nothing reaches your repository until you apply it.",
+      "noModel": "Model this test first",
+      "noModelHint": "The test script is projected from the Test Model, so that has to exist first.",
+      "notImported": "Import this test first",
+      "notImportedHint": "Prepare automation to bring the case into Specra, then model it."
+    },
+    "problems": {
+      "refused": "The test script could not be generated",
+      "generic": "Something went wrong. Try again."
+    },
+    "toast": {
+      "generated": "{count, plural, one {# file} other {# files}} proposed for review",
+      "applied": "Committed as {sha}",
+      "rejected": "Proposal rejected; nothing was written"
     }
   }
 }

@@ -34,6 +34,7 @@ import {
   useImportExternalTest,
   useImportedTestCase,
 } from "@/features/testmanagement/api/test-management";
+import { CodeProposalPanel } from "@/features/codegen/components/code-proposal-panel";
 import { useModelTestCase, useTestModel } from "@/features/testmodel/api/test-models";
 import { Link } from "@/i18n/navigation";
 import { ApiError } from "@/lib/api/client";
@@ -332,7 +333,7 @@ export function ExternalTestWorkspace({
             </TabsContent>
 
             <TabsContent value="script" className="mt-0">
-              <EmptyRail icon={Code2} title={t("script.empty")} hint={t("script.hint")} />
+              <EmptyRail icon={Code2} title={t("script.rail")} hint={t("script.railHint")} />
             </TabsContent>
           </Tabs>
         </aside>
@@ -340,10 +341,14 @@ export function ExternalTestWorkspace({
         <main className="grid min-w-0 grid-rows-[auto_1fr] bg-muted/20">
           <div className="flex items-center justify-between border-b bg-card px-4 py-3">
             <div>
-              <p className="text-sm font-semibold">{t("canvas.title")}</p>
-              <p className="text-xs text-muted-foreground">{t("canvas.reviewMode")}</p>
+              <p className="text-sm font-semibold">
+                {rail === "script" ? t("canvas.scriptTitle") : t("canvas.title")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {rail === "script" ? t("canvas.scriptMode") : t("canvas.reviewMode")}
+              </p>
             </div>
-            {selection.kind === "manual" ? (
+            {rail === "script" ? null : selection.kind === "manual" ? (
               <Badge variant="secondary">
                 {t("canvas.step", { current: selection.position, total: manualSteps.length })}
               </Badge>
@@ -362,7 +367,9 @@ export function ExternalTestWorkspace({
                 </div>
               </div>
               <div className="grid min-h-80 p-6 sm:p-8">
-                {selection.kind === "manual" ? (
+                {rail === "script" ? (
+                  <CodeProposalPanel testCaseId={testCaseId} hasModel={Boolean(current)} />
+                ) : selection.kind === "manual" ? (
                   <ManualStage
                     step={manualSteps.find((s) => s.position === selection.position)}
                     model={current}

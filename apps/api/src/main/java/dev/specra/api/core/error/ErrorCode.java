@@ -57,6 +57,11 @@ public enum ErrorCode {
    */
   EMAIL_ALREADY_USED(HttpStatus.CONFLICT),
   /**
+   * Apply or reject on a generation that is no longer PROPOSED — already applied, rejected, or
+   * superseded by a newer one. Declared after {@link #CONFLICT} for the usual reason.
+   */
+  GENERATION_NOT_PROPOSED(HttpStatus.CONFLICT),
+  /**
    * The remote refused a non-fast-forward push. Resolved by the user pulling and retrying — never
    * by a force push or a background rebase they did not ask for. After {@link #CONFLICT} so {@link
    * #forStatus} keeps returning the general 409.
@@ -97,6 +102,12 @@ public enum ErrorCode {
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   /** The configured Jira/Xray host could not be reached or timed out. */
   INTEGRATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+  /**
+   * The runner could not be reached, or did not answer in time. Ours to fix, unlike a refusal: the
+   * user can only wait. After {@link #AI_PROVIDER_UNAVAILABLE} so {@link #forStatus} keeps
+   * returning the general 503.
+   */
+  RUNNER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   /**
    * Nobody has given this installation usable credentials for the active model provider, so there
    * is nothing to call. Distinct from {@link #AI_PROVIDER_ERROR} on purpose: that one means the

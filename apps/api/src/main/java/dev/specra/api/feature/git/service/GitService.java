@@ -181,6 +181,37 @@ public class GitService {
         });
   }
 
+  /**
+   * The file's current contents, or null when the repository has no such file.
+   *
+   * <p>Absence is an answer here, not a failure: a generation asks so it can show a diff, and a
+   * file that does not exist yet is the ordinary case for a new spec. Returns null rather than
+   * throwing so the caller does not have to catch its way through a normal state.
+   */
+  public String readFileOrNull(UUID projectId, String path) {
+    GitRepository repository = requireForRead(projectId);
+    return inCopy(
+        repository,
+        (provider, copy) -> {
+          Path file = resolve(copy, path);
+          if (!Files.isRegularFile(file)) {
+            return null;
+          }
+          try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+  }
+
+  /** Whether the working copy already has this path — how a generation decides to scaffold. */
+  public boolean hasFile(UUID projectId, String path) {
+    GitRepository repository = requireForRead(projectId);
+    return Boolean.TRUE.equals(
+        inCopy(repository, (provider, copy) -> Files.isRegularFile(resolve(copy, path))));
+  }
+
   @Transactional
   public FileContentResponse writeFile(UUID projectId, FileWriteRequest request) {
     GitRepository repository = requireForWrite(projectId);

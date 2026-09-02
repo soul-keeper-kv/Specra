@@ -38,7 +38,8 @@ public final class TestProperties {
         defaults.content(),
         defaults.logging(),
         security(base64Key, defaults.security().lockout()),
-        git());
+        git(),
+        runner());
   }
 
   /** For tests about sign-in throttling, which vary only the lockout policy. */
@@ -50,7 +51,8 @@ public final class TestProperties {
         defaults.content(),
         defaults.logging(),
         security("", new SpecraProperties.Security.Lockout(maxAttempts, duration)),
-        git());
+        git(),
+        runner());
   }
 
   /** For tests about the AI health probe, which vary only its timings. */
@@ -62,6 +64,11 @@ public final class TestProperties {
       boolean enabled, Duration timeout, Duration minRefreshInterval) {
     return new SpecraProperties.Ai.Health(
         enabled, Duration.ofMinutes(5), Duration.ofSeconds(10), timeout, minRefreshInterval);
+  }
+
+  /** A runner nothing in a unit test actually calls; the URL only has to parse. */
+  private static SpecraProperties.Runner runner() {
+    return new SpecraProperties.Runner("http://127.0.0.1:8090", Duration.ofSeconds(30));
   }
 
   /** Working copies under target/ so a test run never writes outside the build directory. */
@@ -89,6 +96,7 @@ public final class TestProperties {
         new SpecraProperties.Content(defaultKind),
         new SpecraProperties.Logging(new SpecraProperties.Logging.Access(true, 1000)),
         security("", new SpecraProperties.Security.Lockout(5, Duration.ofMinutes(15))),
-        git());
+        git(),
+        runner());
   }
 }

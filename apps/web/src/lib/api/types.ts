@@ -40,6 +40,9 @@ export type ApiProblem = {
   questions?: AmbiguityQuestion[];
   /** Present only when `code` is "test-model-invalid": what the schema or semantics rejected. */
   violations?: SchemaViolation[];
+  /** Present when the runner refused a codegen job: its own machine-readable reason. */
+  runnerCode?: string;
+  runnerMessage?: string;
 };
 
 export type ChatReply = {
@@ -595,3 +598,40 @@ export type TestModelVersionSummary = {
 export type AmbiguityQuestion = { sourceStepId: string | null; question: string };
 
 export type SchemaViolation = { path: string; message: string };
+
+// ── Code generation (the proposal a person reviews) ──────────────────────────
+
+export type GeneratedFileRole = "SPEC" | "PAGE" | "FIXTURE" | "CONFIG" | "MODEL";
+
+/** NEW when the repository has no such file, MODIFIED when it differs, UNCHANGED when it matches. */
+export type GeneratedFileStatus = "NEW" | "MODIFIED" | "UNCHANGED";
+
+export type GeneratedFile = {
+  path: string;
+  role: GeneratedFileRole;
+  status: GeneratedFileStatus;
+  contents: string;
+  /** What the working copy holds today; null when the file is new. */
+  previous: string | null;
+};
+
+/** A step whose page nobody has inspected — reported rather than guessed at. */
+export type UnresolvedTarget = { stepId: string; page: string; element: string | null };
+
+export type CodeGenerationStatus = "PROPOSED" | "APPLIED" | "REJECTED" | "SUPERSEDED";
+
+export type CodeGeneration = {
+  id: string;
+  testCaseId: string;
+  reference: string;
+  status: CodeGenerationStatus;
+  modelVersion: number;
+  adapterVersion: string;
+  files: GeneratedFile[];
+  unresolved: UnresolvedTarget[];
+  commitSha: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+};
+
+export type ApplyGenerationInput = { message?: string; push?: boolean };

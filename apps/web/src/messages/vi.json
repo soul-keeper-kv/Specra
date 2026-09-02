@@ -231,8 +231,10 @@
         }
       },
       "script": {
-        "empty": "Test script",
-        "hint": "Đề xuất và diff hiển thị ở khung giữa."
+        "empty": "Chưa có đề xuất test script",
+        "hint": "Test Model sau khi được duyệt sẽ trở thành Git diff có thể review tại đây khi sinh code được kết nối.",
+        "rail": "Test script",
+        "railHint": "Đề xuất và diff hiển thị ở khung giữa."
       },
       "canvas": {
         "title": "Bước hiện tại",
@@ -259,7 +261,9 @@
         "expectedValue": "mong đợi",
         "attribute": "thuộc tính",
         "sourceSteps": "Từ bước thủ công",
-        "derived": "Suy ra: không bước thủ công nào yêu cầu — test case ngầm giả định."
+        "derived": "Suy ra: không bước thủ công nào yêu cầu — test case ngầm giả định.",
+        "scriptTitle": "Test script",
+        "scriptMode": "Review diff trước khi vào repository của bạn"
       },
       "details": {
         "title": "Chi tiết test",
@@ -713,6 +717,47 @@
       "description": "{name} sẽ mất quyền truy cập không gian làm việc này và mọi thứ trong đó. Tài khoản và các không gian khác của họ không bị ảnh hưởng.",
       "cancel": "Huỷ",
       "confirm": "Xoá"
+    }
+  },
+  "codegen": {
+    "generate": "Sinh test script",
+    "regenerate": "Tạo lại",
+    "apply": "Áp dụng và commit",
+    "reject": "Từ chối",
+    "summary": "{files} tệp, {changed} thay đổi",
+    "fromModel": "từ Test Model v{version}",
+    "applyHint": "Áp dụng sẽ ghi các tệp này vào repository của bạn và commit dưới tên bạn.",
+    "status": {
+      "proposed": "Chờ review"
+    },
+    "fileStatus": {
+      "NEW": "Tệp mới",
+      "MODIFIED": "Đã sửa",
+      "UNCHANGED": "Không đổi"
+    },
+    "diff": {
+      "unchanged": "Tệp này đã trùng với nội dung trong repository."
+    },
+    "unresolved": {
+      "title": "Một số trang chưa được inspect",
+      "hint": "Các phần tử này chưa có locator nên mã sinh ra không truy cập được. Hãy inspect các trang rồi tạo lại."
+    },
+    "empty": {
+      "noProposal": "Chưa có đề xuất test script",
+      "noProposalHint": "Hãy sinh từ Test Model đã duyệt. Không có gì vào repository cho tới khi bạn áp dụng.",
+      "noModel": "Hãy mô hình hóa test này trước",
+      "noModelHint": "Test script được chiếu ra từ Test Model, nên cần có Test Model trước.",
+      "notImported": "Hãy import test này trước",
+      "notImportedHint": "Chuẩn bị automation để đưa ca kiểm thử vào Specra, rồi mô hình hóa."
+    },
+    "problems": {
+      "refused": "Không thể sinh test script",
+      "generic": "Có lỗi xảy ra. Hãy thử lại."
+    },
+    "toast": {
+      "generated": "Đã đề xuất {count} tệp để review",
+      "applied": "Đã commit {sha}",
+      "rejected": "Đã từ chối đề xuất; chưa ghi gì cả"
     }
   }
 }

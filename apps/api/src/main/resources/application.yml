@@ -212,6 +212,13 @@ specra:
     # Set false once the installation has its people: sign-up closes, and accounts are
     # created by inviting an address into a workspace instead.
     registration-open: ${SPECRA_REGISTRATION_OPEN:true}
+  runner:
+    # The Node service that owns the Playwright toolchain (03-module-boundaries.md). Codegen is
+    # a pure function over the job payload, so this is a plain HTTP call with no queue behind
+    # it yet; `pnpm --filter specra-runner start` is what listens here in development.
+    base-url: ${RUNNER_BASE_URL:http://127.0.0.1:8090}
+    timeout: ${RUNNER_TIMEOUT:PT30S}
+
   ai:
     system-prompt: >
       You are Specra's assistant. Answer concisely and concretely.
