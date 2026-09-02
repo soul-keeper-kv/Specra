@@ -143,14 +143,32 @@ rather than through `/automation-tests/{id}/files`, which does not exist: until 
 applied there is no automation test to read files from, and afterwards the file is in Git, where
 `GET /projects/{id}/git/file` already serves it.
 
-## Page inspection — planned (M8)
+## Page inspection — built
 
 ```http
-POST   /api/v1/projects/{id}/inspect           { url, environmentId } → 202
-GET    /api/v1/projects/{id}/pages
+GET    /api/v1/projects/{id}/pages             not paged: a project has a handful
+POST   /api/v1/projects/{id}/pages/inspect     { pageName, route, environmentId? } → the page
 GET    /api/v1/pages/{id}
 PUT    /api/v1/pages/{id}/elements/{name}      a human corrects a locator
 ```
+
+Two shapes differ from the sketch this section used to carry, and the code is right. The path is
+`…/pages/inspect` rather than `…/inspect`, because inspection produces a page object and the
+resource it belongs under should say so. And it answers **200 with the page**, not 202: opening one
+page takes a few seconds, and a reviewer wants the elements rather than a ticket to poll for.
+
+`route` is a path, not a URL — it is joined to the environment's base URL, so the same page object
+is re-inspectable against staging or production without editing it. `pageName` is supplied rather
+than derived: inspection has no idea that `/login` is `LoginPage`, and guessing would produce a
+page nothing references.
+
+**Re-inspecting replaces the elements rather than merging them.** A merge would keep a locator for
+an element the page no longer has, and a page object that quietly accumulates dead entries is how
+"the tests were passing yesterday" becomes unanswerable.
+
+An element the planner could not address uniquely is not stored at all: a page-object getter that
+can never resolve is worse than its absence, which at least surfaces as an unresolved target on the
+next generation.
 
 ## Git — built
 

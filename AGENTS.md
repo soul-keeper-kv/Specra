@@ -66,9 +66,9 @@ current `notes`/`chat` scaffold gets replaced by.
 The fifth landed with M3, in the place
 [03 — Module boundaries](docs/architecture/03-module-boundaries.md) reserved for it:
 
-|                   |                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------ |
-| `services/runner` | Node/TS: the Playwright adapter, codegen and execution today; DOM inspection to come |
+|                   |                                                                         |
+| ----------------- | ----------------------------------------------------------------------- |
+| `services/runner` | Node/TS: the Playwright adapter — codegen, execution and DOM inspection |
 
 The split rule is one question: **does the job need the Node/Playwright toolchain?** If yes,
 `services/runner`. If no, `apps/api`. Nothing else decides it.
@@ -149,6 +149,11 @@ apps/api/src/main/java/dev/specra/api/
     │   ├── service/ EnvironmentService — the only class that decrypts one, for dispatch
     │   ├── domain/  Environment, EnvironmentVariable
     │   └── dto/     EnvironmentRequest/Response, EnvironmentVariableRequest/Response
+    ├── pageobject/ what inspection read off a real page; the locators codegen resolves
+    │   ├── web/     PageObjectController
+    │   ├── service/ PageObjectService — best candidate wins, a person may overrule
+    │   ├── domain/  PageObject, PageElement, LocatorStrategy
+    │   └── dto/     InspectRequest, PageObjectResponse, ElementUpdateRequest
     ├── analysis/    role 5: why a cell failed. PRODUCT_BUG proposes nothing, on purpose
     │   ├── web/     FailureAnalysisController
     │   ├── service/ FailureAnalysisService, RepairService, EvidenceCollector, the two prompts
@@ -172,7 +177,8 @@ apps/web/src/
 ├── i18n/            routing, navigation, request config
 ├── messages/        en.json, vi.json
 ├── features/        projects · testcases · testmodel · codegen · runs · analysis · environments ·
-│                    git · testmanagement · workspaces · chat · auth · settings · dashboard
+│                    git · pages · testmanagement · workspaces · chat · auth · settings ·
+│                    dashboard
 │                    — each api/ + components/ + schemas
 ├── components/      ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
 ├── lib/             api/ (client, types) · config/ (site, navigation) · utils

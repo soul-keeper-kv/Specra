@@ -301,6 +301,31 @@ what makes them good.
 - The `inspect` job, page objects, the locator planner and its scoring.
 - Regeneration and impact analysis on a changed test case.
 
+**Done: inspection and the planner.** The runner's last `not-implemented` is gone. `inspect` opens
+a real page and reports how each interactive element can be addressed, scored; `feature/pageobject`
+stores the best candidate as the locator and the runner-up as the fallback, and a person can
+overrule either.
+
+The split inside the runner is the point. `collect.ts` runs in the page and reports facts only —
+role, accessible name, label, test id, text, a CSS path, and how many nodes each matches.
+`score.ts` and `plan.ts` run in Node and decide which of those makes the best locator. The
+judgement is the part worth testing, so it has to be testable without launching a browser.
+
+Uniqueness is a gate rather than a weight: a locator matching two nodes is not a worse locator, it
+is a broken one. Beyond the strategy ranking, the scorer distrusts values that look machine-written
+(`css-1x7f9k`), text that carries data rather than a label (`$42.00`), and selectors that describe
+where an element sits rather than what it is — because where it sits is exactly what a redesign
+changes.
+
+**This unblocks the two things that were waiting on it.** Every generation since M5 has reported
+unresolved targets and has therefore never been typechecked, because there were no locators for the
+compiler to check against; a project with an inspected page now gets a real page object and
+verification finally runs over real output. And M4's referential validation now has page objects to
+validate against.
+
+Still open here: **regeneration and impact analysis**. A changed test case still regenerates whole
+rather than producing the one-line diff 08-ai-pipeline.md describes.
+
 ## Later, and only then
 
 Dashboard beyond a simple summary · result sync back to Jira/Xray · scheduled runs · CI

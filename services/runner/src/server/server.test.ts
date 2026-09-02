@@ -83,7 +83,8 @@ describe("POST /jobs", () => {
    * A generation with unresolved targets cannot compile — the spec calls `page.element` for an
    * element nobody inspected, so the page object has no such getter. Running the compiler over
    * it would turn the actionable "inspect these pages first" into a TS2339 the user can do
-   * nothing about, and until inspection lands (M8) that is *every* real generation. So
+   * nothing about. Inspection has landed, so this is no longer every generation — but a page
+   * nobody has looked at yet still produces one, which is exactly when the message matters. So
    * verification is skipped for those, and `verified` says so rather than claiming a pass.
    */
   it("does not typecheck a generation whose targets are unresolved", async () => {
