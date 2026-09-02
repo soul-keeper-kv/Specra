@@ -167,7 +167,8 @@
       "source": "Source control",
       "integrations": "Integrations",
       "runs": "Runs",
-      "environments": "Environments"
+      "environments": "Environments",
+      "pages": "Pages"
     }
   },
   "testManagement": {
@@ -824,6 +825,56 @@
     "problems": {
       "conflict": "This run cannot start yet.",
       "noEnvironment": "Add an environment to this project first, so a run knows where to point.",
+      "generic": "Something went wrong. Try again."
+    }
+  },
+  "pages": {
+    "title": "Pages",
+    "subtitle": "What each page of your application contains, read from a real browser.",
+    "neverInspected": "Never inspected",
+    "inspectedAt": "Inspected {when}",
+    "noElements": "No elements yet. Inspect this page to find them.",
+    "weak": "Weak",
+    "edit": "Edit locator",
+    "cancel": "Cancel",
+    "locatorValue": "Locator value",
+    "qualifier": "Accessible name",
+    "qualifierPlaceholder": "The name a screen reader announces, e.g. Sign in",
+    "strategy": {
+      "TEST_ID": "Test id",
+      "ROLE": "Role",
+      "LABEL": "Label",
+      "PLACEHOLDER": "Placeholder",
+      "TEXT": "Text",
+      "ALT_TEXT": "Alt text",
+      "TITLE": "Title",
+      "CSS": "CSS",
+      "XPATH": "XPath"
+    },
+    "empty": {
+      "title": "No pages yet",
+      "description": "Inspect a page to record how its elements can be reached. Until then, generated tests have no locators to use."
+    },
+    "inspect": {
+      "action": "Inspect a page",
+      "title": "Inspect a page",
+      "description": "Specra opens the page in a browser and records the best way to reach each element. Nothing is guessed.",
+      "pageName": "Page name",
+      "pageNamePlaceholder": "LoginPage",
+      "pageNameHint": "What your test model calls this page. It must match, or the generated test will not find it.",
+      "route": "Route",
+      "routePlaceholder": "/login",
+      "routeHint": "Joined to the environment’s base URL, so the same page works against staging or production.",
+      "submit": "Inspect",
+      "running": "Opening the page…"
+    },
+    "toast": {
+      "inspected": "{count, plural, =0 {No elements found} one {# element found} other {# elements found}}",
+      "updated": "{name} updated"
+    },
+    "problems": {
+      "conflict": "The page could not be inspected.",
+      "noEnvironment": "Add an environment first, so inspection knows where to look.",
       "generic": "Something went wrong. Try again."
     }
   },

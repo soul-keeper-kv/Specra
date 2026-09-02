@@ -722,6 +722,58 @@ export type ArtifactLink = {
   expiresAt: string;
 };
 
+// ── Page objects ─────────────────────────────────────────────────────────────
+
+/** Ranked best-first, matching the API's enum order — a UI may rely on that order. */
+export type LocatorStrategy =
+  | "TEST_ID"
+  | "ROLE"
+  | "LABEL"
+  | "PLACEHOLDER"
+  | "TEXT"
+  | "ALT_TEXT"
+  | "TITLE"
+  | "CSS"
+  | "XPATH";
+
+export type PageElement = {
+  id: string;
+  /** The identifier an IR target names — `submitButton`. */
+  name: string;
+  strategy: LocatorStrategy;
+  value: string;
+  /** The accessible name a ROLE locator needs; null for every other strategy. */
+  qualifier: string | null;
+  /** What failure analysis proposes first when the primary drifts. */
+  fallbackStrategy: LocatorStrategy | null;
+  fallbackValue: string | null;
+  /** 0–1 as the planner scored it, so a weak locator can be distrusted before it flakes. */
+  confidence: string | null;
+};
+
+export type PageObject = {
+  id: string;
+  projectId: string;
+  name: string;
+  route: string | null;
+  /** Null when nothing has looked at this page yet — the state that blocks a generation. */
+  inspectedAt: string | null;
+  elements: PageElement[];
+  updatedAt: string;
+};
+
+export type InspectInput = {
+  pageName: string;
+  route: string;
+  environmentId?: string;
+};
+
+export type ElementUpdateInput = {
+  strategy: LocatorStrategy;
+  value: string;
+  qualifier?: string;
+};
+
 // ── Failure analysis ─────────────────────────────────────────────────────────
 
 export type RootCause =

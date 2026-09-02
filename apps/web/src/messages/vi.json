@@ -167,7 +167,8 @@
       "source": "Mã nguồn",
       "integrations": "Tích hợp",
       "runs": "Lần chạy",
-      "environments": "Môi trường"
+      "environments": "Môi trường",
+      "pages": "Trang"
     }
   },
   "testManagement": {
@@ -825,6 +826,56 @@
       "conflict": "Lần chạy này chưa thể bắt đầu.",
       "noEnvironment": "Hãy thêm một môi trường cho dự án này trước, để lần chạy biết trỏ vào đâu.",
       "generic": "Đã có lỗi xảy ra. Hãy thử lại."
+    }
+  },
+  "pages": {
+    "title": "Trang",
+    "subtitle": "Mỗi trang của ứng dụng chứa những gì, đọc từ trình duyệt thật.",
+    "neverInspected": "Chưa khảo sát",
+    "inspectedAt": "Đã khảo sát {when}",
+    "noElements": "Chưa có phần tử nào. Hãy khảo sát trang này để tìm.",
+    "weak": "Yếu",
+    "edit": "Sửa định vị",
+    "cancel": "Huỷ",
+    "locatorValue": "Giá trị định vị",
+    "qualifier": "Tên trợ năng",
+    "qualifierPlaceholder": "Tên mà trình đọc màn hình đọc lên, ví dụ Đăng nhập",
+    "strategy": {
+      "TEST_ID": "Test id",
+      "ROLE": "Vai trò",
+      "LABEL": "Nhãn",
+      "PLACEHOLDER": "Gợi ý",
+      "TEXT": "Văn bản",
+      "ALT_TEXT": "Văn bản thay thế",
+      "TITLE": "Tiêu đề",
+      "CSS": "CSS",
+      "XPATH": "XPath"
+    },
+    "empty": {
+      "title": "Chưa có trang nào",
+      "description": "Hãy khảo sát một trang để ghi lại cách tiếp cận các phần tử. Trước đó, mã sinh ra không có định vị nào để dùng."
+    },
+    "inspect": {
+      "action": "Khảo sát trang",
+      "title": "Khảo sát trang",
+      "description": "Specra mở trang bằng trình duyệt và ghi lại cách tốt nhất để tiếp cận từng phần tử. Không đoán gì cả.",
+      "pageName": "Tên trang",
+      "pageNamePlaceholder": "LoginPage",
+      "pageNameHint": "Tên mà test model gọi trang này. Phải khớp, nếu không mã sinh ra sẽ không tìm thấy.",
+      "route": "Đường dẫn",
+      "routePlaceholder": "/login",
+      "routeHint": "Được ghép vào URL gốc của môi trường, nên cùng một trang dùng được cho staging lẫn production.",
+      "submit": "Khảo sát",
+      "running": "Đang mở trang…"
+    },
+    "toast": {
+      "inspected": "{count, plural, =0 {Không tìm thấy phần tử nào} other {Tìm thấy # phần tử}}",
+      "updated": "Đã cập nhật {name}"
+    },
+    "problems": {
+      "conflict": "Không thể khảo sát trang này.",
+      "noEnvironment": "Hãy thêm môi trường trước, để việc khảo sát biết nhìn vào đâu.",
+      "generic": "Đã có lỗi xảy ra. Vui lòng thử lại."
     }
   },
   "analysis": {
