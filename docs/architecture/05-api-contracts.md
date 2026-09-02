@@ -138,7 +138,7 @@ the row records what the model produced, the commit records what the human appro
 naming a path the proposal does not contain is a 400, not a write: apply is not "commit any file
 I name".
 
-The SSE progress stream is still open. A proposal's files are read from the proposal itself
+A proposal's files are read from the proposal itself
 rather than through `/automation-tests/{id}/files`, which does not exist: until a generation is
 applied there is no automation test to read files from, and afterwards the file is in Git, where
 `GET /projects/{id}/git/file` already serves it.
@@ -192,11 +192,23 @@ PUT    /api/v1/projects/{id}/git/file          { path, content }  a human edits 
 POST   /api/v1/projects/{id}/runs   { testCaseIds[] | all, browsers[], environmentId } → 202
 GET    /api/v1/projects/{id}/runs
 GET    /api/v1/runs/{id}
-GET    /api/v1/runs/{id}/stream                SSE — still to come; the UI polls while a run is in flight
+                                               (no /stream — see below; the UI polls)
 POST   /api/v1/runs/{id}/cancel
 GET    /api/v1/run-items/{id}
 GET    /api/v1/run-items/{id}/artifacts        signed, expiring URLs — never raw bytes
 ```
+
+**There is no `/runs/{id}/stream`, and the reason is the runner rather than the API.** The
+`execute` job is one blocking call: the API marks the run RUNNING, waits for the whole suite, and
+writes every cell's result at once. So a run only ever changes state twice — QUEUED → RUNNING and
+RUNNING → its result — and a stream would carry exactly the two transitions the UI's three-second
+poll already catches, in exchange for an emitter registry, disconnect cleanup and a second delivery
+path to keep correct.
+
+A stream becomes worth building when the runner emits per-cell progress: it captures the engine's
+output today but returns it only at the end, and the job server has no streaming transport at all.
+That is a change across the runner, the job protocol and the API — not a missing endpoint here.
+Adding the endpoint first would be a live feed of nothing.
 
 ## Failure analysis — built
 

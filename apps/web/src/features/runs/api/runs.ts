@@ -16,9 +16,13 @@ export const runKeys = {
 /**
  * How often a run in flight is re-fetched.
  *
- * Polling rather than the SSE stream the contract sketches: a run's state is a handful of
- * fields, and three seconds of latency on a job that takes minutes is imperceptible. The stream
- * earns its complexity when there is a live log to tail, which is M7's problem.
+ * Polling rather than a stream, and that is settled rather than pending. The runner's `execute`
+ * job is one blocking call, so a run changes state exactly twice — queued to running, then
+ * running to its result — and a stream would deliver the same two transitions this catches, in
+ * exchange for an emitter registry and disconnect handling on both sides.
+ *
+ * Worth revisiting when the runner emits per-cell progress; 05-api-contracts.md carries the
+ * fuller reasoning.
  */
 const IN_FLIGHT_POLL_MS = 3000;
 

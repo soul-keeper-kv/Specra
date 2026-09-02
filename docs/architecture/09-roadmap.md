@@ -20,9 +20,11 @@ evidence. Underneath: Next.js + Spring Boot, i18n in Vietnamese and English, RFC
 correlation ids and tracing, OpenAPI, ArchUnit layering, pgvector, Spring AI with a
 provider-agnostic setup and per-workspace keys.
 
-What remains is not a missing stage but the seams between them: the loop closes in two gestures
-rather than one (applying a fix commits it; the re-run is started from the Runs screen), and there
-is still no live progress stream — the UI polls while a run is in flight.
+The loop closes in one gesture: a failed cell is analysed, repaired and re-run from the same
+screen. The live progress stream is not built and is not pending — see M5 for why the runner's
+shape, not the API's, is what makes polling the right answer today.
+
+What is left is the "Later, and only then" list below. No stage of the golden path is missing.
 
 Two things landed that were never on this roadmap, and both paid for themselves. **Local auth**
 (V3) became necessary the moment workspaces had members; the whole API is closed by default and
@@ -210,9 +212,17 @@ apply into "commit any file I name", which is not what the reviewer looked at.
 Push-on-apply is a switch beside the apply button, off by default: committing is local and
 undoable, publishing to a remote other people pull from is a second decision.
 
-Still open here: the SSE progress stream, which waits for M7 — a stream earns its complexity when
-there is a live log to tail, and until then three seconds of polling on a job that takes minutes
-is imperceptible.
+**The SSE progress stream is deliberately not built, and this entry is the decision rather than a
+deferral.** It was pencilled in as "waits for M7", on the reasoning that a stream earns its
+complexity once there is a live log to tail. M7 landed and the log did not, because the constraint
+was never the API: the runner's `execute` job is one blocking call, so a run changes state exactly
+twice — QUEUED → RUNNING, then RUNNING → its result. A stream would carry the same two transitions
+the three-second poll already catches, and cost an emitter registry, disconnect cleanup and a
+second delivery path to keep correct.
+
+Worth revisiting when the runner emits per-cell progress. It captures the engine's output today
+but hands it over only at the end, and the job server has no streaming transport, so that is a
+change across three components — at which point a stream carries something polling cannot.
 
 ## M6 — Execution ✅
 
@@ -247,8 +257,8 @@ run had nowhere to point, so every execution refused with a message the user cou
 A secret is written once and never returned — a re-save that omits it keeps the stored value,
 which is the only reason the edit form is usable at all.
 
-Still open: the live status stream (see M5), and result sync back to Jira/Xray, which stays
-under "Later".
+The live status stream is settled rather than open — M5 records why the runner's shape, not the
+API's, makes polling the right answer. Result sync back to Jira/Xray stays under "Later".
 
 ## M7 — Analysis and repair ✅
 
@@ -292,8 +302,12 @@ do rather than invent a change when the diagnosis does not survive contact with 
 `PRODUCT_BUG` check is enforced in the service, not just hidden in the UI: a UI check is a
 suggestion, and this is a rule.
 
-Still open here: **re-running from the analysis**. Applying a fix commits it, and the run has to
-be started again from the Runs screen — the loop closes, but not in one gesture.
+**The loop closes in one gesture.** A failed cell carries a "run again" beside its analysis, and
+it re-runs that cell alone — the same case, the same browser, the same environment the failure came
+from. Scoped rather than the whole matrix, because after a fix the question is whether _this_ test
+passes now, and re-running twelve cells to answer it buries the answer among results nobody asked
+for. The same environment matters more than it looks: a fix verified against a different deployment
+has not been verified.
 
 ## M8 — Inspection and locator planning ✅
 
