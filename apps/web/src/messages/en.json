@@ -166,7 +166,8 @@
       "testCases": "Test cases",
       "source": "Source control",
       "integrations": "Integrations",
-      "runs": "Runs"
+      "runs": "Runs",
+      "environments": "Environments"
     }
   },
   "testManagement": {
@@ -805,6 +806,11 @@
       "title": "No runs yet",
       "description": "Commit a generated test, then run it against an environment to see results here."
     },
+    "noEnvironment": {
+      "title": "No environment yet",
+      "description": "A run needs somewhere to point. Add an environment with the base URL of a deployment before running the suite.",
+      "action": "Add an environment"
+    },
     "toast": {
       "queued": "{reference} queued",
       "cancelled": "Run cancelled"
@@ -813,6 +819,81 @@
       "conflict": "This run cannot start yet.",
       "noEnvironment": "Add an environment to this project first, so a run knows where to point.",
       "generic": "Something went wrong. Try again."
+    }
+  },
+  "environments": {
+    "title": "Environments",
+    "subtitle": "Where this project's runs point, and the variables they carry.",
+    "default": "Default",
+    "variableCount": "{count, plural, =0 {No variables} one {# variable} other {# variables}}",
+    "secretCount": "{count, plural, one {# secret} other {# secrets}}",
+    "empty": {
+      "title": "No environments yet",
+      "description": "A run needs somewhere to point. Add an environment with the base URL of a deployment, and any variables the tests read."
+    },
+    "new": {
+      "action": "New environment",
+      "title": "New environment",
+      "description": "A deployment to run against. The first one becomes this project's default.",
+      "submit": "Create environment"
+    },
+    "edit": {
+      "action": "Edit environment",
+      "title": "Edit environment",
+      "description": "Stored secrets stay as they are unless you type a new value.",
+      "submit": "Save changes"
+    },
+    "delete": {
+      "action": "Delete environment",
+      "title": "Delete this environment?",
+      "description": "{name} and its variables are deleted for good. Runs that already used it keep their results.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "STAGING",
+      "baseUrl": "Base URL",
+      "baseUrlPlaceholder": "https://staging.example.com",
+      "baseUrlHint": "Where the suite points. Generated tests navigate relative to it.",
+      "isDefault": "Use by default",
+      "isDefaultHint": "Runs that name no environment use this one. Only one per project.",
+      "variables": "Variables",
+      "variablesHint": "Read by the generated code through the process environment. A secret is encrypted at rest and never shown again.",
+      "noVariables": "No variables yet.",
+      "addVariable": "Add variable",
+      "removeVariable": "Remove variable",
+      "variableKey": "Key",
+      "variableKeyPlaceholder": "QA_USER",
+      "variableValue": "Value",
+      "variableValuePlaceholder": "Value",
+      "variableSecret": "Secret",
+      "secretStored": "Stored. Leave blank to keep it.",
+      "secretStoredPlaceholder": "Unchanged"
+    },
+    "validation": {
+      "nameRequired": "A name is required.",
+      "nameMax": "Keep the name to 64 characters or fewer.",
+      "baseUrlRequired": "A base URL is required.",
+      "baseUrlMax": "Keep the URL to 500 characters or fewer.",
+      "baseUrlFormat": "Start the URL with http:// or https://.",
+      "keyRequired": "A key is required.",
+      "keyMax": "Keep the key to 120 characters or fewer.",
+      "keyFormat": "Use letters, digits and underscores, starting with a letter or underscore.",
+      "keyUnique": "This key is already used in this environment.",
+      "valueMax": "Keep the value to 4000 characters or fewer.",
+      "secretRequired": "Enter a value for this secret.",
+      "variablesMax": "An environment holds at most 100 variables."
+    },
+    "toast": {
+      "created": "{name} created",
+      "updated": "{name} saved",
+      "deleted": "{name} deleted"
+    },
+    "problems": {
+      "conflict": "An environment with that name already exists in this project.",
+      "forbidden": "You do not have permission to change this project's environments.",
+      "generic": "The environment could not be saved."
     }
   }
 }

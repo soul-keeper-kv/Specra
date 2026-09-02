@@ -166,7 +166,8 @@
       "testCases": "Ca kiểm thử",
       "source": "Mã nguồn",
       "integrations": "Tích hợp",
-      "runs": "Lần chạy"
+      "runs": "Lần chạy",
+      "environments": "Môi trường"
     }
   },
   "testManagement": {
@@ -805,6 +806,11 @@
       "title": "Chưa có lần chạy nào",
       "description": "Hãy commit một test đã sinh, rồi chạy nó trên một môi trường để xem kết quả ở đây."
     },
+    "noEnvironment": {
+      "title": "Chưa có môi trường",
+      "description": "Một lần chạy cần nơi để trỏ tới. Hãy thêm môi trường với URL gốc của một bản triển khai trước khi chạy bộ kiểm thử.",
+      "action": "Thêm môi trường"
+    },
     "toast": {
       "queued": "Đã đưa {reference} vào hàng đợi",
       "cancelled": "Đã hủy lần chạy"
@@ -813,6 +819,81 @@
       "conflict": "Lần chạy này chưa thể bắt đầu.",
       "noEnvironment": "Hãy thêm một môi trường cho dự án này trước, để lần chạy biết trỏ vào đâu.",
       "generic": "Đã có lỗi xảy ra. Hãy thử lại."
+    }
+  },
+  "environments": {
+    "title": "Môi trường",
+    "subtitle": "Nơi các lần chạy của dự án này trỏ tới, và các biến chúng mang theo.",
+    "default": "Mặc định",
+    "variableCount": "{count, plural, =0 {Không có biến} other {# biến}}",
+    "secretCount": "{count, plural, other {# bí mật}}",
+    "empty": {
+      "title": "Chưa có môi trường nào",
+      "description": "Một lần chạy cần nơi để trỏ tới. Hãy thêm môi trường với URL gốc của một bản triển khai, cùng các biến mà bài kiểm thử đọc."
+    },
+    "new": {
+      "action": "Môi trường mới",
+      "title": "Môi trường mới",
+      "description": "Một bản triển khai để chạy kiểm thử. Môi trường đầu tiên trở thành mặc định của dự án.",
+      "submit": "Tạo môi trường"
+    },
+    "edit": {
+      "action": "Sửa môi trường",
+      "title": "Sửa môi trường",
+      "description": "Các bí mật đã lưu được giữ nguyên trừ khi bạn nhập giá trị mới.",
+      "submit": "Lưu thay đổi"
+    },
+    "delete": {
+      "action": "Xoá môi trường",
+      "title": "Xoá môi trường này?",
+      "description": "{name} và các biến của nó sẽ bị xoá vĩnh viễn. Các lần chạy đã dùng nó vẫn giữ kết quả.",
+      "confirm": "Xoá",
+      "cancel": "Huỷ"
+    },
+    "form": {
+      "name": "Tên",
+      "namePlaceholder": "STAGING",
+      "baseUrl": "URL gốc",
+      "baseUrlPlaceholder": "https://staging.example.com",
+      "baseUrlHint": "Nơi bộ kiểm thử trỏ tới. Mã sinh ra điều hướng tương đối với URL này.",
+      "isDefault": "Dùng làm mặc định",
+      "isDefaultHint": "Lần chạy không chỉ định môi trường sẽ dùng môi trường này. Mỗi dự án chỉ có một.",
+      "variables": "Biến",
+      "variablesHint": "Được mã sinh ra đọc qua biến môi trường của tiến trình. Bí mật được mã hoá khi lưu và không hiển thị lại.",
+      "noVariables": "Chưa có biến nào.",
+      "addVariable": "Thêm biến",
+      "removeVariable": "Xoá biến",
+      "variableKey": "Khoá",
+      "variableKeyPlaceholder": "QA_USER",
+      "variableValue": "Giá trị",
+      "variableValuePlaceholder": "Giá trị",
+      "variableSecret": "Bí mật",
+      "secretStored": "Đã lưu. Để trống để giữ nguyên.",
+      "secretStoredPlaceholder": "Không đổi"
+    },
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên.",
+      "nameMax": "Tên tối đa 64 ký tự.",
+      "baseUrlRequired": "Vui lòng nhập URL gốc.",
+      "baseUrlMax": "URL tối đa 500 ký tự.",
+      "baseUrlFormat": "URL phải bắt đầu bằng http:// hoặc https://.",
+      "keyRequired": "Vui lòng nhập khoá.",
+      "keyMax": "Khoá tối đa 120 ký tự.",
+      "keyFormat": "Chỉ dùng chữ, số và gạch dưới, bắt đầu bằng chữ hoặc gạch dưới.",
+      "keyUnique": "Khoá này đã được dùng trong môi trường này.",
+      "valueMax": "Giá trị tối đa 4000 ký tự.",
+      "secretRequired": "Vui lòng nhập giá trị cho bí mật này.",
+      "variablesMax": "Mỗi môi trường chứa tối đa 100 biến."
+    },
+    "toast": {
+      "created": "Đã tạo {name}",
+      "updated": "Đã lưu {name}",
+      "deleted": "Đã xoá {name}"
+    },
+    "problems": {
+      "conflict": "Đã có môi trường trùng tên trong dự án này.",
+      "forbidden": "Bạn không có quyền thay đổi môi trường của dự án này.",
+      "generic": "Không thể lưu môi trường."
     }
   }
 }

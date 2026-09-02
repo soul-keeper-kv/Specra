@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, GitBranch, Plug, PlayCircle } from "lucide-react";
+import { ClipboardList, GitBranch, Plug, PlayCircle, Server } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
@@ -19,6 +19,12 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
     { href: `/projects/${projectId}`, key: "testCases", icon: ClipboardList, exact: true },
     { href: `/projects/${projectId}/source`, key: "source", icon: GitBranch, exact: false },
     { href: `/projects/${projectId}/runs`, key: "runs", icon: PlayCircle, exact: false },
+    {
+      href: `/projects/${projectId}/environments`,
+      key: "environments",
+      icon: Server,
+      exact: false,
+    },
     {
       href: `/projects/${projectId}/integrations`,
       key: "integrations",

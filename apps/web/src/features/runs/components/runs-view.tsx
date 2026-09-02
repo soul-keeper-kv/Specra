@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Play, PlayCircle } from "lucide-react";
+import { Loader2, Play, PlayCircle, Server } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEnvironments } from "@/features/environments/api/environments";
 import { useRequestRun, useRuns } from "@/features/runs/api/runs";
 import { RunStatusBadge } from "@/features/runs/components/run-badges";
 import { Link } from "@/i18n/navigation";
@@ -24,6 +25,12 @@ export function RunsView({ projectId }: { projectId: string }) {
   const t = useTranslations("runs");
   const runs = useRuns(projectId);
   const request = useRequestRun(projectId);
+
+  // A run with nowhere to point is refused by the API, which is correct but arrives as a toast
+  // the user cannot act on. Knowing the list is empty turns that into a link to the screen that
+  // fixes it.
+  const environments = useEnvironments(projectId);
+  const needsEnvironment = environments.data?.length === 0;
 
   function startRun() {
     request.mutate(
@@ -48,7 +55,7 @@ export function RunsView({ projectId }: { projectId: string }) {
     <div className="grid gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-        <Button size="sm" disabled={request.isPending} onClick={startRun}>
+        <Button size="sm" disabled={request.isPending || needsEnvironment} onClick={startRun}>
           {request.isPending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
@@ -58,7 +65,20 @@ export function RunsView({ projectId }: { projectId: string }) {
         </Button>
       </div>
 
-      {rows.length === 0 ? (
+      {needsEnvironment ? (
+        <EmptyState
+          icon={Server}
+          title={t("noEnvironment.title")}
+          description={t("noEnvironment.description")}
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/projects/${projectId}/environments`}>
+                {t("noEnvironment.action")}
+              </Link>
+            </Button>
+          }
+        />
+      ) : rows.length === 0 ? (
         <EmptyState
           icon={PlayCircle}
           title={t("empty.title")}
