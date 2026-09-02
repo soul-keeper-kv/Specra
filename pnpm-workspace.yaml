@@ -4,8 +4,13 @@ packages:
   # The Test Model / IR contract: schema, types and fixtures. It depends on no app and no
   # execution engine, which is what lets the web app, the runner and apps/api share it.
   - packages/test-model
+  # The toolchain plane: the Playwright adapter, codegen validation, inspection and execution.
+  # It is a separate package because that work needs the Node toolchain, not because it is a
+  # separate product — apps/api calls it over HTTP and it owns no database.
+  - services/runner
   # End-to-end tests are their own package, not part of the app they drive: the suite has to
   # be runnable against a deployed URL, and nothing in apps/web should be able to import it.
+  # It drives Specra; services/runner drives the user's application. They share no code.
   - tests/e2e
 
 # pnpm does not run a dependency's install scripts unless it is allowed here.

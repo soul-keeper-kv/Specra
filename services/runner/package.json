@@ -1,0 +1,24 @@
+{
+  "name": "specra-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The toolchain plane: the Playwright adapter, codegen validation, DOM inspection and execution. Drives the user's application, never Specra itself.",
+  "scripts": {
+    "start": "tsx src/server/main.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/server/main.ts"
+  },
+  "dependencies": {
+    "@specra/test-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11",
+    "tsx": "^4.20.6"
+  }
+}
