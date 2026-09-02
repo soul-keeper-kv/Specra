@@ -19,8 +19,10 @@ import { ErrorState } from "@/components/common/error-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   useApplyGeneration,
   useCodeGeneration,
@@ -51,6 +53,11 @@ export function CodeProposalPanel({
   const apply = useApplyGeneration();
   const reject = useRejectGeneration();
   const [selected, setSelected] = useState<string | null>(null);
+  /**
+   * Off by default. Committing is local and undoable; pushing publishes to a remote other
+   * people pull from, so it is a second decision rather than a consequence of the first.
+   */
+  const [push, setPush] = useState(false);
 
   if (!testCaseId) {
     return <Empty title={t("empty.notImported")} hint={t("empty.notImportedHint")} />;
@@ -82,10 +89,14 @@ export function CodeProposalPanel({
   function applyProposal() {
     if (!current) return;
     apply.mutate(
-      { id: current.id, input: {} },
+      { id: current.id, input: { push } },
       {
         onSuccess: (applied) =>
-          toast.success(t("toast.applied", { sha: applied.commitSha?.slice(0, 7) ?? "" })),
+          toast.success(
+            t(push ? "toast.appliedAndPushed" : "toast.applied", {
+              sha: applied.commitSha?.slice(0, 7) ?? "",
+            }),
+          ),
         onError: (error) => toast.error(describe(error, t)),
       },
     );
@@ -127,6 +138,17 @@ export function CodeProposalPanel({
               )}
               {t("apply")}
             </Button>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="push-after-apply"
+                checked={push}
+                onCheckedChange={setPush}
+                disabled={apply.isPending}
+              />
+              <Label htmlFor="push-after-apply" className="text-sm text-muted-foreground">
+                {t("pushAfterApply")}
+              </Label>
+            </div>
             <Button
               size="sm"
               variant="ghost"

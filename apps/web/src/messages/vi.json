@@ -757,7 +757,9 @@
     "toast": {
       "generated": "Đã đề xuất {count} tệp để review",
       "applied": "Đã commit {sha}",
-      "rejected": "Đã từ chối đề xuất; chưa ghi gì cả"
-    }
+      "rejected": "Đã từ chối đề xuất; chưa ghi gì cả",
+      "appliedAndPushed": "Đã commit {sha} và push"
+    },
+    "pushAfterApply": "Push sau khi commit"
   }
 }

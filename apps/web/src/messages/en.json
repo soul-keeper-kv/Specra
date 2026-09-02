@@ -757,7 +757,9 @@
     "toast": {
       "generated": "{count, plural, one {# file} other {# files}} proposed for review",
       "applied": "Committed as {sha}",
-      "rejected": "Proposal rejected; nothing was written"
-    }
+      "rejected": "Proposal rejected; nothing was written",
+      "appliedAndPushed": "Committed as {sha} and pushed"
+    },
+    "pushAfterApply": "Push after committing"
   }
 }

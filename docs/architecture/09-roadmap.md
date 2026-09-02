@@ -95,7 +95,7 @@ repository over `file://`, which drives the same transport code a GitHub URL doe
 
 **Done for `codegen`**: the package exists as `specra-runner` with the adapter
 (`src/adapters/playwright/`), `generate()` as a pure `(IR, page objects, options) → files`, and
-53 tests. Determinism is held by golden files over the shared `fixtures/valid/` IRs; portability
+58 tests. Determinism is held by golden files over the shared `fixtures/valid/` IRs; portability
 is held by a test that writes two generations into one temp project and runs the real `tsc`
 against the real engine types — which is what caught a flow referencing a page object it never
 constructed, and a second generation clobbering `fixtures/environment.ts`. Engine vocabulary is
@@ -116,6 +116,18 @@ typed, over a materialised project, with the rules that catch a template bug (un
 floating promises) and none about style, which is prettier's. `require-await` is off with a
 reason: an uninspected page's `goto()` throws rather than guessing a URL, and it stays `async`
 because inspection later fills in a real navigation.
+
+The codegen job now enforces the rule rather than only being able to: it typechecks and lints
+its own output and answers 422 with the compiler's words instead of proposing something that
+does not build. Two limits are deliberate. The engine's types arrive as a path
+(`SPECRA_ENGINE_TYPES`) rather than a dependency, because depending on the engine here to check
+the projection is the containment rule leaking in through the back door — unset, the runner says
+so at startup instead of silently passing everything. And **a generation with unresolved targets
+is not typechecked at all**: until inspection lands it references elements nobody has a locator
+for, so the compiler would reject every real generation with a `TS2339` the user can do nothing
+about, drowning the actionable "inspect these pages first". `verified` on the result says which
+of the three happened, because a caller that cannot tell "checked and fine" from "not checked"
+will eventually trust the wrong one.
 
 Still open here: the `inspect` and `execute` jobs, which land with M8 and M6.
 
@@ -171,12 +183,22 @@ from the UI, and the SSE progress stream.
 
 ## M6 — Execution
 
-- Migration V5, the `execute` job, environments and secret injection, the run matrix.
+- Migration V12 — `test_runs`, `test_run_items`, `test_artifacts`. (The bullet here used to say
+  "V5"; V5 was spent on the model and the generated code long ago, and the numbering has moved.)
+- The `execute` job, environments and secret injection, the run matrix.
 - Artifacts to object storage, signed URLs, trace and video in the UI.
 - Web: runs list, run detail, live status.
 
 **Done when** a committed test runs against a real environment and the failure view shows the
 trace.
+
+Two things are already in place and only need code. **`environments` and `environment_vars`
+have existed since V2**, so environments are an entity and a screen, not a migration. And
+**`automation_tests` (V5) is written for the first time here** — it has never had a row, which
+looks like dead schema until you ask what it is for: `code_generations` (V11) is the history of
+proposals, one row per attempt, whereas `automation_tests` is the _current_ identity of a test
+inside the repository — which spec file holds it, under what title, at which commit. A run
+targets "this test in that file", which no proposal row can answer. Keep it, fill it at apply.
 
 ## M7 — Analysis and repair
 
