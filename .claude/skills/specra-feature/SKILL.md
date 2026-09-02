@@ -43,7 +43,7 @@ These are what get forgotten. Treat the list as the definition of "the feature i
 
 ## API side — the vertical slice
 
-Reference: `feature/note/`. Details of JPA/MapStruct/Flyway are in the `specra-api` skill;
+Reference: `feature/testcase/`. Details of JPA/MapStruct/Flyway are in the `specra-api` skill;
 this is the order and the parts that cross concerns.
 
 1. `resources/db/migration/V<n>__<name>.sql` — Hibernate runs `ddl-auto: validate`, so an
@@ -77,7 +77,7 @@ this is the order and the parts that cross concerns.
 
 ## Web side — the vertical slice
 
-Reference: `features/notes/`.
+Reference: `features/testcases/`.
 
 1. `features/<name>/` — `api/` (Query hooks + a `<name>Keys` object), `components/`,
    `schemas.ts` if it has a form. Hooks call `http.*` from `lib/api/client.ts` and nothing
@@ -129,7 +129,8 @@ Run them; do not assume. The i18n parity tests and the lint rules are the ones t
 what this skill is about.
 
 ```bash
-cd apps/api && ./mvnw -B verify
+cd apps/api && ./mvnw -B verify   # add `clean` if a resource assertion fails on a file you can see is right
+pnpm test:runner && pnpm test:model
 cd apps/web && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 

@@ -24,13 +24,14 @@ change).
 | `tests/e2e`          | Playwright suite             | pnpm workspace package `specra-e2e`     |
 | `docker-compose.yml` | Postgres + pgvector, `:5432` | —                                       |
 
-Two more are planned, and are described before they exist so nothing gets built in the wrong
-place — [`docs/architecture/03-module-boundaries.md`](../../../docs/architecture/03-module-boundaries.md):
+Two more landed with M3 and M5, in the places
+[`docs/architecture/03-module-boundaries.md`](../../../docs/architecture/03-module-boundaries.md)
+reserved for them:
 
-| Path                  | What it is                                      | Rule                                                       |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| `packages/test-model` | The IR contract: schema, types, fixtures        | Imports nothing in this repo. `ajv` is its one dependency. |
-| `services/runner`     | Node worker: adapter, codegen, inspect, execute | Stateless. Owns no database. Imports nothing in `apps/`.   |
+| Path                  | What it is                                                                      | Rule                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `packages/test-model` | The IR contract: schema, types, fixtures                                        | Imports nothing in this repo. `ajv` is its one dependency.                                            |
+| `services/runner`     | Node service on `:8090`: adapter and codegen today, inspect and execute to come | Stateless. Owns no database. Imports nothing in `apps/`. `apps/api` reaches it through `core/runner`. |
 
 **The split rule between the two runtimes is one question: does the job need the
 Node/Playwright toolchain?** If yes, `services/runner`. If no, `apps/api`. Not "it feels more
@@ -38,9 +39,9 @@ like TypeScript". Codegen, DOM inspection and execution are on the Node side bec
 output has to be typechecked with the real compiler and Playwright is Node-only; tenancy,
 persistence, prompting and Git are on the Java side because that plumbing is already there.
 
-`pnpm-workspace.yaml` lists `apps/web` and `tests/e2e`, so one root `pnpm install` covers
-both and there is one lockfile. Root scripts reach the app with
-`pnpm --filter specra-web <script>`.
+`pnpm-workspace.yaml` lists all four — `apps/web`, `packages/test-model`, `services/runner`,
+`tests/e2e` — so one root `pnpm install` covers them and there is one lockfile. Root scripts
+reach each with `pnpm --filter <package> <script>`.
 
 **The e2e package is not part of the product it drives.** It has to be runnable against a
 deployed URL (`E2E_BASE_URL`), so nothing in `apps/web` may import it, and it reaches into
@@ -86,7 +87,7 @@ Four consequences worth stating, because they are where the shape usually slips:
   request, a test or a scheduler called it.
 - **A service hands back a DTO, never an entity.** An entity that reaches the web layer is
   how a lazy JPA proxy ends up being serialised.
-- **A feature may use another feature, never in a circle.** `note → ai` is fine; `ai → note`
+- **A feature may use another feature, never in a circle.** `testcase → ai` is fine; `ai → testcase`
   as well and neither can be changed alone.
 - **Where the caller only _reacts_ to a change, use an event.** `NoteService` publishes
   `NoteEvents.NoteContentChanged`; `NoteIndexService` listens `AFTER_COMMIT`. Plain CRUD
@@ -104,8 +105,10 @@ store means rewriting the tools and the prompts with it. `ContentTools` holds a
 `ContentStore`, never a `NoteService`.
 
 - The implementation lives in the **feature that owns the storage** —
-  `feature/note/service/NoteContentStore` — not in `core/`. `core/` owns the port, features
-  own the adapters.
+  `feature/testcase/service/TestCaseContentStore` — not in `core/`. `core/` owns the port,
+  features own the adapters. The exception is a port whose implementation belongs to no
+  feature because it talks to one external system for all of them: `HttpRunnerClient` sits
+  in `core/runner/` beside its interface.
 - To add one: implement `ContentStore`, return a new `kind()`, annotate `@Component` and
   `@Validated`. `ContentStoreRegistry` discovers it from the context; there is no list to
   edit. Declare what it can do in `capabilities()` — the four mutating methods default to
@@ -114,16 +117,30 @@ store means rewriting the tools and the prompts with it. `ContentTools` holds a
   same pattern as `spring.ai.model.*`. Both failure modes (two stores claiming one kind, a
   configured default nobody answers to) fail the boot, not the first call.
 
-**Do not generalise this into a ports-and-adapters layer for the rest of the code.** One
-port exists because one thing genuinely has to swap; a `NoteServicePort` in front of a class
-with one implementation buys nothing, and contradicts the plain design above.
+## The three ports in `core/`, and what earns a fourth
+
+`ContentStore`, `GitProvider` and `RunnerClient` are the interfaces-with-implementations in
+this codebase. Each earns it the same way — **something on the other side is not a Java call**:
+
+| Port           | The thing on the other side | The one class allowed to know how                  |
+| -------------- | --------------------------- | -------------------------------------------------- |
+| `core/content` | wherever user content lives | each feature's own `…ContentStore`                 |
+| `core/git`     | a Git repository            | `GithubGitProvider` — the only JGit importer       |
+| `core/runner`  | the Node runner, over HTTP  | `HttpRunnerClient` — the only `java.net.http` user |
+
+A port is earned by a **process or storage boundary**, not by a wish for symmetry. The test:
+without it, could this be unit-tested at all? `CodeGenerationService` holds a `RunnerClient`
+and never learns there is a socket, which is why its tests are Mockito and not a fixture
+server. A `TestCaseServicePort` in front of a class with one implementation buys nothing and
+contradicts the plain design above — **do not generalise this into a ports-and-adapters
+layer for the rest of the code.**
 
 ## apps/web — the same shape, without a compiler to enforce it
 
 ```text
 src/
 ├── app/[locale]/   (marketing) · (auth) · (app) route groups — layouts and thin pages
-├── features/       notes · chat · auth · settings · dashboard
+├── features/       projects · testcases · testmanagement · testmodel · codegen · chat · auth · settings · dashboard
 ├── components/     ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
 ├── lib/            api/ (client, types) · config/ (site, navigation) · utils
 ├── i18n/ messages/ hooks/ stores/ styles/ types/
@@ -187,14 +204,21 @@ with a feature.
    `locator`, `getByRole`, `@playwright/test` — belongs in
    `services/runner/src/adapters/playwright/` and in `tests/e2e`. Never in the IR, never in
    `apps/api`, never in `apps/web`. Same containment idea as the vendor rule above, enforced
-   by ArchUnit on the Java side and an eslint restricted-import rule on the Node side.
-7. **Git holds the automation source code; the database holds metadata.** Content hash and
+   by ArchUnit on the Java side (no `com.microsoft.playwright..`, `org.openqa.selenium..` or
+   `io.appium..` on the api classpath) and an eslint restricted-import rule on the Node side.
+
+7. **Only `HttpRunnerClient` knows the runner speaks HTTP.** `java.net.http`, the `/jobs` URI
+   and the `{ok, result, error}` envelope stop at that class; everything above it holds a
+   `RunnerClient` and gets back a `RunnerJobResult`. The same shape as `GithubGitProvider` for
+   JGit — a service that knew the transport could not be tested without a socket, and would
+   have to change when the transport does.
+8. **Git holds the automation source code; the database holds metadata.** Content hash and
    commit sha, not file bodies. See
    [`docs/architecture/07-git.md`](../../../docs/architecture/07-git.md).
 
 ## Adding a whole new area
 
-- **A new api feature**: copy the shape of `feature/note/` — `domain/`, `dto/`, `mapper/`,
+- **A new api feature**: copy the shape of `feature/testcase/` — `domain/`, `dto/`, `mapper/`,
   `service/`, `web/`. There is nothing to register: Spring finds it, and ArchUnit's rules are
   written against `feature.*`, so they apply the moment the folder exists.
 - **A new web feature**: a folder under `features/`, a thin page under the right route group,

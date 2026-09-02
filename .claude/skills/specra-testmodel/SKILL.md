@@ -101,6 +101,49 @@ services/runner/src/
   arrives in the job payload and leaves in the result or in object storage.
 - `services/runner` drives the **user's** application. `tests/e2e` drives **Specra**. They
   both use Playwright and they share no code — never import between them.
+- It runs TypeScript directly: `pnpm --filter specra-runner start` is `tsx src/server/main.ts`,
+  with no build step. Not plain `node --experimental-strip-types` — that does not resolve the
+  `.js` specifiers back to `.ts`, so the server starts under vitest and nowhere else.
+  `RUNNER_PORT` / `RUNNER_HOST` override the `127.0.0.1:8090` default.
+
+### The job contract — `POST /jobs`
+
+Two routes, and they are the whole surface (`src/server/server.ts`):
+
+```text
+POST /jobs   { kind, payload }  ──►  200 { ok: true,  result }
+                                     422 { ok: false, error: { code, message } }
+GET  /health                    ──►  200 { ok: true,  result: { status: "up" } }
+```
+
+- **Three kinds, one envelope**: `codegen`, `inspect`, `execute`. Only `codegen` is built;
+  the other two answer `not-implemented` rather than 404, so a caller can tell "not built
+  yet" from "the runner is missing". One envelope for all three on purpose — the control
+  plane should not learn a new shape per job.
+- **200 vs 422 is load-bearing.** A refusal is a complete answer about the user's test case —
+  an invalid IR, a malformed payload — and comes back 422 with a reason they can act on. Only
+  ≥500 means the runner itself fell over, and only that throws `RunnerUnavailableException`
+  on the Java side. Getting this backwards turns "your Test Model has a problem" into "try
+  again later".
+- `JobErrorCode` is `unknown-job-kind` · `malformed-payload` · `not-implemented` ·
+  `generation-failed`. Bodies over 4 MB are 413.
+- Add a kind by extending `JOB_KINDS` and the switch in `src/server/handler.ts`; the switch is
+  exhaustive over the union, so TypeScript points at what is missing.
+
+### Unresolved is about elements too, not only pages
+
+`StepContext.knownPages` is a `Map<string, Set<string>>`, and `target()` in
+`adapters/playwright/steps.ts` reports the step when **the page is unknown _or_ the element is
+missing from a known page**. A page object that exists with nothing on it yet would otherwise
+produce `loginPage.usernameInput` against a class with no such getter — code that compiles
+against nothing and fails on the real application. A missing page and a missing element are
+the same failure: a locator that does not exist.
+
+**Every generation currently comes back with unresolved targets, and that is correct.**
+`PageObjectCatalogue` in `apps/api` deliberately returns each referenced page with an empty
+element list, because inspection is M8. The proposal then says which pages need inspecting
+instead of shipping a guessed `#login-btn`. Do not "fix" this by inventing locators; it stops
+when inspection lands.
 
 ## Generated project shape
 
@@ -141,10 +184,10 @@ can only pass.
 
 ## Tests to write, every time
 
-| Change                | Test                                                          |
-| --------------------- | ------------------------------------------------------------- |
-| Schema field          | a valid fixture and an invalid one, checked on both sides     |
-| Action or condition   | a golden file for the generated output                        |
-| Adapter change at all | the existing golden files still match, byte for byte          |
-| Locator scoring       | a DOM fixture with a known best and a known fallback          |
-| Runner job            | a job payload in, a result out, with no network to a real app |
+| Change                | Test                                                                              |
+| --------------------- | --------------------------------------------------------------------------------- |
+| Schema field          | a valid fixture and an invalid one, checked on both sides                         |
+| Action or condition   | a golden file for the generated output                                            |
+| Adapter change at all | the existing golden files still match, byte for byte                              |
+| Locator scoring       | a DOM fixture with a known best and a known fallback                              |
+| Runner job            | `src/server/server.test.ts` — over a real socket: the status code is the contract |

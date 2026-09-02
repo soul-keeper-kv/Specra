@@ -23,7 +23,8 @@ dev.specra.api
 ├── config/       @Configuration only; SpecraProperties holds everything under specra.*
 ├── core/         no domain knowledge: error/ · i18n/ · logging/ · web/ · content/
 └── feature/      one folder per domain, one folder per layer inside it
-    ├── note/     web/ · service/ · domain/ · mapper/ · dto/
+    ├── testcase/ web/ · service/ · domain/ · mapper/ · dto/    ← the reference slice
+    ├── codegen/  the IR projected into files; a person applies them
     └── ai/       web/ · service/ · tool/ · dto/
 ```
 
@@ -46,21 +47,21 @@ folder its role names**, so where a file sits tells you what it is allowed to to
 `src/test/java/dev/specra/api/ArchitectureTest.java` (ArchUnit, runs in `./mvnw test`, no
 Docker) fails the build on:
 
-| Rule                                                                                     | Why it exists                                                       |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `core` depending on `feature`                                                            | core is shared plumbing; a class naming a feature belongs in it     |
-| a cycle between features                                                                 | note → ai is fine; ai → note as well means neither can change alone |
-| `service/` accessed by anything but `web/`, `domain/` by anything but `service/`         | that is the layering itself                                         |
-| a `@RestController` outside `web/`, an `@Entity` or repository outside `domain/`         | otherwise the rule above is trivial to dodge                        |
-| anything depending on a `*Controller`                                                    | a controller is an entry point, not a collaborator                  |
-| `service/`, `mapper/` or `domain/` seeing `jakarta.servlet` or `org.springframework.web` | a service is also called by tests and schedulers                    |
-| importing `org.springframework.ai.<vendor>`                                              | the provider is `spring.ai.model.*`, chosen at runtime              |
-| `@Autowired` on a field                                                                  | constructor injection keeps the class buildable with `new`          |
+| Rule                                                                                     | Why it exists                                                               |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `core` depending on `feature`                                                            | core is shared plumbing; a class naming a feature belongs in it             |
+| a cycle between features                                                                 | testcase → ai is fine; ai → testcase as well means neither can change alone |
+| `service/` accessed by anything but `web/`, `domain/` by anything but `service/`         | that is the layering itself                                                 |
+| a `@RestController` outside `web/`, an `@Entity` or repository outside `domain/`         | otherwise the rule above is trivial to dodge                                |
+| anything depending on a `*Controller`                                                    | a controller is an entry point, not a collaborator                          |
+| `service/`, `mapper/` or `domain/` seeing `jakarta.servlet` or `org.springframework.web` | a service is also called by tests and schedulers                            |
+| importing `org.springframework.ai.<vendor>`                                              | the provider is `spring.ai.model.*`, chosen at runtime                      |
+| `@Autowired` on a field                                                                  | constructor injection keeps the class buildable with `new`                  |
 
 Practical consequences when writing a feature:
 
 - **A handler delegates once.** Two service calls in one controller method is a use case
-  without a home — `DELETE /api/notes/{id}` calls `NoteService.delete` and nothing else.
+  without a home — `DELETE /api/v1/test-cases/{id}` calls `TestCaseService.delete` and nothing else.
 - **A service returns a DTO**, never an entity. `NoteService.require` returns a `Note` and
   is deliberately package-private: it is for the other service in the same feature.
 - **Cross-feature side effects go through an event.** `NoteService` publishes
@@ -95,21 +96,51 @@ curl -s https://repo.maven.apache.org/maven2/org/springframework/ai/spring-ai-st
 
 ## Who owns which table
 
-| Table                   | Created by                                  |
-| ----------------------- | ------------------------------------------- |
-| `notes`, `note_tags`    | Flyway — `src/main/resources/db/migration/` |
-| `vector_store`          | **Spring AI**, `initialize-schema: true`    |
-| `SPRING_AI_CHAT_MEMORY` | **Spring AI**, `initialize-schema: always`  |
+| Table                        | Created by                                          |
+| ---------------------------- | --------------------------------------------------- |
+| everything but the two below | Flyway — `src/main/resources/db/migration/`, V1…V11 |
+| `vector_store`               | **Spring AI**, `initialize-schema: true`            |
+| `SPRING_AI_CHAT_MEMORY`      | **Spring AI**, `initialize-schema: always`          |
 
 Hibernate runs `ddl-auto: validate`, so any entity change **must** come with a new
-migration (`V2__…sql`), or the app fails at startup — that is intentional.
+migration (the next free `V<n>__…sql`; V11 is the latest), or the app fails at startup — that is
+intentional.
 
 Do not write a migration for `vector_store`: its vector width changes with the active
 embedding model (transformers 384 / ollama 768 / openai 1536).
 
+**A migration that has run anywhere is immutable — including its comments.** Flyway
+checksums the whole file, so rewording a `--` line fails `flyway:validate` on every database
+that already applied it, and the app refuses to start. Put the better wording in the Java that
+reads the table. If one was edited by mistake: `./mvnw flyway:repair` with the datasource
+properties rewrites the stored checksum and touches no data — on that one machine.
+
+## `feature/codegen` — two verbs that must stay two endpoints
+
+| Endpoint                                    | Does                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| `POST /api/v1/test-cases/{id}/code`         | projects the IR into files, stores a proposal — **writes nothing**  |
+| `GET  /api/v1/test-cases/{id}/code`         | the proposal awaiting review, each file beside its current contents |
+| `POST /api/v1/code-generations/{id}/apply`  | writes the files, commits exactly those paths as the user           |
+| `POST /api/v1/code-generations/{id}/reject` | nothing is written                                                  |
+
+`PROPOSED → APPLIED | REJECTED | SUPERSEDED`. **Never add an endpoint that generates and
+applies**, however convenient — the human decision between them is the product, and a
+convenience route makes it optional. Generating supersedes any older `PROPOSED` row, because
+two live proposals offer a reviewer two futures for the same file.
+
+## `ErrorCode` — declaration order is load-bearing
+
+`forStatus` returns the **first** constant with a given status, so the general one must be
+declared before the specific ones that share it. `RESOURCE_NOT_FOUND` before
+`EXTERNAL_TEST_NOT_FOUND`; `CONFLICT` before `GENERATION_NOT_PROPOSED`;
+`AI_PROVIDER_UNAVAILABLE` before `RUNNER_UNAVAILABLE`. Adding a constant in the wrong place
+silently changes what an unhandled exception maps to — put it after the general one and say
+in its javadoc why it sits there.
+
 ## Adding a domain — the vertical slice
 
-Follow `feature/note/` as the reference. In order:
+Follow `feature/testcase/` as the reference. In order:
 
 1. `src/main/resources/db/migration/V<n>__<name>.sql` — table plus indexes
 2. `feature/<name>/domain/<Name>.java` — entity with `@Getter @Setter @NoArgsConstructor`,
@@ -155,7 +186,7 @@ on), `timestamp`, `traceId` and `requestId`; validation failures add `fieldError
 To raise one, throw:
 
 ```java
-throw new ResourceNotFoundException("resource.note", id);   // 404
+throw new ResourceNotFoundException("resource.test-case", id);   // 404
 throw new ConflictException("error.conflict.detail");       // 409
 ```
 
@@ -181,10 +212,10 @@ No user-facing string is written in Java. Bundles live in `src/main/resources/i1
 `messages.properties` (English fallback) and `messages_vi.properties`.
 
 - Resolve text through `MessageResolver`, never `MessageSource` directly.
-- A message argument that is itself a noun goes in as `LocalizedText("resource.note")`, so
+- A message argument that is itself a noun goes in as `LocalizedText("resource.test-case")`, so
   the whole sentence ends up in one language.
 - Bean Validation resolves from the same bundle — `I18nConfig` replaces Boot's validator —
-  so write `@NotBlank(message = "{validation.note.title.required}")`, never a literal.
+  so write `@NotBlank(message = "{validation.testcase.title.required}")`, never a literal.
 - `MessageBundleTest` fails the build on a key present in one bundle and missing from
   another, and on an undoubled apostrophe in a parameterised message (MessageFormat treats
   a single quote as an escape and swallows the rest of the sentence).
@@ -237,7 +268,7 @@ Run the app against a disposable database:
 Changing a DTO or an endpoint means updating:
 
 - `apps/web/src/lib/api/types.ts` — the hand-written types the web app actually uses
-- `apps/web/src/features/notes/api/notes.ts` and `apps/web/src/features/chat/api/ai.ts` — the
+- `apps/web/src/features/testcases/api/testcases.ts` and `apps/web/src/features/chat/api/ai.ts` — the
   TanStack Query hooks
 
 Cross-check against the live schema (needs the API running):

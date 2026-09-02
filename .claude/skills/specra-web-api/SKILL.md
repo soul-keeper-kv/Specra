@@ -124,6 +124,19 @@ user edits.
 Because that retry is bounded by a `_retried` flag on the config, a hook needs no 401 handling of
 its own. Do not add one.
 
+## When a key factory does not fit the three tiers
+
+`codeGenerationKeys` is `{ all, current(testCaseId), history(testCaseId) }` — no
+`lists()`/`details()`, because a proposal is reached through its parent test case and never by
+its own id. That is a sanctioned variant, not drift: key the factory the way the resource is
+actually addressed.
+
+**A mutation may invalidate another feature's keys, through that feature's `api/`.**
+`useApplyGeneration` invalidates `testCaseKeys.detail(...)` and `testCaseKeys.lists()` as well
+as its own, because applying moves the case to `COMMITTED` and the list column would
+otherwise lie until a refresh. Importing another feature's key factory is allowed —
+importing its components is not.
+
 ## Errors in the UI
 
 ```tsx
