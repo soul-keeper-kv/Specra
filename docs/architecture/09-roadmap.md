@@ -258,7 +258,7 @@ under "Later".
 **Done when** a locator change in the target application produces a correct one-line proposal
 that a user accepts and re-runs green — the loop closes.
 
-**Half done: the reading.** `POST /run-items/{id}/analysis` classifies one failed cell into the
+**Done.** `POST /run-items/{id}/analysis` classifies one failed cell into the
 six causes of [08](08-ai-pipeline.md) with a confidence, a summary, a rationale tied to the
 evidence, and a suggestion in words. The run detail offers it per cell.
 
@@ -277,9 +277,21 @@ to, and an excerpt of the generated code. No environment values, secret or other
 DOM snapshot — that arrives with M8, and until then the prompt says so rather than letting a
 rationale describe a page nobody looked at.
 
-Still open here: the FIX generation itself. It reuses `code_generations` rather than getting its
-own table, so it inherits the one propose/review/apply path — a second route into a user's
-repository is how "a human approves every write" quietly stops being true.
+`POST /failure-analyses/{id}/repair` then turns a reading into a patch: the model is given the
+committed file and the diagnosis, and returns the file with the smallest change that fixes it.
+The result is a `PROPOSED` row in `code_generations` with `kind = 'FIX'` — not its own table, so
+it inherits the one review-and-apply path. A second route into a user's repository is how "a
+human approves every write" quietly stops being true.
+
+The repair refuses in four cases, and the refusals are the feature: an unrepairable cause, a spec
+file no longer in the repository, an unusable answer (an empty file included — committing one
+would delete the test), and a model that returned the file unchanged, which the prompt asks it to
+do rather than invent a change when the diagnosis does not survive contact with the code. The
+`PRODUCT_BUG` check is enforced in the service, not just hidden in the UI: a UI check is a
+suggestion, and this is a rule.
+
+Still open here: **re-running from the analysis**. Applying a fix commits it, and the run has to
+be started again from the Runs screen — the loop closes, but not in one gesture.
 
 ## M8 — Inspection and locator planning
 

@@ -180,12 +180,13 @@ GET    /api/v1/run-items/{id}
 GET    /api/v1/run-items/{id}/artifacts        signed, expiring URLs — never raw bytes
 ```
 
-## Failure analysis — the reading is built, the repair is not
+## Failure analysis — built
 
 ```http
 GET    /api/v1/run-items/{id}/analysis         the stored reading, 404 if none was made
 POST   /api/v1/run-items/{id}/analysis         classify this failure
 POST   /api/v1/run-items/{id}/analysis?reanalyse=true    ignore the stored one and ask again
+POST   /api/v1/failure-analyses/{id}/repair    → a PROPOSED CodeGenerationResponse of kind FIX
 ```
 
 Answers `{ rootCause, confidence, summary, rationale, suggestion, repairable }`. `rootCause` is
@@ -202,9 +203,17 @@ a second press returns the stored reading rather than buying a second opinion. O
 item can be analysed; **ERROR** is a 409, because a run that could not complete says nothing about
 the application under test.
 
-Still to come: the `FIX` generation itself. It will be a row in `code_generations` with
-`kind = 'FIX'`, applied through the same apply endpoint as any other proposal — there is no
-separate "heal" endpoint, because healing is not a separate mechanism.
+`repair` answers a `CodeGenerationResponse` — a row in `code_generations` with `kind = 'FIX'`,
+reviewed and applied through the same apply endpoint as any other proposal. There is no separate
+"heal" endpoint, because healing is not a separate mechanism, and a second route into a user's
+repository is how "a human approves every write" quietly stops being true.
+
+It is refused with 409 in four cases, each of which would otherwise produce a diff worth less
+than nothing: the cause is `PRODUCT_BUG` or `UNKNOWN` (`repair.not-repairable`); the spec file the
+run executed is no longer in the repository (`repair.spec-missing`); the answer was unusable, an
+empty file included (`repair.unusable`); or the model returned the file unchanged, which the
+prompt asks it to do when the diagnosis does not survive contact with the code
+(`repair.no-change`).
 
 ## Error codes
 

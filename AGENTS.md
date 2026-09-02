@@ -151,7 +151,7 @@ apps/api/src/main/java/dev/specra/api/
     │   └── dto/     EnvironmentRequest/Response, EnvironmentVariableRequest/Response
     ├── analysis/    role 5: why a cell failed. PRODUCT_BUG proposes nothing, on purpose
     │   ├── web/     FailureAnalysisController
-    │   ├── service/ FailureAnalysisService, EvidenceCollector, FailureAnalysisPrompt
+    │   ├── service/ FailureAnalysisService, RepairService, EvidenceCollector, the two prompts
     │   ├── domain/  FailureAnalysis, RootCause
     │   └── dto/     FailureAnalysisResponse
     ├── run/         execution, its matrix and its evidence
