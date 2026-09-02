@@ -93,6 +93,18 @@ repository over `file://`, which drives the same transport code a GitHub URL doe
 **Done when** a hand-written IR fixture generates a project that passes `tsc`, `eslint` and
 `prettier --check`, byte-identically on every run.
 
+**In flight**: the package exists as `specra-runner` with the adapter
+(`src/adapters/playwright/`), `generate()` as a pure `(IR, page objects, options) → files`, and
+41 tests. Determinism is held by golden files over the shared `fixtures/valid/` IRs; portability
+is held by a test that writes two generations into one temp project and runs the real `tsc`
+against the real engine types — which is what caught a flow referencing a page object it never
+constructed, and a second generation clobbering `fixtures/environment.ts`. Engine vocabulary is
+contained by `containment.test.ts` with a two-entry exemption list. Generation refuses rather
+than guesses: an uninspected page comes back in `unresolved`, an element named `page`/`goto`
+is rejected, duplicate page names are rejected. The job server landed with M5: `POST /jobs { kind, payload }` over HTTP, serving `codegen`
+while `inspect`/`execute` answer `not-implemented`. Still open here: `eslint` and `prettier`
+over the output (only `tsc` runs today), and those two jobs.
+
 ## M4 — Understanding and modelling
 
 - Roles 1 and 2 ([08](08-ai-pipeline.md)) behind `POST /test-cases/{id}/model`.
@@ -102,6 +114,16 @@ repository over `file://`, which drives the same transport code a GitHub URL doe
 **Done when** a real manual test case produces a valid IR, and a deliberately ambiguous one
 produces a question instead of a fabrication.
 
+**In flight** (ahead of M3, because the Xray path made the modelling step the next thing a user
+sees): `feature/testmodel` with `POST /test-cases/{id}/model` answering synchronously, the
+semantic layer (`TestModelSemantics`, caught against `fixtures/invalid/semantic/`), one repair
+round, `test_models` versions, and the `ai_generations` audit (V10). Refusals are
+`test-case-ambiguous` with the questions and `test-model-invalid` with the violations, both as
+problem extensions. The web side is the automation workspace reached from an Xray test: manual
+steps on the left, the model step beside the manual step it came from in the middle, pages
+awaiting inspection on the right. Still open here: `PUT …/model` (a human editing the IR),
+and referential validation against page objects, which waits for M8 to have any.
+
 ## M5 — Generate, review, commit
 
 - `POST /test-cases/{id}/code`, the proposal/diff/apply flow, `ai_generations` audit.
@@ -109,6 +131,18 @@ produces a question instead of a fabrication.
 
 **Done when** a manual test case becomes a reviewed, committed Playwright spec without anyone
 writing code — the first half of the golden path, end to end.
+
+**In flight**: the chain is connected end to end. `apps/api` reaches the runner through
+`core/runner` — `RunnerClient` is the port and `HttpRunnerClient` the only class that knows it
+is HTTP, the same containment shape as `GitProvider`. `feature/codegen` stores each proposal in
+`code_generations` (V11) with its files and its unresolved targets, and
+`POST /code-generations/{id}/apply` is the only path that writes into a working copy: it writes
+the proposed files, commits exactly those paths as the signed-in user, and moves the case to
+`COMMITTED`. Generate and apply are separate endpoints on purpose — there is no call that does
+both. Web: the workspace's Test script tab is the review surface, with a file list, a line
+diff, apply and reject, and the warning the runner's `unresolved` list produces when a page has
+not been inspected. Still open here: editing a generated file before applying, push-on-apply
+from the UI, and the SSE progress stream.
 
 ## M6 — Execution
 

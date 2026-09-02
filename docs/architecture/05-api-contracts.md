@@ -56,7 +56,8 @@ code exists, and a bad generation is re-run at the stage that went wrong rather 
 top.
 
 ```http
-POST   /api/v1/test-cases/{id}/model           → 202, AiGeneration id     (understand → IR)
+POST   /api/v1/test-cases/{id}/model           → 200, the stored version  (understand → IR)
+                                                 (202 + stream is the later, async form)
 GET    /api/v1/test-cases/{id}/model                                       (current IR)
 GET    /api/v1/test-cases/{id}/model/versions
 PUT    /api/v1/test-cases/{id}/model           a human edits the IR directly

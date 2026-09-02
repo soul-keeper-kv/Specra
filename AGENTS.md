@@ -63,13 +63,12 @@ current `notes`/`chat` scaffold gets replaced by.
 | `tests/e2e`           | Playwright, its own package — drives the product, is not part of it                                       |
 | `tools/notion-clone`  | Standalone script, unrelated to the two apps                                                              |
 
-One more is planned, and described in
-[03 — Module boundaries](docs/architecture/03-module-boundaries.md) before it exists so
-nothing gets built in the wrong place:
+The fifth landed with M3, in the place
+[03 — Module boundaries](docs/architecture/03-module-boundaries.md) reserved for it:
 
-|                   |                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| `services/runner` | Node/TS worker: the Playwright adapter, codegen validation, DOM inspection, execution |
+|                   |                                                                                         |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| `services/runner` | Node/TS: the Playwright adapter and codegen today; DOM inspection and execution to come |
 
 The split rule is one question: **does the job need the Node/Playwright toolchain?** If yes,
 `services/runner`. If no, `apps/api`. Nothing else decides it.
@@ -124,6 +123,7 @@ apps/api/src/main/java/dev/specra/api/
 │   ├── web/         PageResponse
 │   ├── content/     ContentStore + registry: one shape for every kind of user content
 │   ├── git/         GitProvider port + its records — no JGit type appears here
+│   ├── runner/      RunnerClient port; HttpRunnerClient is the only class that knows it is HTTP
 │   └── testmodel/   the IR records + the shared schema, validated by TestModelSchema
 └── feature/         one folder per feature, one folder per layer inside it
     ├── workspace/   the tenant boundary; other features check parents through its service
@@ -139,6 +139,11 @@ apps/api/src/main/java/dev/specra/api/
     │   ├── service/ GitService, GithubGitProvider (the only JGit importer), WorkingCopies
     │   ├── domain/  GitRepository, GitCredential
     │   └── dto/     RepositoryRequest, CommitRequest, GitStatusResponse, …
+    ├── codegen/     the IR projected into files, proposed and applied by a person
+    │   ├── web/     CodeGenerationController — generate and apply are separate endpoints
+    │   ├── service/ CodeGenerationService, PageObjectCatalogue, CommitMessages
+    │   ├── domain/  CodeGeneration (+ its status), CodeGenerationRepository
+    │   └── dto/     CodeGenerationResponse, GeneratedFileResponse, ApplyGenerationRequest
     └── ai/
         ├── web/     AiController
         ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders,
@@ -311,12 +316,14 @@ pnpm db:up          # Postgres + pgvector, host port 5432
 ollama serve        # local chat model — free, no key; VS Code: "specra: ollama up"
 ollama pull qwen2.5:7b   # once, ~4.7 GB; the model OLLAMA_MODEL names
 pnpm dev:api        # :8080
+pnpm --filter specra-runner start   # :8090 — the codegen job server apps/api calls
 pnpm dev:web        # :3000  (redirects / to /vi)
 pnpm test:api       # unit + integration — needs Docker (unit alone: ./mvnw test)
-pnpm test:web       # 12 Vitest tests
+pnpm test:web       # 20 Vitest tests
+pnpm test:runner    # 51 Vitest tests: the adapter, its golden files, the job server, portability
 pnpm test:e2e       # 8 Playwright specs; builds apps/web and serves it on :3100
 pnpm e2e:browsers   # one-off: download the Chromium build Playwright drives
-pnpm typecheck      # web + e2e: next typegen && tsc --noEmit
+pnpm typecheck      # web + e2e + test-model + runner: next typegen && tsc --noEmit
 
 pnpm format         # prettier: root docs + apps/web
 pnpm format:api     # spotless: google-java-format over apps/api

@@ -31,3 +31,6 @@ notion-export/
 
 # Git working copies the API manages (specra.git.repos-dir) — a cache, never source.
 apps/api/data/
+
+# Worked examples against a real internal application: useful locally, not ours to publish.
+demo/
