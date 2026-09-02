@@ -5,22 +5,24 @@ further along, on real domain logic — never on mocked behaviour behind a finis
 
 ## Where the repository is today
 
-The golden path runs from an imported test case to a committed spec that **executes and comes
-back with evidence**, and stops before the failure is analysed.
+**The golden path closes.** A manual test case becomes an executable test, runs against a real
+environment, comes back with evidence, and a failure produces a diagnosis and — where a diagnosis
+warrants one — a repair proposal a person reviews and commits.
 
 Working end to end: sign in, a workspace with members and roles, a project bound to a Jira/Xray
-board, a manual case imported or authored, AI modelling it into an IR a person can edit, the IR
-projected into Playwright source that is typechecked and linted before it is offered, a reviewer
-correcting that source and applying it as a commit authored by them — optionally pushed — an
-environment saying where the suite points, and a run that executes in a container and brings back
-its trace, video and logs behind expiring links. Underneath: Next.js + Spring Boot, i18n in
-Vietnamese and English, RFC 9457 errors, correlation ids and tracing, OpenAPI, ArchUnit layering,
-pgvector, Spring AI with a provider-agnostic setup and per-workspace keys.
+board, a manual case imported or authored, AI modelling it into an IR a person can edit, a page
+inspected in a real browser so its locators are read rather than guessed, the IR projected into
+Playwright source that is typechecked and linted before it is offered, a reviewer correcting that
+source and applying it as a commit authored by them — optionally pushed — an environment saying
+where the suite points, a run that executes in a container and brings back its trace, video and
+logs behind expiring links, and a failure classified into a cause with a rationale tied to the
+evidence. Underneath: Next.js + Spring Boot, i18n in Vietnamese and English, RFC 9457 errors,
+correlation ids and tracing, OpenAPI, ArchUnit layering, pgvector, Spring AI with a
+provider-agnostic setup and per-workspace keys.
 
-Not there yet: **reading the failure**. M7 (analysis and repair) and M8 (inspection) are unbuilt,
-which is also why every generation still reports unresolved targets and is therefore never
-typechecked — until pages have been inspected there are no locators for the compiler to check
-against.
+What remains is not a missing stage but the seams between them: the loop closes in two gestures
+rather than one (applying a fix commits it; the re-run is started from the Runs screen), and there
+is still no live progress stream — the UI polls while a run is in flight.
 
 Two things landed that were never on this roadmap, and both paid for themselves. **Local auth**
 (V3) became necessary the moment workspaces had members; the whole API is closed by default and
@@ -101,7 +103,7 @@ A push that is not a fast-forward comes back as `GIT_PUSH_REJECTED` for the user
 retry; nothing in the code path can force it. The provider is tested against a real bare
 repository over `file://`, which drives the same transport code a GitHub URL does.
 
-## M3 — The runner
+## M3 — The runner ✅
 
 - `services/runner` with the `codegen` job only, plus the Playwright adapter and golden-file
   tests.
@@ -119,8 +121,8 @@ constructed, and a second generation clobbering `fixtures/environment.ts`. Engin
 contained by `containment.test.ts` with a two-entry exemption list. Generation refuses rather
 than guesses: an uninspected page comes back in `unresolved`, an element named `page`/`goto`
 is rejected, duplicate page names are rejected. The job server landed with M5:
-`POST /jobs { kind, payload }` over HTTP, serving `codegen` while `inspect`/`execute` answer
-`not-implemented`.
+`POST /jobs { kind, payload }` over HTTP. It served `codegen` alone at first; `execute` landed
+with M6 and `inspect` with M8, so all three are live.
 
 All three tools now run over the output. **Prettier is the authority on the bytes, not a check
 on them**: it formats in the job layer (`runCodegen`) rather than inside `generate()`, because
@@ -146,9 +148,9 @@ about, drowning the actionable "inspect these pages first". `verified` on the re
 of the three happened, because a caller that cannot tell "checked and fine" from "not checked"
 will eventually trust the wrong one.
 
-Still open here: the `inspect` and `execute` jobs, which land with M8 and M6.
+Both later jobs have since landed: `execute` with M6, `inspect` with M8.
 
-## M4 — Understanding and modelling
+## M4 — Understanding and modelling ✅
 
 - Roles 1 and 2 ([08](08-ai-pipeline.md)) behind `POST /test-cases/{id}/model`.
 - IR validation with useful rejections; ambiguity surfaced, not guessed.
@@ -178,7 +180,7 @@ not be the lenient one.
 
 Still open here: referential validation against page objects, which waits for M8 to have any.
 
-## M5 — Generate, review, commit
+## M5 — Generate, review, commit ✅
 
 - `POST /test-cases/{id}/code`, the proposal/diff/apply flow, `ai_generations` audit.
 - Web: the code editor with diff, accept, edit, and commit.
@@ -248,7 +250,7 @@ which is the only reason the edit form is usable at all.
 Still open: the live status stream (see M5), and result sync back to Jira/Xray, which stays
 under "Later".
 
-## M7 — Analysis and repair
+## M7 — Analysis and repair ✅
 
 - Migration V13 (the bullet used to say "V6"; the numbering has moved) — `failure_analyses`,
   plus `kind` and `failure_analysis_id` on `code_generations`.
@@ -293,7 +295,7 @@ suggestion, and this is a rule.
 Still open here: **re-running from the analysis**. Applying a fix commits it, and the run has to
 be started again from the Runs screen — the loop closes, but not in one gesture.
 
-## M8 — Inspection and locator planning
+## M8 — Inspection and locator planning ✅
 
 Deliberately after M7: analysis makes the value of good locators obvious, and inspection is
 what makes them good.
@@ -323,8 +325,21 @@ compiler to check against; a project with an inspected page now gets a real page
 verification finally runs over real output. And M4's referential validation now has page objects to
 validate against.
 
-Still open here: **regeneration and impact analysis**. A changed test case still regenerates whole
-rather than producing the one-line diff 08-ai-pipeline.md describes.
+**Done: impact analysis.** A generation carries an `impact` — which IR steps were added, removed
+or modified since the version the repository holds, and which pages they touch.
+
+The doc asks for "a minimal change proposal", and the shape that request takes here is worth
+stating, because it is not the obvious one. The projection stays whole and deterministic: invariant
+3 forbids a model call in the adapter, and a hand-patched projection would not be reproducible, so
+regeneration cannot become a patch without giving up the property that makes it trustworthy. What
+the doc is really protecting against is a reviewer facing churn they cannot interpret — so the
+impact supplies the rationale instead. The file diff says what the code does; the impact says what
+the _test case_ did, which is the thing the reviewer actually changed.
+
+Matched by step id rather than position, because inserting a step at the top shifts everything
+below it and a positional diff would report the whole test as rewritten — the exact noise the doc
+warns about. The baseline is the last **applied** generation: a superseded or rejected proposal was
+never in anyone's repository, so diffing against one would describe a change that never happened.
 
 ## Later, and only then
 

@@ -121,7 +121,7 @@ GET    /api/v1/test-cases/{id}/model                                       (curr
 GET    /api/v1/test-cases/{id}/model/versions
 PUT    /api/v1/test-cases/{id}/model           a human edits the IR directly
 
-POST   /api/v1/test-cases/{id}/code             → 200, the proposal       (IR → files)
+POST   /api/v1/test-cases/{id}/code             → 200, the proposal + its impact
 GET    /api/v1/test-cases/{id}/code                 the live proposal, if any
 GET    /api/v1/test-cases/{id}/code/history
 POST   /api/v1/code-generations/{id}/apply      { message?, push?, edits? } → commit, and optionally push
