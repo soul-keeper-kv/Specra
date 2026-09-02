@@ -10,6 +10,7 @@
 
 import type { CodegenRequest, CodegenResult } from "../codegen/types.js";
 import { BROWSERS, type ExecuteRequest, type ExecuteResult } from "../execute/types.js";
+import type { InspectRequest, InspectResult } from "../inspect/types.js";
 
 export const JOB_KINDS = ["codegen", "inspect", "execute"] as const;
 
@@ -30,6 +31,8 @@ export type JobResponse<T> =
 export type CodegenJobResult = CodegenResult;
 
 export type ExecuteJobResult = ExecuteResult;
+
+export type InspectJobResult = InspectResult;
 
 /**
  * A payload is JSON from another runtime, so it is validated rather than cast. The IR itself is
@@ -100,4 +103,32 @@ export function parseExecutePayload(payload: unknown): ExecuteRequest {
 
 export class PayloadError extends Error {
   readonly code: JobErrorCode = "malformed-payload";
+}
+
+/**
+ * The inspect payload.
+ *
+ * `url` is absolute because the API joins the environment's base URL to the route it was given —
+ * the runner has no idea what environments are, and resolving one here would put tenant
+ * configuration inside the component that runs untrusted pages.
+ */
+export function parseInspectPayload(payload: unknown): InspectRequest {
+  if (typeof payload !== "object" || payload === null) {
+    throw new PayloadError("the payload must be an object");
+  }
+  const candidate = payload as Partial<InspectRequest>;
+
+  if (typeof candidate.url !== "string" || candidate.url.trim() === "") {
+    throw new PayloadError("url is required and must be absolute");
+  }
+  if (!/^https?:\/\//i.test(candidate.url)) {
+    throw new PayloadError("url must start with http:// or https://");
+  }
+  if (typeof candidate.pageName !== "string" || candidate.pageName.trim() === "") {
+    throw new PayloadError("pageName is required: the IR references pages by name");
+  }
+  if (typeof candidate.projectDir !== "string" || candidate.projectDir.trim() === "") {
+    throw new PayloadError("projectDir is required: the engine is resolved from the project");
+  }
+  return candidate as InspectRequest;
 }

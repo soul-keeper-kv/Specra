@@ -10,11 +10,13 @@ import { generate } from "../codegen/generate.js";
 import { formatFiles } from "../codegen/validate.js";
 import { verifyProject } from "../codegen/verify.js";
 import { execute } from "../execute/run.js";
+import { inspect } from "../inspect/run.js";
 import {
   JOB_KINDS,
   PayloadError,
   parseCodegenPayload,
   parseExecutePayload,
+  parseInspectPayload,
   type Job,
   type JobKind,
   type JobResponse,
@@ -30,16 +32,8 @@ export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
       return runCodegen(job.payload);
     case "execute":
       return runExecute(job.payload);
-    // Lands with M8; answering "not implemented" beats a 404 that reads like the runner is
-    // missing entirely.
     case "inspect":
-      return {
-        ok: false,
-        error: {
-          code: "not-implemented",
-          message: `The ${job.kind} job is not built yet.`,
-        },
-      };
+      return runInspect(job.payload);
     default: {
       const exhaustive: never = job.kind;
       return {
@@ -81,6 +75,22 @@ export async function handleJob(job: Job): Promise<JobResponse<unknown>> {
 async function runExecute(payload: unknown): Promise<JobResponse<unknown>> {
   try {
     return { ok: true, result: await execute(parseExecutePayload(payload)) };
+  } catch (error) {
+    const code = error instanceof PayloadError ? error.code : "generation-failed";
+    return {
+      ok: false,
+      error: { code, message: error instanceof Error ? error.message : String(error) },
+    };
+  }
+}
+
+/**
+ * A page that cannot be opened is a refusal, not a crash: a wrong URL, a site that is down, or a
+ * redirect to a login are all things the user fixes, and each must reach them as a message.
+ */
+async function runInspect(payload: unknown): Promise<JobResponse<unknown>> {
+  try {
+    return { ok: true, result: await inspect(parseInspectPayload(payload)) };
   } catch (error) {
     const code = error instanceof PayloadError ? error.code : "generation-failed";
     return {

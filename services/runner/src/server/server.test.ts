@@ -131,11 +131,31 @@ describe("POST /jobs", () => {
     expect(body.error.code).toBe("unknown-job-kind");
   });
 
-  it("says the job it has not built yet is not built yet", async () => {
-    const { status, body } = await post({ kind: "inspect", payload: {} });
+  /**
+   * Inspection opens whatever URL it is handed, so the payload is checked before a browser is
+   * launched rather than after. A relative URL would otherwise be resolved against the runner's
+   * own filesystem, which is not where the user's application lives.
+   */
+  it("refuses an inspect job whose url is not absolute", async () => {
+    const { status, body } = await post({
+      kind: "inspect",
+      payload: { url: "/login", pageName: "LoginPage", projectDir: "." },
+    });
+
+    // 422, not 400: the envelope was fine and the job was refused, which is a complete answer
+    // rather than a server fault — the same distinction every other refusal here makes.
+    expect(status).toBe(422);
+    expect(body.error.code).toBe("malformed-payload");
+  });
+
+  it("refuses an inspect job that does not say what to call the page", async () => {
+    const { status, body } = await post({
+      kind: "inspect",
+      payload: { url: "https://example.test/login", projectDir: "." },
+    });
 
     expect(status).toBe(422);
-    expect(body.error.code).toBe("not-implemented");
+    expect(body.error.code).toBe("malformed-payload");
   });
 
   /**
