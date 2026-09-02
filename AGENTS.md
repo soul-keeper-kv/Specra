@@ -66,9 +66,9 @@ current `notes`/`chat` scaffold gets replaced by.
 The fifth landed with M3, in the place
 [03 — Module boundaries](docs/architecture/03-module-boundaries.md) reserved for it:
 
-|                   |                                                                                         |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| `services/runner` | Node/TS: the Playwright adapter and codegen today; DOM inspection and execution to come |
+|                   |                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `services/runner` | Node/TS: the Playwright adapter, codegen and execution today; DOM inspection to come |
 
 The split rule is one question: **does the job need the Node/Playwright toolchain?** If yes,
 `services/runner`. If no, `apps/api`. Nothing else decides it.
@@ -144,6 +144,17 @@ apps/api/src/main/java/dev/specra/api/
     │   ├── service/ CodeGenerationService, PageObjectCatalogue, CommitMessages
     │   ├── domain/  CodeGeneration (+ its status), CodeGenerationRepository
     │   └── dto/     CodeGenerationResponse, GeneratedFileResponse, ApplyGenerationRequest
+    ├── environment/ where a run points, and the variables it carries — secrets write-only
+    │   ├── web/     EnvironmentController
+    │   ├── service/ EnvironmentService — the only class that decrypts one, for dispatch
+    │   ├── domain/  Environment, EnvironmentVariable
+    │   └── dto/     EnvironmentRequest/Response, EnvironmentVariableRequest/Response
+    ├── run/         execution, its matrix and its evidence
+    │   ├── web/     RunController, ArtifactController — artifacts are signed links, never bytes
+    │   ├── service/ RunService, RunExecutor, ArtifactService, ArtifactRetention,
+    │   │             AutomationTestService (which spec file holds a case, filled at apply)
+    │   ├── domain/  TestRun, TestRunItem, TestArtifact, AutomationTest
+    │   └── dto/     RunRequest, RunResponse, RunItemResponse, ArtifactLinkResponse
     └── ai/
         ├── web/     AiController
         ├── service/ ChatService, RagService (read), DocumentIndexService (write), AiProviders,
@@ -155,7 +166,9 @@ apps/web/src/
 ├── app/[locale]/    (marketing) · (auth) · (app) route groups; layouts only
 ├── i18n/            routing, navigation, request config
 ├── messages/        en.json, vi.json
-├── features/        projects · testcases · workspaces · chat · auth · settings · dashboard — api/ + components/ + schemas
+├── features/        projects · testcases · testmodel · codegen · runs · environments · git ·
+│                    testmanagement · workspaces · chat · auth · settings · dashboard
+│                    — each api/ + components/ + schemas
 ├── components/      ui/ (shadcn) · layout/ · common/ · theme/ · i18n/ · providers.tsx
 ├── lib/             api/ (client, types) · config/ (site, navigation) · utils
 ├── hooks/ stores/ styles/ types/

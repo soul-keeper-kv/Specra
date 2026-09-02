@@ -63,15 +63,25 @@ GET    /api/v1/workspaces/{ws}/ai-account · PUT · DELETE     BYOK; the key is 
 GET    /api/v1/workspaces/{ws}/git-credentials · POST · DELETE {id}
 ```
 
-## Environments — planned (M6)
+## Environments — built
 
 ```http
-GET    /api/v1/projects/{id}/environments
-POST   /api/v1/projects/{id}/environments      { name, baseUrl, variables[] }
-PUT    /api/v1/environments/{id}/variables     secrets write-only; reads return "set" flags
+GET    /api/v1/projects/{id}/environments      not paged: a project has a handful
+POST   /api/v1/projects/{id}/environments      { name, baseUrl, isDefault?, variables[] }
+GET    /api/v1/environments/{id}
+PUT    /api/v1/environments/{id}               replaces the whole variable list, in order
+DELETE /api/v1/environments/{id}
 ```
 
-The tables have existed since V2; what is missing is the entity, the endpoints and the screen.
+A variable is `{ key, value?, secret? }`. **A secret's value is never returned** — a read gives
+`{ key, value: null, secret: true, valueSet: true }`, so `valueSet` is how a client shows
+"configured" without the API deciding whether this caller may be told a password. Sending a
+secret back **without** a value keeps the stored one, which is what lets a form be re-saved
+without retyping every credential; a brand-new secret with no value is a 409 rather than an
+empty secret stored silently.
+
+At most one environment per project is the default, and the first one created becomes it — a
+project with environments but no default would make every run ask a question with one answer.
 
 ## Test cases — built
 
@@ -114,7 +124,7 @@ PUT    /api/v1/test-cases/{id}/model           a human edits the IR directly
 POST   /api/v1/test-cases/{id}/code             → 200, the proposal       (IR → files)
 GET    /api/v1/test-cases/{id}/code                 the live proposal, if any
 GET    /api/v1/test-cases/{id}/code/history
-POST   /api/v1/code-generations/{id}/apply      { message?, push? } → commit, and optionally push
+POST   /api/v1/code-generations/{id}/apply      { message?, push?, edits? } → commit, and optionally push
 POST   /api/v1/code-generations/{id}/reject
 ```
 
@@ -122,10 +132,15 @@ POST   /api/v1/code-generations/{id}/reject
 generation that is in `PROPOSED`, and it records who decided. There is no endpoint that
 generates and applies in one call — see [08](08-ai-pipeline.md).
 
-Editing a generated file before applying it, and the SSE progress stream, are still open. A
-proposal's files are read from the proposal itself rather than through
-`/automation-tests/{id}/files`, which does not exist: until a generation is applied there is
-no automation test to read files from, and afterwards the file is in Git, where
+`apply` also takes `edits`: `[{ path, contents }]`, the bodies a reviewer corrected. They ride
+on the request rather than being saved against the proposal, whose stored files are immutable —
+the row records what the model produced, the commit records what the human approved. An edit
+naming a path the proposal does not contain is a 400, not a write: apply is not "commit any file
+I name".
+
+The SSE progress stream is still open. A proposal's files are read from the proposal itself
+rather than through `/automation-tests/{id}/files`, which does not exist: until a generation is
+applied there is no automation test to read files from, and afterwards the file is in Git, where
 `GET /projects/{id}/git/file` already serves it.
 
 ## Page inspection — planned (M8)

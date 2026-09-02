@@ -5,20 +5,22 @@ further along, on real domain logic — never on mocked behaviour behind a finis
 
 ## Where the repository is today
 
-The golden path runs from an imported test case to a committed spec, and stops before the
-test is executed.
+The golden path runs from an imported test case to a committed spec that **executes and comes
+back with evidence**, and stops before the failure is analysed.
 
 Working end to end: sign in, a workspace with members and roles, a project bound to a Jira/Xray
 board, a manual case imported or authored, AI modelling it into an IR a person can edit, the IR
-projected into Playwright source that is typechecked and linted before it is offered, and a
-reviewer applying that proposal as a commit authored by them — optionally pushed. Underneath:
-Next.js + Spring Boot, i18n in Vietnamese and English, RFC 9457 errors, correlation ids and
-tracing, OpenAPI, ArchUnit layering, pgvector, Spring AI with a provider-agnostic setup and
-per-workspace keys.
+projected into Playwright source that is typechecked and linted before it is offered, a reviewer
+correcting that source and applying it as a commit authored by them — optionally pushed — an
+environment saying where the suite points, and a run that executes in a container and brings back
+its trace, video and logs behind expiring links. Underneath: Next.js + Spring Boot, i18n in
+Vietnamese and English, RFC 9457 errors, correlation ids and tracing, OpenAPI, ArchUnit layering,
+pgvector, Spring AI with a provider-agnostic setup and per-workspace keys.
 
-Not there yet: **running the test**. Everything from M6 onward — execution, evidence, failure
-analysis, inspection — is unbuilt, which is also why every generation still reports unresolved
-targets.
+Not there yet: **reading the failure**. M7 (analysis and repair) and M8 (inspection) are unbuilt,
+which is also why every generation still reports unresolved targets and is therefore never
+typechecked — until pages have been inspected there are no locators for the compiler to check
+against.
 
 Two things landed that were never on this roadmap, and both paid for themselves. **Local auth**
 (V3) became necessary the moment workspaces had members; the whole API is closed by default and
@@ -193,10 +195,24 @@ the proposed files, commits exactly those paths as the signed-in user, and moves
 `COMMITTED`. Generate and apply are separate endpoints on purpose — there is no call that does
 both. Web: the workspace's Test script tab is the review surface, with a file list, a line
 diff, apply and reject, and the warning the runner's `unresolved` list produces when a page has
-not been inspected. Still open here: editing a generated file before applying, push-on-apply
-from the UI, and the SSE progress stream.
+not been inspected.
 
-## M6 — Execution
+**Done.** A reviewer edits a generated file before applying it, and the correction is what gets
+committed. The edits travel on the apply request rather than mutating the stored proposal, whose
+`files` column is `updatable = false` on purpose: the row is the record of what the model
+produced, the commit is what the human approved, and those are different facts — an edit that
+rewrote the row would leave `ai_generations` describing something nobody generated. An edit
+naming a path the proposal does not contain is refused, because accepting one would quietly turn
+apply into "commit any file I name", which is not what the reviewer looked at.
+
+Push-on-apply is a switch beside the apply button, off by default: committing is local and
+undoable, publishing to a remote other people pull from is a second decision.
+
+Still open here: the SSE progress stream, which waits for M7 — a stream earns its complexity when
+there is a live log to tail, and until then three seconds of polling on a job that takes minutes
+is imperceptible.
+
+## M6 — Execution ✅
 
 - Migration V12 — `test_runs`, `test_run_items`, `test_artifacts`. (The bullet here used to say
   "V5"; V5 was spent on the model and the generated code long ago, and the numbering has moved.)
@@ -207,13 +223,30 @@ from the UI, and the SSE progress stream.
 **Done when** a committed test runs against a real environment and the failure view shows the
 trace.
 
-Two things are already in place and only need code. **`environments` and `environment_vars`
+Two things were already in place and only needed code. **`environments` and `environment_vars`
 have existed since V2**, so environments are an entity and a screen, not a migration. And
-**`automation_tests` (V5) is written for the first time here** — it has never had a row, which
+**`automation_tests` (V5) is written for the first time here** — it had never had a row, which
 looks like dead schema until you ask what it is for: `code_generations` (V11) is the history of
 proposals, one row per attempt, whereas `automation_tests` is the _current_ identity of a test
 inside the repository — which spec file holds it, under what title, at which commit. A run
-targets "this test in that file", which no proposal row can answer. Keep it, fill it at apply.
+targets "this test in that file", which no proposal row can answer. It is filled at apply, from
+the SPEC file among the generated ones — a generation also writes page objects, fixtures and
+config, and pointing a run at a page object would be worse than pointing it at nothing.
+
+**Done**: the `execute` job runs the suite in a container, `RunExecutor` dispatches with the
+environment's variables decrypted at the last moment and never written to the working copy, and
+artifacts land in `core/storage` behind links that expire — `ArtifactRetention` deletes the
+evidence once they have. Web: a runs list that re-fetches itself while anything on it is still
+going, a run detail with the matrix, and the evidence per cell.
+
+Environments are a screen on the project, beside Runs. That screen is what the milestone
+actually turned on: the API had served environments since V2, but with no way to create one a
+run had nowhere to point, so every execution refused with a message the user could not act on.
+A secret is written once and never returned — a re-save that omits it keeps the stored value,
+which is the only reason the edit form is usable at all.
+
+Still open: the live status stream (see M5), and result sync back to Jira/Xray, which stays
+under "Later".
 
 ## M7 — Analysis and repair
 
