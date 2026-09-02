@@ -5,11 +5,26 @@ further along, on real domain logic — never on mocked behaviour behind a finis
 
 ## Where the repository is today
 
-The plumbing plus the first real domain: Next.js + Spring Boot, i18n in Vietnamese and
-English, RFC 9457 errors, correlation ids and tracing, OpenAPI, ArchUnit layering, pgvector,
-Spring AI with a provider-agnostic setup — and workspaces, projects and test cases where the
-`notes` scaffold used to be. The `chat` assistant remains, now grounded in test cases through
-`TestCaseContentStore`.
+The golden path runs from an imported test case to a committed spec, and stops before the
+test is executed.
+
+Working end to end: sign in, a workspace with members and roles, a project bound to a Jira/Xray
+board, a manual case imported or authored, AI modelling it into an IR a person can edit, the IR
+projected into Playwright source that is typechecked and linted before it is offered, and a
+reviewer applying that proposal as a commit authored by them — optionally pushed. Underneath:
+Next.js + Spring Boot, i18n in Vietnamese and English, RFC 9457 errors, correlation ids and
+tracing, OpenAPI, ArchUnit layering, pgvector, Spring AI with a provider-agnostic setup and
+per-workspace keys.
+
+Not there yet: **running the test**. Everything from M6 onward — execution, evidence, failure
+analysis, inspection — is unbuilt, which is also why every generation still reports unresolved
+targets.
+
+Two things landed that were never on this roadmap, and both paid for themselves. **Local auth**
+(V3) became necessary the moment workspaces had members; the whole API is closed by default and
+every service checks a `Permission`. **Xray import** (V7–V9) was listed under "Later, and only
+then" and moved up, because a real imported case is what makes modelling worth judging — a
+hand-typed fixture would have told us much less.
 
 ## M0 — The contract ✅
 
@@ -218,8 +233,13 @@ what makes them good.
 
 ## Later, and only then
 
-Dashboard beyond a simple summary · Jira and Xray import · result sync back · scheduled runs ·
-CI triggers · parallel sharding.
+Dashboard beyond a simple summary · result sync back to Jira/Xray · scheduled runs · CI
+triggers · parallel sharding · task-based model routing (it needs M5's cost data to judge by).
+
+**Jira and Xray import came off this list and shipped** with M4, as V7–V9 plus
+`feature/testmanagement`. Reading a real manual case — with its steps, its data column and its
+ambiguities intact — is what made the modelling step judgeable; inventing fixtures would have
+flattered it. Writing results _back_ is still here, because that needs runs to exist.
 
 ## Not on this roadmap
 

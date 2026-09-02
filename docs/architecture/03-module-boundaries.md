@@ -88,29 +88,43 @@ just features:
 ```text
 dev.specra.api/
 ├── core/
-│   ├── error/ i18n/ logging/ web/ content/     (already there)
-│   └── testmodel/      the IR records + schema contract test
+│   ├── error/ i18n/ logging/ web/ content/ text/
+│   ├── security/       Permission, CurrentUser, SecretsCipher
+│   ├── git/            GitProvider port + its records — no JGit type appears here
+│   ├── runner/         RunnerClient port; HttpRunnerClient is the only class that knows HTTP
+│   └── testmodel/      the IR records, the schema contract, and TestModelValidation
 └── feature/
-    ├── workspace/      tenancy, membership
-    ├── project/        project, environments
-    ├── testcase/       manual cases and steps  ← replaces `note`
+    ├── auth/           registration, sign-in, refresh tokens, sessions
+    ├── workspace/      tenancy, membership, AiAccount (BYOK)
+    ├── project/        project, and the TC-n reference sequence
+    ├── testcase/       manual cases and steps  ← replaced `note`
+    ├── testmanagement/ Jira/Xray connections, bindings, import
     ├── testmodel/      IR generation, versions, validation
-    ├── automation/     generated code identity, page objects
-    ├── git/            GitProvider port + GitHub adapter, working copies
-    ├── run/            run orchestration, results, artifacts
-    └── ai/             understanding, generation, analysis  (already there)
+    ├── codegen/        code proposals, apply/reject
+    ├── git/            GithubGitProvider, working copies, credentials
+    └── ai/             the assistant, RAG, provider selection, generation audit
 ```
 
-Two ports, and only two, both earning their place the way `ContentStore` does:
+Four ports now, each earning its place the way `ContentStore` does:
 
-| Port           | Lives in       | Implementations                                      |
-| -------------- | -------------- | ---------------------------------------------------- |
-| `ContentStore` | `core/content` | test cases, and whatever the assistant reads next    |
-| `GitProvider`  | `feature/git`  | GitHub now; GitLab and Bitbucket are the whole point |
+| Port                     | Lives in                 | Implementations                                      |
+| ------------------------ | ------------------------ | ---------------------------------------------------- |
+| `ContentStore`           | `core/content`           | test cases, and whatever the assistant reads next    |
+| `GitProvider`            | `core/git`               | GitHub now; GitLab and Bitbucket are the whole point |
+| `RunnerClient`           | `core/runner`            | HTTP now; the transport is the detail the port hides |
+| `TestManagementProvider` | `feature/testmanagement` | Xray now; TestRail and others are why it is a port   |
 
-`ExecutionEngine` is **not** a Java port. The engine boundary is the IR plus the adapter, and
-both sit in the runner. Adding Selenium later means a second adapter in the runner, not a
-second Java implementation. Do not invent a Java interface with one implementation to
+Two of those moved from where this document first put them, for the same reason each time.
+`GitProvider` was drawn in `feature/git`; it lives in `core/git` because a port a second
+feature will call is shared plumbing, and ArchUnit forbids `core` depending on a feature.
+`TestManagementProvider` stayed inside its feature because nothing else calls it yet — the day
+something does, it moves. **A port belongs in `core` when a second caller exists, not in
+anticipation of one.**
+
+`ExecutionEngine` is still **not** a Java port, and `RunnerClient` is not one in disguise: it
+is a client for a service, not an abstraction over engines. The engine boundary is the IR plus
+the adapter, and both sit in the runner. Adding Selenium later means a second adapter there,
+not a second Java implementation. Do not invent a Java interface with one implementation to
 "prepare" for it.
 
 ## Inside `services/runner`
@@ -119,28 +133,38 @@ second Java implementation. Do not invent a Java interface with one implementati
 services/runner/src/
 ├── adapters/
 │   └── playwright/     IR → TypeScript. The ONLY engine-specific folder in the repo.
-├── codegen/            project scaffolding, file assembly, formatting, validation
-├── inspect/            DOM extraction → structured page representation
-├── execute/            run a Playwright project, collect artifacts, parse results
-└── server/             the job API the control plane calls
+├── codegen/            scaffolding, file assembly, formatting, and verification
+├── inspect/            DOM extraction → structured page representation      (M8)
+├── execute/            run a project, collect artifacts, parse results       (M6)
+├── server/             the job API the control plane calls
+└── containment.test.ts the rule below, as a test
 ```
 
-`adapters/playwright/` is the containment boundary: nothing outside it may import
-`@playwright/test`, and an eslint `no-restricted-imports` rule plus a unit test enforce that,
-mirroring the ArchUnit vendor rule on the Java side.
+`adapters/playwright/` is the containment boundary: nothing outside it may name the engine.
+`containment.test.ts` enforces it by scanning every source file for engine vocabulary, with a
+short exemption list — the two files that must spell the words out to check for them or to
+typecheck a projection against real types. It is a test rather than the eslint
+`no-restricted-imports` rule this document once promised, because the rule catches imports and
+the leak that matters is a `getByRole` in a template string, which no import rule sees.
+
+Matching each word on a word boundary is load-bearing: `cy.` as a bare substring also matches
+"dependency." in an English sentence, and a containment rule that fires on prose is one people
+learn to suppress.
 
 ## Enforcement
 
 Every boundary above has something that fails a build when it is crossed:
 
-| Boundary                                       | Enforced by                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| api layering, `core` ignorance, feature cycles | `ArchitectureTest` (ArchUnit)                                |
-| no LLM vendor named in Java                    | `ArchitectureTest`                                           |
-| no execution engine named outside the adapter  | `ArchitectureTest` (Java) + eslint restricted imports (Node) |
-| IR schema ↔ Java records                       | shared fixtures, validated on both sides                     |
-| adapter determinism                            | golden-file tests: same IR in, identical bytes out           |
-| `packages/test-model` stays app-free           | its only runtime dependency is `ajv`                         |
+| Boundary                                        | Enforced by                                                            |
+| ----------------------------------------------- | ---------------------------------------------------------------------- |
+| api layering, `core` ignorance, feature cycles  | `ArchitectureTest` (ArchUnit)                                          |
+| no LLM vendor named in Java                     | `ArchitectureTest`                                                     |
+| only `GithubGitProvider` imports JGit           | `ArchitectureTest`                                                     |
+| no execution engine named outside the adapter   | `ArchitectureTest` (Java) + `containment.test.ts` (Node)               |
+| IR schema ↔ Java records                        | shared fixtures, validated on both sides                               |
+| adapter determinism                             | golden-file tests: same IR in, identical bytes out                     |
+| generated code compiles, lints and is formatted | `verify.ts` in the codegen job; a failure is a refusal, not a proposal |
+| `packages/test-model` stays app-free            | its only runtime dependency is `ajv`                                   |
 
 A rule with no test is a paragraph nobody reads. When adding a boundary, add its check in the
 same change.

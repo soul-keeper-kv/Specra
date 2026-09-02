@@ -3,23 +3,43 @@
 ## The shape
 
 ```text
+User                            an account; local sign-in, sessions as refresh tokens
 Workspace                       tenant boundary — every query is scoped by it
  ├── WorkspaceMember            user × workspace × role
  ├── AiAccount                  the workspace's own provider, key and budget (BYOK)
+ ├── GitCredential              a token for reaching remotes, encrypted at rest
+ ├── TestManagementConnection   Jira / Xray credentials + configuration, behind one port
  └── Project                    one automation project = one Git repository
       ├── GitRepository         provider, remote, default branch, credential ref
+      ├── TestManagementBinding which external project this one imports from
       ├── Environment           baseUrl + variables + secrets (DEV / STAGING / PROD)
       ├── TestCase              the manual case, authored or imported
       │    ├── TestStep         ordered, human language
       │    ├── TestModel        the IR — versioned, one current, history kept
+      │    ├── CodeGeneration   one code proposal: its files, its verdict, its commit
       │    └── AutomationTest   the generated artefact's identity in the repo
       ├── PageObject            a known page/screen and its inspected elements
       ├── TestRun               one execution request
       │    └── TestResult       per test × browser × environment
       │         └── TestArtifact  screenshot, video, trace, log, DOM snapshot
-      ├── AiGeneration          one AI proposal: IR, code, or fix — with a diff
-      └── Integration           Jira / Xray / TestRail — later, behind one port
+      └── AiGeneration          one AI call that could change the repository — the audit row
 ```
+
+**Built today**: `User`, `Workspace`, `WorkspaceMember`, `AiAccount`, `GitCredential`,
+`GitRepository`, `TestManagementConnection`, `TestManagementBinding`, `Project`, `TestCase`,
+`TestStep`, `TestModel`, `CodeGeneration`, `AiGeneration`.
+
+**Not yet**: `Environment` and `AutomationTest` have tables and no entity (M6); `PageObject`
+and its elements have tables and no entity (M8); `TestRun`, `TestResult` and `TestArtifact`
+have neither (M6).
+
+Two entities arrived that this diagram did not predict, and both are the same lesson. The
+integration that was drawn as one `Integration` box "later, behind one port" split into a
+_connection_ (a workspace's credentials for a tool) and a _binding_ (which external project a
+Specra project reads from), because a workspace commonly has one Jira and several projects
+pointing at different boards. And `CodeGeneration` separated from `AiGeneration` because the
+audit row and the proposal answer different questions — one is "what did this call cost and
+who decided", the other is "what files, and are they still current".
 
 ## Why these boundaries
 
@@ -96,7 +116,11 @@ transition is the human-in-the-loop principle, expressed as a state machine.
 
 ## Mapping onto the existing code
 
-The current `feature/note` and its `NoteContentStore` are scaffold that proved the
-`core/content` port. `TestCase` replaces `Note` as the first real feature and reuses the
-pattern: a `TestCaseContentStore` is what lets the assistant read test cases without knowing
-where they live. See [09 — Roadmap](09-roadmap.md) for when `note` is removed.
+`feature/note` and its `NoteContentStore` were scaffold that proved the `core/content` port.
+Both are gone: `TestCase` replaced `Note` in M1, and `TestCaseContentStore` is what lets the
+assistant read test cases without knowing where they live.
+
+It is **read-only**, and that was a decision rather than an omission. The note store could
+write; a store that lets the assistant author a test case would produce a title with no steps
+from a chat draft, which is exactly the inversion invariant 4 rules out. The model's path into
+authoring is the modelling pipeline, with a person approving.

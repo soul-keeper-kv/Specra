@@ -19,8 +19,15 @@ runner receives them at job dispatch and never persists them.
 
 ## Tables
 
-Ordered by the migration that introduces them. `V1__init.sql` already exists and creates the
-`vector` extension plus the scaffold `notes` tables.
+Ordered by the migration that introduces them. V1–V11 exist; V12 onward is planned.
+
+`V1__init.sql` creates the `vector` extension. It also created the scaffold `notes` tables,
+which V4 dropped once `test_cases` replaced them.
+
+**The numbering drifted from the plan, and the numbers on disk win.** Auth was not on the
+roadmap and took V3; test management arrived early and took V7–V9. So execution, which this
+document once called V7, is V12. When a milestone's bullet and a filename disagree, the
+filename is the fact — a migration cannot be renumbered once it has run anywhere.
 
 ### V2 — tenancy and projects
 
@@ -76,7 +83,50 @@ analysis needs.
 Also finishes V2s `git_repositories`: `credential_id` becomes a real `uuid` reference, and
 `active_branch` records which branch the projects operations act on right now.
 
-### V7 — execution
+### V7–V9 — test management, and the traceability it needs
+
+Not on the original plan for these numbers: the Xray path arrived early because importing a
+real manual case is what makes modelling worth doing, and it took three migrations rather
+than one.
+
+| Migration | What it does                                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| V7        | `xray_connections` and `xray_project_bindings` — a workspace's Jira/Xray credential, and which external project a Specra project is bound to                                                     |
+| V8        | Renames both to `test_management_*` and adds `provider`, `configuration` jsonb and `credentials_cipher`. Xray stopped being the shape and became one value of `provider` behind a port           |
+| V9        | `test_cases.external_source/external_id/external_url/imported_at` and `test_case_steps.test_data`, with a partial unique index so one external test imports once per project — re-import updates |
+
+The rename in V8 is the interesting one. V7 modelled Xray directly; V8 turned it into
+`TestManagementProvider` with the vendor as data, which is the same containment move as
+`GitProvider` and the model providers. Doing it as a rename rather than a new table kept the
+rows that already existed.
+
+### V10 — AI audit
+
+| Table            | Notable columns                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_generations` | `project_id`, `kind` (`MODEL` · `CODE` · `FIX`), `status`, `subject_type/subject_id`, `input_checksum`, `model`, `provider`, `prompt_tokens`, `completion_tokens`, `latency_ms` |
+
+Every model call that could change a repository is a row here **before** anything is applied.
+`decided_by`/`decided_at` is the human-in-the-loop principle, written where an auditor reads it.
+
+### V11 — code generations
+
+| Table              | Notable columns                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code_generations` | `test_case_id`, `test_model_id`, `generation_id` → `ai_generations`, `status`, `adapter_version`, `files` jsonb, `unresolved` jsonb, `commit_sha` |
+
+One proposal per row, with the projected files inline as jsonb — the shape is the adapter's,
+so a new file role must not need a migration here. Only one row per case is `PROPOSED` at a
+time; generating again supersedes the last, because two live proposals for one file offer a
+reviewer two different futures.
+
+This is **not** `automation_tests`, and the difference is worth stating: this table is the
+history of proposals, one row per attempt. `automation_tests` (V5) is the current identity of
+a test inside the repository — which spec file holds it, under what title, at which commit.
+A run targets "this test in that file", which no proposal row can answer. It is still empty;
+M6 is what fills it.
+
+### V12 — execution (not yet written)
 
 | Table            | Notable columns                                                                                                                                      |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -87,15 +137,8 @@ Also finishes V2s `git_repositories`: `credential_id` becomes a real `uuid` refe
 `failed_step_id` points at an IR step id, not a line number. That is what lets the UI
 highlight the manual step the user wrote and the generated line at the same time.
 
-### V8 — AI audit
-
-| Table            | Notable columns                                                                                                                                                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ai_generations` | `project_id`, `kind` (`MODEL` · `CODE` · `FIX`), `status`, `subject_type/subject_id`, `input_checksum`, `model`, `provider`, `prompt_tokens`, `completion_tokens`, `latency_ms`, `diff`, `rationale`, `decided_by`, `decided_at` |
-
-Every model call that could change a repository is a row here **before** anything is applied.
-`diff` is the proposal; `decided_by`/`decided_at` is the human-in-the-loop principle, written
-down where an auditor can read it.
+`environments` and `environment_vars` are **not** here: they have existed since V2. M6 needs
+entities and a screen for them, not a migration.
 
 ## Conventions
 
