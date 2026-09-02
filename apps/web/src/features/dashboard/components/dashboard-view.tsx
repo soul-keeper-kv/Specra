@@ -36,8 +36,9 @@ export function DashboardView() {
         ? undefined
         : String(projects.data?.totalElements ?? 0);
 
+  // Five cards would stretch absurdly wide on a large monitor with nothing to fill them.
   return (
-    <div className="grid gap-8">
+    <div className="grid max-w-6xl gap-8">
       <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="grid gap-4 sm:grid-cols-3">

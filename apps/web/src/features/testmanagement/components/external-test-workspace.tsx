@@ -188,29 +188,32 @@ export function ExternalTestWorkspace({
         />
       ) : null}
 
-      <div className="grid min-h-[42rem] overflow-hidden rounded-lg border bg-card lg:grid-cols-[19rem_minmax(0,1fr)_18rem]">
-        <aside className="min-w-0 border-b lg:border-r lg:border-b-0">
+      <div className="grid overflow-hidden rounded-lg border bg-card lg:h-[calc(100vh-22rem)] lg:min-h-[34rem] lg:grid-cols-[clamp(21rem,20vw,24rem)_minmax(0,1fr)_clamp(17rem,19vw,24rem)]">
+        <aside className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)] border-b lg:border-r lg:border-b-0">
           <Tabs
             value={rail}
             onValueChange={(value) => setRail(value as Rail)}
-            className="gap-0"
+            className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0"
           >
             <TabsList className="m-3 grid w-[calc(100%-1.5rem)] grid-cols-3">
-              <TabsTrigger value="case">
-                <ListChecks className="size-4" />
-                {t("tabs.case")}
+              <TabsTrigger value="case" className="min-w-0 gap-1.5 px-1.5">
+                <ListChecks className="hidden size-4 shrink-0 xl:block" />
+                <span className="truncate">{t("tabs.case")}</span>
               </TabsTrigger>
-              <TabsTrigger value="model">
-                <Workflow className="size-4" />
-                {t("tabs.model")}
+              <TabsTrigger value="model" className="min-w-0 gap-1.5 px-1.5">
+                <Workflow className="hidden size-4 shrink-0 xl:block" />
+                <span className="truncate">{t("tabs.model")}</span>
               </TabsTrigger>
-              <TabsTrigger value="script">
-                <Code2 className="size-4" />
-                {t("tabs.script")}
+              <TabsTrigger value="script" className="min-w-0 gap-1.5 px-1.5">
+                <Code2 className="hidden size-4 shrink-0 xl:block" />
+                <span className="truncate">{t("tabs.script")}</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="case" className="mt-0">
+            <TabsContent
+              value="case"
+              className="mt-0 grid min-h-0 grid-rows-[auto_minmax(0,1fr)]"
+            >
               <div className="border-y px-4 py-3">
                 <p className="line-clamp-2 text-sm font-semibold">
                   {testCase?.title ?? external.title}
@@ -223,7 +226,7 @@ export function ExternalTestWorkspace({
                     : t("source.external")}
                 </p>
               </div>
-              <ScrollArea className="h-[32rem]">
+              <ScrollArea className="h-[26rem] lg:h-full lg:min-h-0">
                 <ol className="grid gap-1 p-2">
                   {manualSteps.map((step) => {
                     const active =
@@ -267,7 +270,10 @@ export function ExternalTestWorkspace({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="model" className="mt-0">
+            <TabsContent
+              value="model"
+              className="mt-0 grid min-h-0 grid-rows-[auto_minmax(0,1fr)]"
+            >
               {current ? (
                 <>
                   <div className="border-y px-4 py-3">
@@ -281,7 +287,7 @@ export function ExternalTestWorkspace({
                       })}
                     </p>
                   </div>
-                  <ScrollArea className="h-[32rem]">
+                  <ScrollArea className="h-[26rem] lg:h-full lg:min-h-0">
                     <ol className="grid gap-1 p-2">
                       {modelSteps.map(({ step, section }) => {
                         const active = selection.kind === "model" && selection.id === step.id;
@@ -338,7 +344,7 @@ export function ExternalTestWorkspace({
           </Tabs>
         </aside>
 
-        <main className="grid min-w-0 grid-rows-[auto_1fr] bg-muted/20">
+        <main className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] bg-muted/20">
           <div className="flex items-center justify-between border-b bg-card px-4 py-3">
             <div>
               <p className="text-sm font-semibold">
@@ -356,8 +362,8 @@ export function ExternalTestWorkspace({
               <Badge variant="secondary">{t("canvas.modelStep", { id: selection.id })}</Badge>
             )}
           </div>
-          <div className="grid place-items-start p-4 sm:p-8">
-            <div className="w-full max-w-3xl overflow-hidden rounded-lg border bg-background shadow-sm">
+          <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
+            <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-lg border bg-background shadow-sm">
               <div className="flex items-center gap-2 border-b bg-muted/50 px-3 py-2">
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
@@ -366,7 +372,7 @@ export function ExternalTestWorkspace({
                   {t("canvas.application")}
                 </div>
               </div>
-              <div className="grid min-h-80 p-6 sm:p-8">
+              <div className="grid min-h-72 p-4 sm:p-6">
                 {rail === "script" ? (
                   <CodeProposalPanel testCaseId={testCaseId} hasModel={Boolean(current)} />
                 ) : selection.kind === "manual" ? (
@@ -399,12 +405,12 @@ export function ExternalTestWorkspace({
           </div>
         </main>
 
-        <aside className="min-w-0 border-t lg:border-t-0 lg:border-l">
+        <aside className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] border-t lg:border-t-0 lg:border-l">
           <div className="flex items-center gap-2 border-b px-4 py-3">
             <PanelRight className="size-4" />
             <p className="text-sm font-semibold">{t("details.title")}</p>
           </div>
-          <ScrollArea className="h-[38rem]">
+          <ScrollArea className="h-[30rem] lg:h-full lg:min-h-0">
             <div className="grid gap-5 p-4">
               <section className="grid gap-3 rounded-md border bg-muted/30 p-3">
                 <div className="flex items-center gap-2">
