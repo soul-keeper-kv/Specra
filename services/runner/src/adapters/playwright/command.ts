@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { PLAYWRIGHT_VERSION } from "./scaffold.js";
 import path from "node:path";
 
 /**
@@ -59,4 +60,35 @@ export function engineCommand(request: EngineCommandRequest): string[] {
   args.push(...request.specs);
 
   return args;
+}
+
+/**
+ * The image a sandboxed run uses, and the command inside it.
+ *
+ * Here rather than in `execute/sandbox.ts` for the same reason every other engine detail is: the
+ * image tag names the engine and its version, and `sandbox.ts` should be able to isolate *a*
+ * suite without knowing whose. The version is pinned to the one a generated project declares —
+ * a container with a different build is a different browser, and a run against a different
+ * browser than the repository asked for is not reproducible.
+ */
+export function engineImage(): string {
+  return (
+    process.env.SPECRA_RUNNER_IMAGE ??
+    `mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble`
+  );
+}
+
+/** How the engine is invoked inside the image, where it is on the PATH. */
+export function engineEntrypoint(): string[] {
+  return ["npx", "playwright"];
+}
+
+/**
+ * The environment that tells the engine where to write its JSON report.
+ *
+ * A variable name is engine vocabulary like any other, so it lives here — `execute/run.ts` says
+ * "put the report at this path" and does not learn how that is spelled.
+ */
+export function engineReportEnv(reportFile: string): Record<string, string> {
+  return { PLAYWRIGHT_JSON_OUTPUT_NAME: reportFile };
 }

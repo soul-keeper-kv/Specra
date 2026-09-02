@@ -125,6 +125,7 @@ describe("executing a generated project", () => {
       projectDir,
       baseUrl,
       browsers: ["chromium"],
+      isolation: "process",
       timeoutMs: 120_000,
     });
     try {
@@ -164,6 +165,7 @@ describe("executing a generated project", () => {
       projectDir,
       baseUrl,
       browsers: ["chromium"],
+      isolation: "process",
       timeoutMs: 120_000,
     });
     try {
@@ -196,6 +198,7 @@ describe("executing a generated project", () => {
       baseUrl,
       browsers: ["chromium"],
       variables: { QA_PASSWORD: "hunter2" },
+      isolation: "process",
       timeoutMs: 120_000,
     });
     try {

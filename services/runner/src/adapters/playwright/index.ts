@@ -20,5 +20,12 @@ export {
 } from "./scaffold.js";
 export { locatorExpression, fallbackExpression, rawSelectorExpression } from "./locators.js";
 export { renderStep, type StepContext } from "./steps.js";
-export { engineCommand, engineCliPath, type EngineCommandRequest } from "./command.js";
+export {
+  engineCommand,
+  engineCliPath,
+  engineImage,
+  engineEntrypoint,
+  engineReportEnv,
+  type EngineCommandRequest,
+} from "./command.js";
 export { readReport } from "./report.js";

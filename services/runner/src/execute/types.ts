@@ -32,6 +32,11 @@ export interface ExecuteRequest {
   variables?: Record<string, string>;
   /** Whole-run ceiling in milliseconds; a hung suite must not hold a worker for ever. */
   timeoutMs?: number;
+  /**
+   * Forces the direct path when set to `"process"`. Otherwise a container is used if one can be
+   * started. The runner's own tests set it, because a test suite must not need a Docker daemon.
+   */
+  isolation?: "container" | "process";
 }
 
 export type ItemStatus = "PASSED" | "FAILED" | "ERROR" | "SKIPPED";
@@ -78,6 +83,13 @@ export interface ExecuteResult {
   items: ExecutedItem[];
   /** Where artifacts were written, so the API can read them before the directory is dropped. */
   outputDir: string;
+  /**
+   * How the suite was actually run.
+   *
+   * Reported rather than assumed: "was this sandboxed" is a question an operator has to be able
+   * to answer from the result itself, not by reading configuration and hoping it applied.
+   */
+  isolation: "container" | "process";
   /** Set when `status` is ERROR: what stopped the run, in words a user can act on. */
   errorMessage?: string;
   /** How long the whole job took, including install. */
