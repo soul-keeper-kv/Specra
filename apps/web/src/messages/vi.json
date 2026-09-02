@@ -833,6 +833,10 @@
     "confidence": "Độ tin cậy {value}%",
     "lowConfidence": "Bằng chứng chỉ hỗ trợ một phần kết luận này. Hãy đọc kỹ trước khi làm theo.",
     "suggestion": "Nên làm gì",
+    "repair": {
+      "propose": "Đề xuất sửa",
+      "proposed": "Đã có đề xuất sửa. Hãy xem lại ở tab mã nguồn của bài kiểm thử trước khi commit."
+    },
     "rootCause": {
       "LOCATOR_DRIFT": "Phần tử đã thay đổi",
       "TIMING": "Lệch nhịp thời gian",

@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { codeGenerationKeys } from "@/features/codegen/api/code-generations";
 import { ApiError, http } from "@/lib/api/client";
-import type { FailureAnalysis } from "@/lib/api/types";
+import type { CodeGeneration, FailureAnalysis } from "@/lib/api/types";
 
 export const analysisKeys = {
   all: ["failure-analysis"] as const,
@@ -50,6 +51,27 @@ export function useAnalyseFailure() {
       ),
     onSuccess: (analysis) => {
       queryClient.setQueryData(analysisKeys.item(analysis.testRunItemId), analysis);
+    },
+  });
+}
+
+/**
+ * Asks for a patch, which arrives as an ordinary PROPOSED code generation.
+ *
+ * Nothing is written by this call. The proposal is reviewed and applied on the test case's script
+ * tab, through the same apply as any other — which is why the case's `current` proposal is
+ * invalidated here rather than the result being rendered in place.
+ */
+export function useProposeRepair() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (analysisId: string) =>
+      http.post<CodeGeneration>(`/api/v1/failure-analyses/${analysisId}/repair`),
+    onSuccess: (generation) => {
+      queryClient.setQueryData(codeGenerationKeys.current(generation.testCaseId), generation);
+      void queryClient.invalidateQueries({
+        queryKey: codeGenerationKeys.history(generation.testCaseId),
+      });
     },
   });
 }

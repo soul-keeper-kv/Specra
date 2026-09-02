@@ -16,6 +16,7 @@ import dev.specra.api.feature.ai.service.AiGenerationService;
 import dev.specra.api.feature.codegen.domain.CodeGeneration;
 import dev.specra.api.feature.codegen.domain.CodeGenerationRepository;
 import dev.specra.api.feature.codegen.domain.CodeGenerationStatus;
+import dev.specra.api.feature.codegen.domain.GenerationKind;
 import dev.specra.api.feature.codegen.dto.ApplyGenerationRequest;
 import dev.specra.api.feature.codegen.dto.CodeGenerationResponse;
 import dev.specra.api.feature.codegen.dto.EditedFileRequest;
@@ -181,6 +182,42 @@ public class CodeGenerationService {
     CodeGeneration saved = repository.save(generation);
 
     return describe(saved, model.version(), testCase);
+  }
+
+  /**
+   * Stores a repair as a proposal, so it is reviewed and applied exactly like a generation.
+   *
+   * <p>Public because the analysis feature calls it — a repair is a code proposal, and the whole
+   * point of not giving it its own table is that it inherits this one's review and apply. It
+   * supersedes any live proposal for the same case for the same reason a regeneration does: two
+   * PROPOSED rows offer a reviewer two futures for one file.
+   *
+   * @param files the patched bodies, in the same shape the adapter produces
+   */
+  @Transactional
+  public CodeGenerationResponse storeRepair(
+      UUID testCaseId, UUID analysisId, UUID auditId, List<Map<String, Object>> files) {
+    TestCaseResponse testCase = testCases.get(testCaseId);
+
+    for (CodeGeneration previous :
+        repository.findByTestCaseIdAndStatus(testCase.id(), CodeGenerationStatus.PROPOSED)) {
+      previous.setStatus(CodeGenerationStatus.SUPERSEDED);
+    }
+
+    CodeGeneration generation = new CodeGeneration();
+    generation.setWorkspaceId(projects.workspaceOf(testCase.projectId()));
+    generation.setProjectId(testCase.projectId());
+    generation.setTestCaseId(testCase.id());
+    generation.setKind(GenerationKind.FIX);
+    generation.setFailureAnalysisId(analysisId);
+    // No test_model_id: a repair patches committed code rather than projecting an IR version.
+    generation.setGenerationId(auditId);
+    generation.setStatus(CodeGenerationStatus.PROPOSED);
+    generation.setAdapterVersion(ADAPTER_VERSION);
+    generation.setFiles(write(files));
+    generation.setUnresolved(write(List.of()));
+
+    return describe(repository.save(generation), 0, testCase);
   }
 
   public CodeGenerationResponse current(UUID testCaseId) {

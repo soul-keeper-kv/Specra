@@ -3,6 +3,8 @@ package dev.specra.api.feature.analysis.web;
 import dev.specra.api.core.error.ResourceNotFoundException;
 import dev.specra.api.feature.analysis.dto.FailureAnalysisResponse;
 import dev.specra.api.feature.analysis.service.FailureAnalysisService;
+import dev.specra.api.feature.analysis.service.RepairService;
+import dev.specra.api.feature.codegen.dto.CodeGenerationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -27,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class FailureAnalysisController {
 
   private final FailureAnalysisService service;
+  private final RepairService repairs;
 
-  public FailureAnalysisController(FailureAnalysisService service) {
+  public FailureAnalysisController(FailureAnalysisService service, RepairService repairs) {
     this.service = service;
+    this.repairs = repairs;
   }
 
   @GetMapping("/run-items/{id}/analysis")
@@ -50,5 +54,16 @@ public class FailureAnalysisController {
       @PathVariable UUID id,
       @RequestParam(name = "reanalyse", defaultValue = "false") boolean reanalyse) {
     return service.analyse(id, reanalyse);
+  }
+
+  @PostMapping("/failure-analyses/{id}/repair")
+  @Operation(
+      summary =
+          "Propose a patch for this failure. Writes nothing — the result is a PROPOSED code"
+              + " generation of kind FIX, applied through the ordinary apply endpoint. Refused"
+              + " with 409 when the cause is a product bug or unclassifiable: there is nothing"
+              + " to fix in a test that was already right.")
+  public CodeGenerationResponse repair(@PathVariable UUID id) {
+    return repairs.propose(id);
   }
 }

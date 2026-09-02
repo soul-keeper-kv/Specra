@@ -833,6 +833,10 @@
     "confidence": "{value}% confidence",
     "lowConfidence": "The evidence only partly supports this. Read it before acting on it.",
     "suggestion": "What to do",
+    "repair": {
+      "propose": "Propose a fix",
+      "proposed": "A fix is proposed. Review it on the test’s script tab before it is committed."
+    },
     "rootCause": {
       "LOCATOR_DRIFT": "The element moved",
       "TIMING": "A timing race",

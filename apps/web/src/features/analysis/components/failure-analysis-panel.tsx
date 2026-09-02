@@ -1,13 +1,17 @@
 "use client";
 
-import { AlertOctagon, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { AlertOctagon, Loader2, RefreshCw, Sparkles, Wrench } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAnalyseFailure, useFailureAnalysis } from "@/features/analysis/api/analysis";
+import {
+  useAnalyseFailure,
+  useFailureAnalysis,
+  useProposeRepair,
+} from "@/features/analysis/api/analysis";
 import { ApiError } from "@/lib/api/client";
 import type { RootCause } from "@/lib/api/types";
 
@@ -28,6 +32,7 @@ export function FailureAnalysisPanel({
   const t = useTranslations("analysis");
   const stored = useFailureAnalysis(itemId, analysable);
   const analyse = useAnalyseFailure();
+  const repair = useProposeRepair();
 
   if (!analysable) return null;
 
@@ -103,6 +108,30 @@ export function FailureAnalysisPanel({
 
       {analysis.confidence < 50 ? (
         <p className="text-xs text-muted-foreground">{t("lowConfidence")}</p>
+      ) : null}
+
+      {/* Only where the API would allow it. A button that exists to be refused teaches the
+          reader that the rule is arbitrary; here its absence is the explanation. */}
+      {analysis.repairable ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="justify-self-start"
+          disabled={repair.isPending}
+          onClick={() =>
+            repair.mutate(analysis.id, {
+              onSuccess: () => toast.success(t("repair.proposed")),
+              onError: (error) => toast.error(describe(error, t)),
+            })
+          }
+        >
+          {repair.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Wrench className="size-4" />
+          )}
+          {t("repair.propose")}
+        </Button>
       ) : null}
     </div>
   );

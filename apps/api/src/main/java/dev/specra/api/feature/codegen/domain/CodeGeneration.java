@@ -46,8 +46,17 @@ public class CodeGeneration {
   @Column(name = "test_case_id", nullable = false, updatable = false)
   private UUID testCaseId;
 
-  @Column(name = "test_model_id", nullable = false, updatable = false)
+  /** Null for a FIX: a repair patches committed code rather than projecting an IR version. */
+  @Column(name = "test_model_id", updatable = false)
   private UUID testModelId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 16, updatable = false)
+  private GenerationKind kind = GenerationKind.CODE;
+
+  /** The reading this repairs. Null for an ordinary CODE generation. */
+  @Column(name = "failure_analysis_id", updatable = false)
+  private UUID failureAnalysisId;
 
   @Column(name = "generation_id", nullable = false, updatable = false)
   private UUID generationId;
