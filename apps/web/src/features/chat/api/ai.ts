@@ -2,8 +2,16 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { API_URL, ApiError, http, streamHeaders } from "@/lib/api/client";
-import type { AskReply, ChatReply, ProviderInfo } from "@/lib/api/types";
+import {
+  API_URL,
+  ApiError,
+  ensureFreshSession,
+  http,
+  renewSession,
+  streamHeaders,
+} from "@/lib/api/client";
+import { getSession } from "@/lib/api/session";
+import type { ApiProblem, AskReply, ChatReply, ProviderInfo } from "@/lib/api/types";
 
 export const aiKeys = {
   providers: ["ai", "providers"] as const,
@@ -49,7 +57,9 @@ export function useClearConversation() {
  *
  * This is the one call that does not go through axios: its browser adapters hand back a body
  * only once it is complete, which is the opposite of what a token stream is for. `streamHeaders()`
- * supplies the credential, language and request id the axios interceptor would have added.
+ * supplies the credential, language and request id the axios interceptor would have added — and
+ * the retry below stands in for its response interceptor, so an access token that died mid-session
+ * costs the user a second request rather than an error they have to read.
  */
 export async function streamChat(
   input: { message: string; conversationId: string },
@@ -59,22 +69,31 @@ export async function streamChat(
     signal?: AbortSignal;
   },
 ): Promise<void> {
-  let response: Response;
-  try {
-    response = await fetch(`${API_URL}/api/ai/chat/stream`, {
-      method: "POST",
-      headers: streamHeaders(),
-      body: JSON.stringify(input),
-      signal: handlers.signal,
-    });
-  } catch (cause) {
-    if ((cause as Error)?.name === "AbortError") return;
-    throw new ApiError(0, `Cannot reach the API at ${API_URL}. Is it running?`);
+  // Up front, the same thing the axios request interceptor does: a token already known to be
+  // spent is exchanged rather than sent. A refusal here has already ended the session, so there
+  // is nothing to send it with.
+  const signedIn = getSession() !== null;
+  if (signedIn && !(await ensureFreshSession())) throw expired();
+
+  let response = await send(input, handlers.signal);
+  if (response === null) return;
+
+  // A 401 that names the token means the credential was presented and did not verify — the same
+  // condition the axios interceptor retries. The exchange is unconditional: the browser believes
+  // this token is live, and only the server knows otherwise. One attempt, then the error stands.
+  if (
+    signedIn &&
+    response.status === 401 &&
+    (await problemCode(response)) === "invalid-token"
+  ) {
+    if (!(await renewSession())) throw expired();
+
+    response = await send(input, handlers.signal);
+    if (response === null) return;
   }
 
   if (!response.ok || !response.body) {
-    const text = await response.text().catch(() => "");
-    throw new ApiError(response.status, text || `${response.status} ${response.statusText}`);
+    throw await streamError(response);
   }
 
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -107,6 +126,78 @@ export async function streamChat(
   } finally {
     reader.releaseLock();
   }
+}
+
+/**
+ * The error for a session that could not be revived.
+ *
+ * It carries `invalid-token` so the view branches on the same code the axios path would have
+ * given it — by this point `endSession` has already run and the route guard is on its way to the
+ * sign-in page, so nothing renders this text.
+ */
+function expired(): ApiError {
+  return new ApiError(401, "invalid-token", {
+    type: "https://specra.dev/problems/invalid-token",
+    title: "Unauthorized",
+    status: 401,
+    detail: "invalid-token",
+    code: "invalid-token",
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * One attempt at the stream. `null` means the caller aborted, which is not a failure and must not
+ * reach the UI as one.
+ */
+async function send(
+  input: { message: string; conversationId: string },
+  signal?: AbortSignal,
+): Promise<Response | null> {
+  try {
+    return await fetch(`${API_URL}/api/ai/chat/stream`, {
+      method: "POST",
+      headers: await streamHeaders(),
+      body: JSON.stringify(input),
+      signal,
+    });
+  } catch (cause) {
+    if ((cause as Error)?.name === "AbortError") return null;
+    throw new ApiError(0, `Cannot reach the API at ${API_URL}. Is it running?`);
+  }
+}
+
+/**
+ * The problem document's `code`, read from a clone so the body stays available to whoever renders
+ * the error afterwards. An error page that is not a problem document simply has no code.
+ */
+async function problemCode(response: Response): Promise<string | undefined> {
+  try {
+    const problem = (await response.clone().json()) as ApiProblem;
+    return problem?.code;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Turns a failed response into the same `ApiError` the axios path would have produced — carrying
+ * the problem document, so the UI branches on `code` rather than on translated prose.
+ */
+async function streamError(response: Response): Promise<ApiError> {
+  const text = await response.text().catch(() => "");
+  let problem: ApiProblem | undefined;
+  try {
+    problem = JSON.parse(text) as ApiProblem;
+  } catch {
+    problem = undefined;
+  }
+
+  return new ApiError(
+    response.status,
+    problem?.detail ?? problem?.title ?? (text || `${response.status} ${response.statusText}`),
+    problem,
+  );
 }
 
 function findFrameEnd(buffer: string): number {

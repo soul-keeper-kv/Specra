@@ -79,6 +79,15 @@ export function ChatView() {
         patchLast({ text: reply.content, pending: false });
       }
     } catch (error) {
+      // A session that ended is not a chat failure: the guard is already redirecting to sign-in,
+      // and writing the API's "your session expired" into the thread would leave it sitting in the
+      // history the user comes back to after signing in — a stale complaint about a session that
+      // has since been replaced.
+      if (error instanceof ApiError && error.status === 401) {
+        setMessages((prev) => prev.slice(0, -1));
+        return;
+      }
+
       const message = error instanceof ApiError ? error.message : tErrors("generic");
       patchLast({ text: message, pending: false, failed: true });
       toast.error(message);

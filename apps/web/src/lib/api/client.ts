@@ -83,13 +83,7 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   // An access token that has already expired earns a refresh here rather than a 401 the user
   // waits through. The refresh call itself is exempt: it carries no access token, and asking it
   // to refresh before it can refresh is a loop.
-  if (config.url !== REFRESH_PATH && getSession() !== null && isAccessTokenExpired()) {
-    if (isRefreshTokenExpired()) {
-      endSession("expired");
-    } else {
-      await refreshSession();
-    }
-  }
+  if (config.url !== REFRESH_PATH) await ensureFreshSession();
 
   const token = getSession()?.accessToken;
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
@@ -192,6 +186,41 @@ function refreshSession(): Promise<boolean> {
   return refreshing;
 }
 
+/**
+ * Brings the access token up to date before a call goes out, whatever transport carries it.
+ *
+ * The axios request interceptor calls this, and so does the SSE stream — which is the reason it is
+ * a function rather than a few lines inside the interceptor. A token that has already expired is
+ * exchanged here instead of being sent and refused, and a refresh token that is spent too ends the
+ * session rather than buying a round trip that cannot succeed.
+ *
+ * Returns whether the caller now holds a usable access token. A signed-out caller gets `false`
+ * without a request: there is nothing to refresh, and the endpoints that need no credential still
+ * work.
+ */
+export async function ensureFreshSession(): Promise<boolean> {
+  if (getSession() === null) return false;
+  if (!isAccessTokenExpired()) return true;
+  return renewSession();
+}
+
+/**
+ * Exchanges the refresh token now, whatever the clock says.
+ *
+ * This is the other half of what the axios response interceptor does, for the transport that has
+ * no interceptor: when the *server* refuses an access token the browser still believes in — a
+ * revoked token, or a clock that ran ahead — asking `ensureFreshSession` would answer "it is
+ * fine" and send the same dead credential again.
+ */
+export async function renewSession(): Promise<boolean> {
+  if (getSession()?.refreshToken === undefined) return false;
+  if (isRefreshTokenExpired()) {
+    endSession("expired");
+    return false;
+  }
+  return refreshSession();
+}
+
 async function exchangeRefreshToken(): Promise<boolean> {
   const refreshToken = getSession()?.refreshToken;
   if (!refreshToken) return false;
@@ -246,9 +275,13 @@ function unwrap<T>(response: AxiosResponse<T>): T {
  * The SSE stream in `features/chat/api/ai.ts` reads tokens as they arrive, and the browser
  * adapters buffer a whole body before resolving — so that call stays on `fetch` and a
  * `ReadableStream`. It still has to carry the same credential and language, which is what this
- * hands it.
+ * hands it — including the refresh an expired token needs, which is why this is async. Reading the
+ * token straight out of storage would send a spent credential and get a 401 the stream has no
+ * interceptor to recover from.
  */
-export function streamHeaders(): Record<string, string> {
+export async function streamHeaders(): Promise<Record<string, string>> {
+  await ensureFreshSession();
+
   const token = getSession()?.accessToken;
   const locale = documentLocale();
   return {
