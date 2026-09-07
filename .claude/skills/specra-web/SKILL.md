@@ -154,9 +154,18 @@ Rules that are easy to get wrong:
   or the segment silently opts out of static rendering.
 - **Build Zod schemas from a translator**, in a `useMemo` — a module-level `z.object`
   captures whichever language loaded first (see `features/notes/schemas.ts`).
-- **Format dates with `useFormatter`**, never `toLocaleString()`: the formatter uses the
-  request's locale and the timezone pinned in `i18n/request.ts`, so server and client
-  markup agree.
+- **Format dates with `useFormatter`, and only in a client component.** Never
+  `toLocaleString()`. The API sends every instant as ISO-8601 UTC and `i18n/request.ts`
+  pins no `timeZone`, so a timestamp renders in the reader's own timezone — which is the
+  point. That only holds on the client: formatting a date in a **server** component renders
+  it in the server's timezone and then hydrates into the reader's, which is a mismatch.
+  Pass the raw ISO string down to a client component and format it there.
+- **A relative time needs a `now`: `format.relativeTime(date, useNow())`.** Without one,
+  next-intl falls back to `Date.now()` per call — a different instant on the server than in
+  the browser — and logs `ENVIRONMENT_FALLBACK`. Do **not** fix this by putting `now` in
+  `i18n/request.ts`: that config is shared with statically rendered segments, so the instant
+  freezes at build time and "2 hours ago" drifts forever. `useNow({ updateInterval: 60_000 })`
+  keeps it ticking in the one place that has a real clock.
 - Switching locale means `router.replace({ pathname, params }, { locale })`, so the user
   stays on the page they were on.
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Play, PlayCircle, Server } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -98,6 +98,9 @@ export function RunsView({ projectId }: { projectId: string }) {
 function RunRow({ run }: { run: Run }) {
   const t = useTranslations("runs");
   const format = useFormatter();
+  // A shared reference instant, ticking on the client. Without it every relativeTime call
+  // reads its own clock, which differs between the server render and the browser.
+  const now = useNow({ updateInterval: 60_000 });
 
   return (
     <li>
@@ -121,7 +124,7 @@ function RunRow({ run }: { run: Run }) {
         </span>
 
         <span className="text-xs text-muted-foreground">
-          {format.relativeTime(new Date(run.queuedAt))}
+          {format.relativeTime(new Date(run.queuedAt), now)}
         </span>
       </Link>
     </li>

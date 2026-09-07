@@ -1,7 +1,7 @@
 "use client";
 
 import { History } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,6 +28,9 @@ export function ModelHistory({
 }) {
   const t = useTranslations("testManagement.workspace.history");
   const format = useFormatter();
+  // A shared reference instant, ticking on the client. Without it every relativeTime call
+  // reads its own clock, which differs between the server render and the browser.
+  const now = useNow({ updateInterval: 60_000 });
   const versions = useTestModelVersions(testCaseId);
 
   return (
@@ -68,7 +71,7 @@ export function ModelHistory({
                   {t("steps", { count: version.stepCount })}
                 </span>
                 <span className="ms-auto text-muted-foreground">
-                  {format.relativeTime(new Date(version.createdAt))}
+                  {format.relativeTime(new Date(version.createdAt), now)}
                 </span>
               </li>
             ))}

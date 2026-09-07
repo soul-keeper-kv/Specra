@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Layers, Loader2, Pencil, ScanSearch, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -163,6 +163,9 @@ export function PagesView({ projectId }: { projectId: string }) {
 function PageRow({ page, projectId }: { page: PageObject; projectId: string }) {
   const t = useTranslations("pages");
   const format = useFormatter();
+  // A shared reference instant, ticking on the client. Without it every relativeTime call
+  // reads its own clock, which differs between the server render and the browser.
+  const now = useNow({ updateInterval: 60_000 });
 
   return (
     <li className="grid gap-2 rounded-lg border p-3">
@@ -173,7 +176,7 @@ function PageRow({ page, projectId }: { page: PageObject; projectId: string }) {
         ) : null}
         {page.inspectedAt ? (
           <span className="text-xs text-muted-foreground">
-            {t("inspectedAt", { when: format.relativeTime(new Date(page.inspectedAt)) })}
+            {t("inspectedAt", { when: format.relativeTime(new Date(page.inspectedAt), now) })}
           </span>
         ) : (
           // The state that blocks a generation, said plainly rather than left to be inferred

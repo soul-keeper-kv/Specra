@@ -2,7 +2,7 @@
 
 import { useForm } from "@tanstack/react-form";
 import { KeyRound, Loader2, LogOut, Monitor } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
@@ -192,6 +192,9 @@ function SessionsCard() {
 function SessionRow({ session }: { session: AuthSession }) {
   const t = useTranslations("settings.security");
   const format = useFormatter();
+  // A shared reference instant, ticking on the client. Without it every relativeTime call
+  // reads its own clock, which differs between the server render and the browser.
+  const now = useNow({ updateInterval: 60_000 });
   const revoke = useRevokeSession();
 
   return (
@@ -210,7 +213,7 @@ function SessionRow({ session }: { session: AuthSession }) {
           {session.clientIp ? <span className="font-mono">{session.clientIp}</span> : null}
           <span>
             {t("sessions.lastUsed", {
-              when: format.relativeTime(new Date(session.lastUsedAt ?? session.createdAt)),
+              when: format.relativeTime(new Date(session.lastUsedAt ?? session.createdAt), now),
             })}
           </span>
         </span>
