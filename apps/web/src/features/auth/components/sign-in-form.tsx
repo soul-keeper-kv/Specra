@@ -18,7 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLogin } from "@/features/auth/api/auth";
-import { AuthFormError, FieldError } from "@/features/auth/components/auth-form-error";
+import {
+  AuthFormError,
+  FieldError,
+  SessionEndedNotice,
+} from "@/features/auth/components/auth-form-error";
 import { buildSignInSchema } from "@/features/auth/schemas";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ApiError } from "@/lib/api/client";
@@ -30,6 +34,9 @@ import { ApiError } from "@/lib/api/client";
  * refused on `?next=`, so a deep link that expired mid-session resumes instead of dumping the user
  * on the dashboard. Anything that is not a path inside this app is ignored — an open redirect is a
  * phishing primitive, and a login page is exactly where it pays off.
+ *
+ * A `?reason=` alongside it says the session ended on its own rather than the user navigating
+ * here, which is the difference between a blank form and one that explains itself.
  */
 export function SignInForm() {
   const t = useTranslations("auth.signIn");
@@ -65,6 +72,7 @@ export function SignInForm() {
             void form.handleSubmit();
           }}
         >
+          <SessionEndedNotice reason={searchParams.get("reason")} />
           <AuthFormError error={login.error} />
 
           <form.Field name="email">

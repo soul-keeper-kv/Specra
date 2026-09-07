@@ -705,6 +705,10 @@
     "guard": {
       "checking": "Checking your session…"
     },
+    "sessionEnded": {
+      "expired": "Your session expired, so you were signed out. Sign in to pick up where you left off.",
+      "revoked": "Your session was ended on the server. That happens after a password change, or when a session is revoked. Sign in again to continue."
+    },
     "validation": {
       "nameRequired": "Tell us what to call you",
       "nameMax": "A name must be at most {max} characters",

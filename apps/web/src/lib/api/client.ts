@@ -5,7 +5,14 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 
-import { clearSession, getSession, sessionFromTokens, setSession } from "./session";
+import {
+  endSession,
+  getSession,
+  isAccessTokenExpired,
+  isRefreshTokenExpired,
+  sessionFromTokens,
+  setSession,
+} from "./session";
 import type { ApiProblem, AuthTokens } from "./types";
 
 export const API_URL =
@@ -72,7 +79,18 @@ export const api = axios.create({
  * `Accept-Language` shows a Vietnamese user an English validation message, and a missing request
  * id makes an error report unsearchable in the API log.
  */
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // An access token that has already expired earns a refresh here rather than a 401 the user
+  // waits through. The refresh call itself is exempt: it carries no access token, and asking it
+  // to refresh before it can refresh is a loop.
+  if (config.url !== REFRESH_PATH && getSession() !== null && isAccessTokenExpired()) {
+    if (isRefreshTokenExpired()) {
+      endSession("expired");
+    } else {
+      await refreshSession();
+    }
+  }
+
   const token = getSession()?.accessToken;
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
 
@@ -189,9 +207,12 @@ async function exchangeRefreshToken(): Promise<boolean> {
     setSession(sessionFromTokens(data));
     return true;
   } catch {
-    // Expired, revoked, or replayed. Clearing the session is all this layer does; the redirect
+    // Expired, revoked, or replayed. Ending the session is all this layer does; the redirect
     // belongs to the route guard, which knows whether the current page even needs an account.
-    clearSession();
+    // The distinction is for the user: a refresh token that was still in date and was refused
+    // anyway means the server retired it — a password change, an administrator, or replay
+    // detection — and that is worth wording differently from simply having been away too long.
+    endSession(isRefreshTokenExpired() ? "expired" : "revoked");
     return false;
   }
 }

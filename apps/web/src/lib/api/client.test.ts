@@ -2,7 +2,7 @@ import axios, { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig }
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ApiError, REQUEST_ID_HEADER, api, http } from "./client";
-import { clearSession, getSession, setSession } from "./session";
+import { clearSession, consumeSessionEndedReason, getSession, setSession } from "./session";
 import type { Account } from "./types";
 
 type Canned = { status: number; data?: unknown; headers?: Record<string, string> };
@@ -47,6 +47,28 @@ const tokens = (accessToken: string) => ({
   refreshToken: "refresh-2",
   refreshExpiresAt: "2999-01-01T00:00:00Z",
 });
+
+/** Signed in, but the access token is already spent — the state an idle tab wakes up in. */
+function signInExpired() {
+  setSession({
+    user: ACCOUNT,
+    accessToken: "stale",
+    expiresAt: "2020-01-01T00:00:00Z",
+    refreshToken: "refresh-1",
+    refreshExpiresAt: "2999-01-01T00:00:00Z",
+  });
+}
+
+/** Both tokens spent: nothing left to refresh with. */
+function signInDead() {
+  setSession({
+    user: ACCOUNT,
+    accessToken: "stale",
+    expiresAt: "2020-01-01T00:00:00Z",
+    refreshToken: "refresh-1",
+    refreshExpiresAt: "2020-01-02T00:00:00Z",
+  });
+}
 
 function signIn(accessToken = "access-1") {
   setSession({
@@ -170,5 +192,57 @@ describe("the refresh retry", () => {
     await expect(http.get("/api/v1/auth/me")).rejects.toBeInstanceOf(ApiError);
 
     expect(requests).toHaveLength(1);
+  });
+});
+
+describe("an expired session", () => {
+  it("refreshes before the call rather than paying for a 401 first", async () => {
+    signInExpired();
+    respondWith(
+      { status: 200, data: tokens("access-2") }, // the pre-emptive exchange
+      { status: 200, data: ACCOUNT },
+    );
+
+    await expect(http.get<Account>("/api/v1/auth/me")).resolves.toEqual(ACCOUNT);
+
+    // Two calls, not three: the request never went out with the dead token.
+    expect(requests).toHaveLength(2);
+    expect(requests[1].headers.get("Authorization")).toBe("Bearer access-2");
+  });
+
+  it("signs out without calling the API when the refresh token is spent too", async () => {
+    signInDead();
+    respondWith({ status: 401, data: { code: "unauthorized" } });
+
+    await expect(http.get("/api/v1/auth/me")).rejects.toBeInstanceOf(ApiError);
+
+    expect(getSession()).toBeNull();
+    // The request still went out, unauthenticated; what did not happen is a doomed refresh.
+    expect(requests).toHaveLength(1);
+    expect(requests[0].headers.has("Authorization")).toBe(false);
+  });
+
+  it("records why it ended, so the sign-in page can say so", async () => {
+    signInDead();
+    respondWith({ status: 401, data: { code: "unauthorized" } });
+
+    await http.get("/api/v1/auth/me").catch(() => undefined);
+
+    expect(consumeSessionEndedReason()).toBe("expired");
+    // Consumed once: a second navigation must not re-announce it.
+    expect(consumeSessionEndedReason()).toBeNull();
+  });
+
+  it("calls a rejected but in-date refresh token revoked, not expired", async () => {
+    signIn();
+    respondWith(
+      { status: 401, data: { code: "invalid-token" } },
+      { status: 401, data: { code: "invalid-token" } }, // the exchange is refused
+    );
+
+    await http.get("/api/v1/auth/me").catch(() => undefined);
+
+    expect(getSession()).toBeNull();
+    expect(consumeSessionEndedReason()).toBe("revoked");
   });
 });

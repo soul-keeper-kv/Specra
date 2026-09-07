@@ -705,6 +705,10 @@
     "guard": {
       "checking": "Đang kiểm tra phiên đăng nhập…"
     },
+    "sessionEnded": {
+      "expired": "Phiên đăng nhập đã hết hạn nên bạn được đăng xuất. Hãy đăng nhập lại để tiếp tục công việc đang dở.",
+      "revoked": "Phiên đăng nhập đã bị kết thúc từ máy chủ. Điều này xảy ra sau khi đổi mật khẩu, hoặc khi một phiên bị thu hồi. Hãy đăng nhập lại để tiếp tục."
+    },
     "validation": {
       "nameRequired": "Hãy cho biết tên của bạn",
       "nameMax": "Tên tối đa {max} ký tự",

@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { ApiError } from "@/lib/api/client";
 
@@ -55,4 +56,26 @@ export function FieldError({
 
   if (!text) return null;
   return <p className="text-sm text-destructive">{text}</p>;
+}
+
+/**
+ * Why the user is looking at a sign-in page they did not ask for.
+ *
+ * The guard puts the reason on `?reason=` when a session ends by itself, and this turns it into a
+ * sentence. It is informational rather than an error — nothing went wrong and nothing was lost —
+ * so it is styled as a notice, not as the destructive banner a failed sign-in gets.
+ */
+export function SessionEndedNotice({ reason }: { reason: string | null }) {
+  const t = useTranslations("auth.sessionEnded");
+  if (reason !== "expired" && reason !== "revoked") return null;
+
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-2 rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+    >
+      <Info className="mt-0.5 size-4 shrink-0" />
+      <span>{t(reason)}</span>
+    </div>
+  );
 }
