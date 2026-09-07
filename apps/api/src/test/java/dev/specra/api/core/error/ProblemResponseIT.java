@@ -46,6 +46,41 @@ class ProblemResponseIT {
 
   @Autowired MockMvc mvc;
 
+  @org.springframework.test.context.bean.override.mockito.MockitoBean
+  dev.specra.api.feature.testmanagement.service.TestManagementService testManagement;
+
+  @Test
+  void invalidJqlIsAnActionableProblemInBothLanguages() throws Exception {
+    UUID projectId = UUID.randomUUID();
+    org.mockito.Mockito.when(testManagement.tests(projectId, "status =", true, 0, 20))
+        .thenThrow(
+            new BusinessException(
+                ErrorCode.INTEGRATION_QUERY_INVALID,
+                ErrorCode.INTEGRATION_QUERY_INVALID.detailKey()));
+    for (String locale : new String[] {"en", "vi"}) {
+      mvc.perform(
+              get("/api/v1/projects/{id}/test-management/tests", projectId)
+                  .param("q", "status =")
+                  .param("advanced", "true")
+                  .header("Accept-Language", locale))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentTypeCompatibleWith(PROBLEM_JSON))
+          .andExpect(jsonPath("$.code").value("integration-query-invalid"))
+          .andExpect(
+              jsonPath("$.title")
+                  .value(
+                      locale.equals("en") ? "Invalid Jira search" : "Truy vấn Jira không hợp lệ"))
+          .andExpect(
+              jsonPath("$.detail")
+                  .value(
+                      locale.equals("en")
+                          ? "Jira rejected this search. Check the JQL syntax, field names and"
+                              + " values, and try again."
+                          : "Jira từ chối tìm kiếm này. Kiểm tra cú pháp JQL, tên trường và giá trị"
+                              + " rồi thử lại."));
+    }
+  }
+
   @Test
   void notFoundCarriesTheCodeTypeAndCorrelationIds() throws Exception {
     mvc.perform(get("/api/v1/test-cases/{id}", UUID.randomUUID()))

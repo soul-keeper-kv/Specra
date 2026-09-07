@@ -118,11 +118,15 @@ export function useExternalTests(
           signal,
           // The search runs against the provider, not against Specra — a blank q would be sent
           // as an empty JQL term, so it is dropped rather than passed through.
-          params: { q: query.q || undefined, page: query.page ?? 0, size: query.size ?? 20 },
+          params: {
+            q: query.q || undefined,
+            advanced: query.advanced,
+            page: query.page ?? 0,
+            size: query.size ?? 20,
+          },
         },
       ),
     enabled,
-    placeholderData: (previous) => previous, // no flash of skeleton on every keystroke
   });
 }
 

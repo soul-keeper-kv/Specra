@@ -80,7 +80,8 @@ public class TestManagementService {
         .verify(bound.material().providerConnection(), bound.binding().getRemoteProjectId());
   }
 
-  public PageResponse<ExternalTestSummary> tests(UUID projectId, String query, int page, int size) {
+  public PageResponse<ExternalTestSummary> tests(
+      UUID projectId, String query, boolean advanced, int page, int size) {
     BoundProvider bound = bound(projectId);
     return bound
         .material()
@@ -89,6 +90,7 @@ public class TestManagementService {
             bound.material().providerConnection(),
             bound.binding().getRemoteProjectId(),
             query,
+            advanced,
             page,
             size);
   }

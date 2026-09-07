@@ -365,6 +365,10 @@ triggers · parallel sharding · task-based model routing (it needs M5's cost da
 ambiguities intact — is what made the modelling step judgeable; inventing fixtures would have
 flattered it. Writing results _back_ is still here, because that needs runs to exist.
 
+The integration now has explicit Basic/JQL search, pasted multiline queries with sorting,
+provider paging and translated query errors. [10 — Test management](10-test-management.md)
+records the implemented scope and remaining limits; result write-back is still deferred.
+
 ## Not on this roadmap
 
 Selenium, Cypress, WebdriverIO, Appium, mobile, visual regression, performance, API testing,

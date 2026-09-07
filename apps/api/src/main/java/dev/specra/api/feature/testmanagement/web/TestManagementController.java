@@ -68,10 +68,11 @@ public class TestManagementController {
   public PageResponse<ExternalTestSummary> tests(
       @PathVariable UUID projectId,
       @RequestParam(required = false) String q,
+      @RequestParam(defaultValue = "false") boolean advanced,
       @RequestParam(defaultValue = "0") @Min(value = 0, message = "{validation.page.min}") int page,
       @RequestParam(defaultValue = "20")
           @Min(value = 1, message = "{validation.page-size.min}") @Max(value = 100, message = "{validation.page-size.max}") int size) {
-    return service.tests(projectId, q, page, size);
+    return service.tests(projectId, q, advanced, page, size);
   }
 
   @GetMapping("/tests/{externalId}")

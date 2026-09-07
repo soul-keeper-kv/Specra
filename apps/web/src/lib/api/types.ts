@@ -450,6 +450,7 @@ export type TestManagementVerify = {
 /** What a search of the external system is narrowed by; the provider interprets the term. */
 export type ExternalTestQuery = {
   q?: string;
+  advanced?: boolean;
   page?: number;
   size?: number;
 };

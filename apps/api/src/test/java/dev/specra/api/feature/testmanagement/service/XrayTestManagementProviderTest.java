@@ -221,7 +221,7 @@ class XrayTestManagementProviderTest {
   void searchMatchesTheSummaryAndTheDescription() {
     route(SEARCH_PATH, 200, searchResult(1));
 
-    provider.tests(connection, PROJECT, "login form", 0, 20);
+    provider.tests(connection, PROJECT, "login form", false, 0, 20);
 
     assertThat(lastQuery.get())
         .contains("project = \"XRAY\" AND issuetype = Test")
@@ -234,7 +234,7 @@ class XrayTestManagementProviderTest {
     // A QA pastes the key from a ticket. Matching only the summary would answer "no such test".
     route(SEARCH_PATH, 200, searchResult(1));
 
-    provider.tests(connection, PROJECT, "xray-1810", 0, 20);
+    provider.tests(connection, PROJECT, "xray-1810", false, 0, 20);
 
     assertThat(lastQuery.get()).contains("key = \"XRAY-1810\"");
   }
@@ -244,7 +244,7 @@ class XrayTestManagementProviderTest {
     // "key = login" is not valid JQL; adding it unconditionally would fail every text search.
     route(SEARCH_PATH, 200, searchResult(1));
 
-    provider.tests(connection, PROJECT, "login", 0, 20);
+    provider.tests(connection, PROJECT, "login", false, 0, 20);
 
     assertThat(lastQuery.get()).doesNotContain("key = ");
   }
@@ -253,7 +253,8 @@ class XrayTestManagementProviderTest {
   void searchPagesWithTheProvidersTotalSoTheCallerKnowsThereIsMore() {
     route(SEARCH_PATH, 200, searchResult(137));
 
-    PageResponse<ExternalTestSummary> page = provider.tests(connection, PROJECT, null, 2, 20);
+    PageResponse<ExternalTestSummary> page =
+        provider.tests(connection, PROJECT, null, false, 2, 20);
 
     assertThat(lastQuery.get()).contains("startAt=40").contains("maxResults=20");
     assertThat(page.totalElements()).isEqualTo(137);
@@ -270,8 +271,42 @@ class XrayTestManagementProviderTest {
   void aQuotedTermCannotBreakOutOfTheJqlStringItIsPlacedIn() {
     route(SEARCH_PATH, 200, searchResult(0));
 
-    provider.tests(connection, PROJECT, "a\" OR project = OTHER", 0, 20);
+    provider.tests(connection, PROJECT, "a\" OR project = OTHER", false, 0, 20);
 
     assertThat(lastQuery.get()).contains("summary ~ \"a\\\" OR project = OTHER\"");
+  }
+
+  @Test
+  void pastedJqlPreservesSortingAndScopesOrClauses() {
+    route(SEARCH_PATH, 200, searchResult(137));
+    provider.tests(
+        connection,
+        PROJECT,
+        "status = Open OR assignee = currentUser() ORDER BY updated DESC",
+        true,
+        1,
+        20);
+    assertThat(lastQuery.get())
+        .contains(
+            "project = \"XRAY\" AND issuetype = Test AND (status = Open OR assignee ="
+                + " currentUser()) ORDER BY updated DESC")
+        .contains("startAt=20")
+        .doesNotContain("summary ~");
+  }
+
+  @Test
+  void sortingWordsInsideQuotedValuesStayInTheFilter() {
+    route(SEARCH_PATH, 200, searchResult(0));
+    provider.tests(connection, PROJECT, "summary ~ \"order by date\"", true, 0, 20);
+    assertThat(lastQuery.get()).contains("AND (summary ~ \"order by date\") ORDER BY key ASC");
+  }
+
+  @Test
+  void jiraRejectsInvalidSearchWithAnActionableError() {
+    route(SEARCH_PATH, 400, "{}");
+    assertThatThrownBy(() -> provider.tests(connection, PROJECT, "status =", true, 0, 20))
+        .isInstanceOfSatisfying(
+            TestManagementRemoteException.class,
+            error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.INTEGRATION_QUERY_INVALID));
   }
 }

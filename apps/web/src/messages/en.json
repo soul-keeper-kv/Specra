@@ -206,7 +206,15 @@
       "searchPlaceholder": "Search by key, title or description…",
       "noMatch": "No test matches \"{query}\" in this project.",
       "count": "{count, plural, =0 {No tests} one {# test} other {# tests}}",
-      "pagination": "Page {page} of {total}"
+      "pagination": "Page {page} of {total}",
+      "basic": "Basic",
+      "advanced": "JQL",
+      "jqlLabel": "Jira Query Language (JQL)",
+      "jqlPlaceholder": "status = \"Open\" AND assignee = currentUser() ORDER BY updated DESC",
+      "jqlHint": "Paste a query from Jira advanced search. Press Ctrl+Enter or ⌘+Enter to search.",
+      "scope": "Results include only Test issues in the connected project {project}.",
+      "clear": "Clear search",
+      "invalidJql": "Jira rejected the query. Check the JQL syntax, field names and values, then search again."
     },
     "workspace": {
       "title": "Automation workspace",

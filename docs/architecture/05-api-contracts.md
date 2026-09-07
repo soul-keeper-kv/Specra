@@ -98,12 +98,22 @@ Importing from a test management tool is its own surface, behind one port with X
 first provider:
 
 ```http
+GET    /api/v1/workspaces/{workspaceId}/test-management-connections
+POST   /api/v1/workspaces/{workspaceId}/test-management-connections
+DELETE /api/v1/workspaces/{workspaceId}/test-management-connections/{id}
 GET    /api/v1/projects/{id}/test-management · PUT · DELETE · GET /verify
 GET    /api/v1/projects/{id}/test-management/tests
 GET    /api/v1/projects/{id}/test-management/tests/{externalId}
 GET    /api/v1/projects/{id}/test-management/tests/{externalId}/test-case
 POST   /api/v1/projects/{id}/test-management/tests/{externalId}/import
 ```
+
+Search takes `q`, `advanced=false`, `page=0` and `size=20` (maximum 100). With
+`advanced=false`, `q` is free text; with `advanced=true`, it is native JQL. Both modes
+remain scoped to Test issues in the bound project. JQL retains its `ORDER BY` and groups
+the filter before adding the scope. Results are `PageResponse<ExternalTestSummary>`;
+invalid searches return `integration-query-invalid` (400). The full blueprint, including
+import ownership and UI submission behavior, is [10 — Test management](10-test-management.md).
 
 Editing a test case that already has a model sets `outOfDate` on the response — the UI shows
 "regenerate" from that flag, it does not compute staleness itself.
@@ -264,6 +274,7 @@ HTTP-shaped codes (`VALIDATION_FAILED`, `RESOURCE_NOT_FOUND`, `CONFLICT`, …).
 | `REPOSITORY_NOT_CONNECTED`                                                                              | 409         | a git operation on a project with no repository            |
 | `RUNNER_UNAVAILABLE`                                                                                    | 503         | the toolchain plane did not answer                         |
 | `EXTERNAL_TEST_NOT_FOUND`                                                                               | 404         | the bound Jira/Xray project has no such test               |
+| `INTEGRATION_QUERY_INVALID`                                                                             | 400         | invalid JQL structure or Jira rejected the search          |
 | `INTEGRATION_AUTH_FAILED` · `_PROVIDER_ERROR` · `_UNAVAILABLE`                                          | 502/503     | the three ways a test management call fails                |
 | `INVALID_CREDENTIALS` · `INVALID_TOKEN` · `ACCOUNT_LOCKED` · `ACCOUNT_SUSPENDED` · `EMAIL_ALREADY_USED` | 401/403/409 | local auth                                                 |
 | `AI_PROVIDER_ERROR` · `_UNAVAILABLE` · `AI_NOT_CONFIGURED`                                              | 502/503     | the model provider said no, was unreachable, or has no key |

@@ -48,6 +48,7 @@ Requirement / Manual test case
 | [07 — Git](07-git.md)                             | The `GitProvider` port, working copies, the generated project layout |
 | [08 — AI pipeline](08-ai-pipeline.md)             | The five AI roles, their contracts, and what AI may never do         |
 | [09 — Roadmap](09-roadmap.md)                     | Milestone order, and what current scaffold gets deleted when         |
+| [10 — Test management](10-test-management.md)     | Jira/Xray connections, import ownership, Basic/JQL search and limits |
 
 Read [00](00-product.md) and [02](02-test-model-ir.md) before writing code. Everything else
 is reference you come back to.

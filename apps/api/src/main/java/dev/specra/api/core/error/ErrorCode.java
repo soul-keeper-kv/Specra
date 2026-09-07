@@ -100,6 +100,8 @@ public enum ErrorCode {
   INTEGRATION_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
   /** The model provider could not be reached at all, or timed out. */
   AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+  /** Jira rejected the search expression or its field values. */
+  INTEGRATION_QUERY_INVALID(HttpStatus.BAD_REQUEST),
   /** The configured Jira/Xray host could not be reached or timed out. */
   INTEGRATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   /**

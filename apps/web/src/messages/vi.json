@@ -206,7 +206,15 @@
       "searchPlaceholder": "Tìm theo mã, tiêu đề hoặc mô tả…",
       "noMatch": "Không có ca kiểm thử nào khớp với \"{query}\" trong dự án này.",
       "count": "{count, plural, other {# ca kiểm thử}}",
-      "pagination": "Trang {page} / {total}"
+      "pagination": "Trang {page} / {total}",
+      "basic": "Cơ bản",
+      "advanced": "JQL",
+      "jqlLabel": "Truy vấn Jira (JQL)",
+      "jqlPlaceholder": "status = \"Open\" AND assignee = currentUser() ORDER BY updated DESC",
+      "jqlHint": "Dán truy vấn từ tìm kiếm nâng cao của Jira. Nhấn Ctrl+Enter hoặc ⌘+Enter để tìm.",
+      "scope": "Chỉ hiển thị issue loại Test thuộc project đã kết nối: {project}.",
+      "clear": "Xóa tìm kiếm",
+      "invalidJql": "Jira từ chối truy vấn. Kiểm tra cú pháp JQL, tên trường và giá trị rồi tìm lại."
     },
     "workspace": {
       "title": "Không gian tự động hóa",

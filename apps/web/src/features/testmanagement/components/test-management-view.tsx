@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useBindTestManagement,
   useCreateTestManagementConnection,
@@ -26,8 +27,8 @@ import {
   useVerifyTestManagement,
 } from "@/features/testmanagement/api/test-management";
 import { useActiveWorkspace } from "@/features/workspaces/api/workspaces";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Link } from "@/i18n/navigation";
+import { ApiError } from "@/lib/api/client";
 
 const PAGE_SIZE = 20;
 
@@ -41,13 +42,24 @@ export function TestManagementView({ projectId }: { projectId: string }) {
   const unbind = useUnbindTestManagement(projectId);
   const verify = useVerifyTestManagement(projectId);
   const [search, setSearch] = useState("");
+  const [jql, setJql] = useState("");
+  const [advanced, setAdvanced] = useState(false);
+  const [submitted, setSubmitted] = useState({ q: "", advanced: false });
   const [page, setPage] = useState(0);
-  const debouncedSearch = useDebouncedValue(search);
   const tests = useExternalTests(
     projectId,
-    { q: debouncedSearch || undefined, page, size: PAGE_SIZE },
+    { ...submitted, page, size: PAGE_SIZE },
     Boolean(binding.data),
   );
+
+  function submitSearch() {
+    const next = { q: (advanced ? jql : search).trim(), advanced };
+    setPage(0);
+    setSubmitted(next);
+    if (page === 0 && next.q === submitted.q && next.advanced === submitted.advanced) {
+      void tests.refetch();
+    }
+  }
 
   const [name, setName] = useState("Company Xray");
   const [baseUrl, setBaseUrl] = useState("");
@@ -190,28 +202,101 @@ export function TestManagementView({ projectId }: { projectId: string }) {
           <CardDescription>{t("tests.description")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="relative max-w-sm">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(0);
-              }}
-              placeholder={t("tests.searchPlaceholder")}
-              aria-label={tActions("search")}
-              className="pl-9"
-            />
-          </div>
+          <form
+            className="grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitSearch();
+            }}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              {[false, true].map((mode) => (
+                <Button
+                  key={String(mode)}
+                  type="button"
+                  size="sm"
+                  variant={advanced === mode ? "secondary" : "ghost"}
+                  aria-pressed={advanced === mode}
+                  onClick={() => setAdvanced(mode)}
+                >
+                  {t(mode ? "tests.advanced" : "tests.basic")}
+                </Button>
+              ))}
+            </div>
+            {advanced ? (
+              <div className="grid gap-2">
+                <Label htmlFor="jira-jql">{t("tests.jqlLabel")}</Label>
+                <Textarea
+                  id="jira-jql"
+                  value={jql}
+                  onChange={(event) => setJql(event.target.value)}
+                  placeholder={t("tests.jqlPlaceholder")}
+                  className="min-h-24 font-mono"
+                  aria-describedby="jira-jql-hint"
+                  spellCheck={false}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                      event.preventDefault();
+                      submitSearch();
+                    }
+                  }}
+                />
+                <p id="jira-jql-hint" className="text-xs text-muted-foreground">
+                  {t("tests.jqlHint")}
+                </p>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={t("tests.searchPlaceholder")}
+                  aria-label={tActions("search")}
+                  className="pl-9"
+                />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={tests.isFetching}>
+                {tests.isFetching ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Search className="size-4" />
+                )}
+                {tActions("search")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setSearch("");
+                  setJql("");
+                  setPage(0);
+                  setSubmitted({ q: "", advanced });
+                }}
+              >
+                {t("tests.clear")}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {t("tests.scope", { project: binding.data.remoteProjectId })}
+              </p>
+            </div>
+          </form>
           {tests.isPending ? <Skeleton className="h-28 w-full" /> : null}
           {tests.isError ? (
-            <ErrorState error={tests.error} onRetry={() => void tests.refetch()} />
+            tests.error instanceof ApiError &&
+            tests.error.code === "integration-query-invalid" ? (
+              <p role="alert" className="text-sm text-destructive">
+                {t("tests.invalidJql")}
+              </p>
+            ) : (
+              <ErrorState error={tests.error} onRetry={() => void tests.refetch()} />
+            )
           ) : null}
           {tests.data?.content.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              {debouncedSearch
-                ? t("tests.noMatch", { query: debouncedSearch })
-                : t("tests.empty")}
+              {submitted.q ? t("tests.noMatch", { query: submitted.q }) : t("tests.empty")}
             </p>
           ) : null}
           <div className="grid divide-y">
@@ -259,7 +344,7 @@ export function TestManagementView({ projectId }: { projectId: string }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={tests.data.first}
+                  disabled={tests.data.first || tests.isFetching}
                   onClick={() => setPage((current) => Math.max(0, current - 1))}
                 >
                   {tActions("previous")}
@@ -273,7 +358,7 @@ export function TestManagementView({ projectId }: { projectId: string }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={tests.data.last}
+                  disabled={tests.data.last || tests.isFetching}
                   onClick={() => setPage((current) => current + 1)}
                 >
                   {tActions("next")}

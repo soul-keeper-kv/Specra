@@ -28,6 +28,10 @@ existing decision — do not open a question about it.
 
 ## Non-negotiables, every time
 
+For Jira/Xray connections, external test search or import, also use `specra-testmanagement`.
+Its [blueprint](../../../docs/architecture/10-test-management.md) records the provider and
+Basic/JQL contracts; the integration feeds the golden path without becoming an issue tracker.
+
 These are what get forgotten. Treat the list as the definition of "the feature is built":
 
 1. **No literal user-facing string.** Every label, placeholder, toast, empty state, aria

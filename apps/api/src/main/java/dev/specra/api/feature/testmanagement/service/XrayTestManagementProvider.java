@@ -74,7 +74,7 @@ public class XrayTestManagementProvider implements TestManagementProvider {
       ProviderConnection connection, String remoteProjectId) {
     JsonNode identity = get(connection, "/rest/api/2/myself", null);
     JsonNode project = get(connection, "/rest/api/2/project/" + encode(remoteProjectId), null);
-    long count = search(connection, remoteProjectId, null, 0, 1).path("total").asLong();
+    long count = search(connection, remoteProjectId, null, false, 0, 1).path("total").asLong();
     return new TestManagementVerifyResponse(
         identity.path("displayName").asText(identity.path("name").asText()),
         project.path("key").asText(remoteProjectId),
@@ -84,8 +84,13 @@ public class XrayTestManagementProvider implements TestManagementProvider {
 
   @Override
   public PageResponse<ExternalTestSummary> tests(
-      ProviderConnection connection, String remoteProjectId, String query, int page, int size) {
-    JsonNode node = search(connection, remoteProjectId, query, page * size, size);
+      ProviderConnection connection,
+      String remoteProjectId,
+      String query,
+      boolean advanced,
+      int page,
+      int size) {
+    JsonNode node = search(connection, remoteProjectId, query, advanced, page * size, size);
     List<ExternalTestSummary> tests = new ArrayList<>();
     for (JsonNode issue : node.path("issues")) {
       JsonNode fields = issue.path("fields");
@@ -182,13 +187,25 @@ public class XrayTestManagementProvider implements TestManagementProvider {
       ProviderConnection connection,
       String remoteProjectId,
       String query,
+      boolean advanced,
       int startAt,
       int maxResults) {
     StringBuilder jql =
         new StringBuilder("project = \"")
             .append(escapeJql(remoteProjectId))
             .append("\" AND issuetype = Test");
-    if (StringUtils.hasText(query)) {
+    String ordering = " ORDER BY key ASC";
+    if (advanced && StringUtils.hasText(query)) {
+      String term = query.trim();
+      int orderAt = orderByIndex(term);
+      if (orderAt >= 0) {
+        ordering = " " + term.substring(orderAt);
+        term = term.substring(0, orderAt).trim();
+      }
+      if (!term.isEmpty()) {
+        jql.append(" AND (").append(term).append(")");
+      }
+    } else if (StringUtils.hasText(query)) {
       // A QA searching an external system types either words from the title or the key they were
       // given in a ticket. Matching only the summary makes "XRAY-123" return nothing, which reads
       // as "the test is not there". "key = X" is only valid JQL for a well-formed key, so it is
@@ -201,7 +218,7 @@ public class XrayTestManagementProvider implements TestManagementProvider {
       }
       jql.append(")");
     }
-    jql.append(" ORDER BY key ASC");
+    jql.append(ordering);
     return get(
         connection,
         "/rest/api/2/search?jql="
@@ -237,6 +254,9 @@ public class XrayTestManagementProvider implements TestManagementProvider {
         // and the problem document deliberately does not carry it — so it is logged here. The
         // path is safe to log; the token travels in a header and never appears in it.
         log.warn("Jira/Xray answered {} for {}", response.statusCode(), path);
+        if (response.statusCode() == 400 && path.startsWith("/rest/api/2/search?")) {
+          throw new TestManagementRemoteException(ErrorCode.INTEGRATION_QUERY_INVALID);
+        }
         throw remoteError(response.statusCode(), externalId);
       }
       return objectMapper.readTree(response.body());
@@ -300,6 +320,37 @@ public class XrayTestManagementProvider implements TestManagementProvider {
     } catch (URISyntaxException e) {
       return false;
     }
+  }
+
+  /** Find sorting outside quoted values; Jira validates the complete expression. */
+  private static int orderByIndex(String query) {
+    Pattern orderBy = Pattern.compile("(?i)order\\s+by\\b");
+    char quote = 0;
+    int depth = 0;
+    for (int i = 0; i < query.length(); i++) {
+      char c = query.charAt(i);
+      if (c == '\\') {
+        i++;
+      } else if (quote != 0) {
+        if (c == quote) quote = 0;
+      } else if (c == '\'' || c == '"') {
+        quote = c;
+      } else if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        if (--depth < 0) {
+          throw new TestManagementRemoteException(ErrorCode.INTEGRATION_QUERY_INVALID);
+        }
+      } else if (depth == 0
+          && (i == 0 || Character.isWhitespace(query.charAt(i - 1)))
+          && orderBy.matcher(query.substring(i)).lookingAt()) {
+        return i;
+      }
+    }
+    if (quote != 0 || depth != 0) {
+      throw new TestManagementRemoteException(ErrorCode.INTEGRATION_QUERY_INVALID);
+    }
+    return -1;
   }
 
   private static String escapeJql(String value) {
