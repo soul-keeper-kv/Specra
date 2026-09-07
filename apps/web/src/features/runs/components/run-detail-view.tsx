@@ -85,7 +85,12 @@ export function RunDetailView({ runId }: { runId: string }) {
           {current.dirty ? <span className="ms-2 text-destructive">{t("dirty")}</span> : null}
         </dd>
         <dt>{t("queued")}</dt>
-        <dd>{format.dateTime(new Date(current.queuedAt), "medium")}</dd>
+        <dd>
+          {format.dateTime(new Date(current.queuedAt), {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}
+        </dd>
       </dl>
 
       {/* An ERROR is about us, not about the tests, so it is stated rather than left to be
