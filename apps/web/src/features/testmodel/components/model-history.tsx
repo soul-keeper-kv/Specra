@@ -1,10 +1,11 @@
 "use client";
 
-import { History, Loader2 } from "lucide-react";
+import { History } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTestModelVersions } from "@/features/testmodel/api/test-models";
 
 /**
@@ -40,10 +41,12 @@ export function ModelHistory({
       <PopoverContent align="end" className="w-80">
         <p className="mb-2 text-sm font-medium">{t("title")}</p>
 
-        {versions.isPending ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        ) : versions.isError ? (
-          <p className="text-xs text-destructive">{t("failed")}</p>
+        {versions.isPending || versions.isError ? (
+          <div className="grid gap-2" aria-hidden="true">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-4/5" />
+            <Skeleton className="h-6 w-3/5" />
+          </div>
         ) : (
           <ul className="grid gap-1">
             {(versions.data ?? []).map((version) => (

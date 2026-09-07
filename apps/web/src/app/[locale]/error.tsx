@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 import { ErrorState } from "@/components/common/error-state";
@@ -17,8 +16,6 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = useTranslations("errors");
-
   useEffect(() => {
     // The digest is the only handle on the server-side stack trace, which Next withholds in
     // production on purpose.
@@ -29,11 +26,6 @@ export default function LocaleError({
     <main className="grid flex-1 place-items-center p-6">
       <div className="w-full max-w-md">
         <ErrorState error={error} onRetry={reset} />
-        {error.digest ? (
-          <p className="mt-2 text-center font-mono text-xs text-muted-foreground">
-            {t("reference", { id: error.digest })}
-          </p>
-        ) : null}
       </div>
     </main>
   );
