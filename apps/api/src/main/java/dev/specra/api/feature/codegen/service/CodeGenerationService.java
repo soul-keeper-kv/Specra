@@ -121,7 +121,7 @@ public class CodeGenerationService {
             "reference", testCase.reference(),
             "area", area(testCase),
             "adapterVersion", ADAPTER_VERSION,
-            "scaffold", !git.hasFile(testCase.projectId(), "playwright.config.ts"),
+            "scaffold", needsScaffold(testCase.projectId()),
             "projectName", "e2e-tests",
             "browsers", List.of("chromium")));
 
@@ -273,6 +273,15 @@ public class CodeGenerationService {
     var commit = git.commit(generation.getProjectId(), new CommitRequest(message, paths));
     if (request != null && request.pushOrDefault()) {
       git.push(generation.getProjectId());
+    } else {
+      // Worth saying out loud: until this is pushed, the commit exists only in the working copy,
+      // and that directory is documented as a cache anything may delete. Git is meant to be the
+      // source of truth for this code (00-product.md), and it is not yet.
+      log.info(
+          "Generation {} committed {} as {} without pushing; it exists only in the working copy",
+          generation.getId(),
+          paths,
+          commit.sha());
     }
 
     // The case now has code in the repository, and a run needs to know which file holds it.
@@ -290,6 +299,20 @@ public class CodeGenerationService {
                     commit.sha()));
 
     return complete(generation.getId(), CodeGenerationStatus.APPLIED, commit.sha(), testCase);
+  }
+
+  /**
+   * Whether this generation should carry the project skeleton.
+   *
+   * <p>Both files, not just the config: a repository missing either one cannot install or run, and
+   * asking about only {@code playwright.config.ts} let a copy that had lost {@code package.json}
+   * stay unscaffolded for ever — every later generation saw the config, said "already scaffolded",
+   * and emitted three files into a project with nothing to install. Checking what a run actually
+   * needs makes the next generation repair it.
+   */
+  private boolean needsScaffold(UUID projectId) {
+    return !git.hasFile(projectId, "playwright.config.ts")
+        || !git.hasFile(projectId, "package.json");
   }
 
   /**

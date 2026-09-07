@@ -132,6 +132,44 @@ class CodeGenerationServiceTest {
   }
 
   @Test
+  void scaffoldsAgainWhenTheRepositoryHasAConfigButNoManifest() {
+    when(runner.run(eq("codegen"), any())).thenReturn(runnerFiles());
+    // The shape a copy is left in when the commit carrying the skeleton never reached the remote:
+    // the config survived in a later commit, package.json did not. Asking only about the config
+    // called this "already scaffolded" and generated three files into a project npm cannot
+    // install — so the repository stayed unrunnable no matter how often it was regenerated.
+    when(git.hasFile(PROJECT, "playwright.config.ts")).thenReturn(true);
+    when(git.hasFile(PROJECT, "package.json")).thenReturn(false);
+
+    service.generate(CASE);
+
+    ArgumentCaptor<java.util.Map<String, Object>> payload =
+        ArgumentCaptor.forClass(java.util.Map.class);
+    verify(runner).run(eq("codegen"), payload.capture());
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> options =
+        (java.util.Map<String, Object>) payload.getValue().get("options");
+    assertThat(options.get("scaffold")).isEqualTo(true);
+  }
+
+  @Test
+  void doesNotScaffoldWhenTheRepositoryIsAlreadyComplete() {
+    when(runner.run(eq("codegen"), any())).thenReturn(runnerFiles());
+    when(git.hasFile(PROJECT, "playwright.config.ts")).thenReturn(true);
+    when(git.hasFile(PROJECT, "package.json")).thenReturn(true);
+
+    service.generate(CASE);
+
+    ArgumentCaptor<java.util.Map<String, Object>> payload =
+        ArgumentCaptor.forClass(java.util.Map.class);
+    verify(runner).run(eq("codegen"), payload.capture());
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> options =
+        (java.util.Map<String, Object>) payload.getValue().get("options");
+    assertThat(options.get("scaffold")).isEqualTo(false);
+  }
+
+  @Test
   void aFileTheRepositoryAlreadyHasIsReportedAsAModification() {
     when(runner.run(eq("codegen"), any())).thenReturn(runnerFiles());
     when(git.readFileOrNull(PROJECT, "tests/auth/login.spec.ts")).thenReturn("old contents");
