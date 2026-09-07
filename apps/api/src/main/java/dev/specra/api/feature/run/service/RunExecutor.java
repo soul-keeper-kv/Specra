@@ -79,7 +79,10 @@ public class RunExecutor {
     try {
       Optional<TestRun> claimed = self.markRunning(runId);
       if (claimed.isEmpty()) {
-        // Cancelled between request and pickup. Nothing to do, and not an error.
+        // Cancelled between request and pickup. Nothing to do, and not an error — but say so,
+        // because the other way to land here is a run this thread could not see yet, and that
+        // one leaves it QUEUED for ever. Silence made the two indistinguishable.
+        log.debug("Run {} was not claimed: already cancelled, or not yet visible", runId);
         return;
       }
       TestRun run = claimed.get();

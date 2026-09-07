@@ -30,6 +30,8 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Requesting a run, and reading one back.
@@ -148,8 +150,10 @@ public class RunService {
     }
 
     TestRun saved = runs.save(run);
-    // After the transaction commits, so the executor cannot read a run that is not there yet.
-    executor.enqueue(saved.getId(), copy.path());
+    // Genuinely after the transaction commits. Submitting from inside it raced the executor's
+    // own REQUIRES_NEW transaction, which then could not see the row and read the empty result
+    // as "cancelled" — leaving the run QUEUED for ever, with nothing logged.
+    afterCommit(() -> executor.enqueue(saved.getId(), copy.path()));
     return views.toDetail(saved);
   }
 
@@ -186,6 +190,31 @@ public class RunService {
     return items
         .findById(itemId)
         .orElseThrow(() -> new ResourceNotFoundException("resource.run-item", itemId));
+  }
+
+  /**
+   * Runs {@code action} once the current transaction has committed.
+   *
+   * <p>Handing work to another thread from inside a transaction hands it a row that thread cannot
+   * read yet. The executor opens its own {@code REQUIRES_NEW} transaction to claim the run, so it
+   * sees only committed state; started early it finds nothing, and its "no such run" branch means
+   * "cancelled", so the run stays {@code QUEUED} silently. Waiting for the commit is what makes the
+   * handover safe.
+   *
+   * <p>With no transaction active — a direct call in a unit test — the action simply runs now.
+   */
+  private static void afterCommit(Runnable action) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      action.run();
+      return;
+    }
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            action.run();
+          }
+        });
   }
 
   /**
