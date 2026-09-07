@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,11 +34,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkingCopies {
 
+  private static final Logger log = LoggerFactory.getLogger(WorkingCopies.class);
+
   private final Path root;
   private final ConcurrentHashMap<UUID, ReentrantLock> locks = new ConcurrentHashMap<>();
 
   public WorkingCopies(SpecraProperties properties) {
     this.root = Path.of(properties.git().reposDir()).toAbsolutePath().normalize();
+    // Logged because where this lands decides whether a run works. A working copy under the
+    // Specra checkout is one the user's toolchain walks up out of — npm with no manifest of
+    // its own climbs until it finds Specra's and resolves that tree instead — and the symptom
+    // (npm crashing on a dependency nobody declared) points nowhere near the cause.
+    log.info("Working copies live in {}", root);
   }
 
   public <T> T withProjectLock(UUID projectId, Supplier<T> work) {

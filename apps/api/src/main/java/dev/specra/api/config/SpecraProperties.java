@@ -127,7 +127,9 @@ public record SpecraProperties(
    *
    * @param reposDir where working copies live, one directory per (project, branch). A cache by
    *     contract (07-git.md): deletable at any time, re-cloned on demand, never pointed into by the
-   *     database. Relative paths resolve against the API's working directory.
+   *     database. Relative paths resolve against the API's working directory, which is why the
+   *     default is absolute and outside the checkout: a working copy below Specra is one the user's
+   *     own toolchain walks up out of, finding Specra's manifest instead of the repository's.
    * @param committerName who the committer is on every commit Specra publishes. The author is the
    *     signed-in user — attribution belongs to the person who approved the change — and the
    *     committer is the tool, which is exactly how {@code git rebase} and friends record it.

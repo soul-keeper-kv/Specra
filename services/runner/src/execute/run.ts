@@ -137,6 +137,16 @@ async function installDependencies(projectDir: string): Promise<string | null> {
   if (existsSync(path.join(projectDir, "node_modules"))) {
     return null;
   }
+  // No manifest, no install. npm without a package.json walks *up* the directory tree looking
+  // for one, so a repository that has none reaches whatever project happens to sit above the
+  // working copy and tries to resolve its tree instead — which is both wrong and, against a
+  // pnpm tree, a crash inside npm. Say what is missing rather than let npm guess.
+  if (!existsSync(path.join(projectDir, "package.json"))) {
+    return (
+      "This repository has no package.json, so there are no dependencies to install and " +
+      "no engine to run. Generate and commit a test project first."
+    );
+  }
   const lockfile = existsSync(path.join(projectDir, "package-lock.json"));
   const result = await run(
     process.execPath,

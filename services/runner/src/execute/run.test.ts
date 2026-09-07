@@ -211,3 +211,31 @@ describe("executing a generated project", () => {
     }
   }, 300_000);
 });
+
+describe("a repository with nothing to run", () => {
+  it("reports the missing manifest instead of letting npm search upwards", async () => {
+    // No package.json and no node_modules: the shape of a repository connected before any code
+    // was generated into it. npm would climb out of this directory looking for a manifest and
+    // resolve whichever project sits above it, so the runner has to refuse first.
+    const bare = mkdtempSync(path.join(tmpdir(), "specra-bare-"));
+    writeFileSync(path.join(bare, "README.md"), "nothing here\n");
+
+    const result = await execute({
+      projectDir: bare,
+      baseUrl,
+      browsers: ["chromium"],
+      variables: {},
+      isolation: "process",
+      timeoutMs: 120_000,
+    });
+    try {
+      expect(result.status).toBe("ERROR");
+      expect(result.errorMessage).toContain("no package.json");
+      // The point of the guard: npm never ran, so nothing from an ancestor project appears.
+      expect(result.errorMessage ?? "").not.toContain("arborist");
+    } finally {
+      discard(result.outputDir);
+      rmSync(bare, { recursive: true, force: true });
+    }
+  }, 60_000);
+});

@@ -275,9 +275,15 @@ specra:
     retention: ${SPECRA_ARTIFACT_RETENTION:P30D}
   git:
     # Working copies, one directory per (project, branch). A cache by contract: safe to
-    # delete at any time, re-cloned on demand, never pointed into by the database. The
-    # relative default lands under apps/api/data/, which is gitignored.
-    repos-dir: ${SPECRA_GIT_REPOS_DIR:data/repos}
+    # delete at any time, re-cloned on demand, never pointed into by the database.
+    #
+    # Outside the checkout on purpose. A working copy nested under Specra is a directory the
+    # user's toolchain searches upwards out of: npm with no package.json of its own climbs
+    # until it finds one, reaches Specra's, and resolves *that* tree — which against a pnpm
+    # store crashes inside npm. Being gitignored keeps it out of a commit; it does not keep it
+    # out of a tool's parent-directory walk. ${java.io.tmpdir} is the one place neither
+    # applies.
+    repos-dir: ${SPECRA_GIT_REPOS_DIR:${java.io.tmpdir}/specra/repos}
     # The committer on every commit Specra publishes. The *author* is the signed-in user —
     # attribution belongs to whoever approved the change — and this is the tool that wrote
     # it out, the same split rebase and cherry-pick record.
