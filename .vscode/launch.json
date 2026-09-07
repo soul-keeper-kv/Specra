@@ -65,7 +65,9 @@
       "type": "node-terminal",
       "name": "Web: full stack (server + browser)",
       "request": "launch",
-      "command": "pnpm dev",
+      // Use Webpack for VS Code debugging: the reported Turbopack HMR virtual
+      // source paths are not readable JSON source maps on Windows.
+      "command": "pnpm dev --webpack",
       "cwd": "${workspaceFolder}/apps/web",
       // Opens Chrome once Next prints its URL, so breakpoints in server
       // components and in client components both bind in one session.
@@ -75,6 +77,22 @@
         "action": "debugWithChrome"
       }
     },
+    // ── Runner ───────────────────────────────────────────────────────────────
+    {
+      "type": "node-terminal",
+      "name": "Runner: job server",
+      "request": "launch",
+      // The Node/Playwright plane on :8090. Without it every codegen and every
+      // run fails at the HTTP call in RunExecutor — the API has nothing to talk
+      // to, and the failure surfaces as a run that goes straight to ERROR.
+      "command": "pnpm start",
+      "cwd": "${workspaceFolder}/services/runner",
+      // Carries RUNNER_PORT and SPECRA_ENGINE_TYPES. The latter is what decides
+      // whether generated code is typechecked before it is proposed; the runner
+      // prints which mode it is in at startup, so the Debug Console says so.
+      "envFile": "${workspaceFolder}/.env"
+    },
+
     {
       "type": "node-terminal",
       "name": "Web: Vitest (current file)",
@@ -105,6 +123,34 @@
       ],
       "stopAll": true,
       "presentation": { "group": "1-specra", "order": 2 }
+    },
+    {
+      // The whole product: API, web, and the runner that owns the Playwright
+      // toolchain. This is what the golden path needs end to end — without the
+      // runner, generation and execution both stop at the API's HTTP call to
+      // :8090, so the two entries above are for working on the UI or the API
+      // alone rather than for running a test.
+      "name": "Web full stack (API + Web + Runner)",
+      "configurations": [
+        "API: Spring Boot",
+        "Web: full stack (server + browser)",
+        "Runner: job server"
+      ],
+      "stopAll": true,
+      "presentation": { "group": "1-specra", "order": 3 }
+    },
+    {
+      // The same three, with the API on the local model server: free, on the
+      // GPU, no API key. Postgres and ollama come up first (the API entry's
+      // preLaunchTask) and the GPU is freed when the session ends.
+      "name": "Web full stack (Ollama, local GPU)",
+      "configurations": [
+        "API: Spring Boot (Ollama, local GPU)",
+        "Web: full stack (server + browser)",
+        "Runner: job server"
+      ],
+      "stopAll": true,
+      "presentation": { "group": "1-specra", "order": 4 }
     }
   ]
 }
