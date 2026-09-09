@@ -32,6 +32,7 @@ import {
   engineReportEnv,
   readReport,
 } from "../adapters/playwright/index.js";
+import { installDependencies } from "./install.js";
 import {
   CONTAINER_OUTPUT_DIR,
   CONTAINER_OUTPUT_MOUNT,
@@ -43,9 +44,6 @@ import type { ExecuteRequest, ExecuteResult, ExecutedItem } from "./types.js";
 
 /** A suite that has not finished by now is not going to; the default is generous on purpose. */
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
-
-/** Installing dependencies is slower than any test and must not share the run's budget. */
-const INSTALL_TIMEOUT_MS = 10 * 60 * 1000;
 
 export async function execute(request: ExecuteRequest): Promise<ExecuteResult> {
   const started = Date.now();
@@ -125,39 +123,6 @@ function statusOf(items: ExecutedItem[]): ExecuteResult["status"] {
   if (items.some((item) => item.status === "ERROR")) return "ERROR";
   if (items.some((item) => item.status === "FAILED")) return "FAILED";
   return "PASSED";
-}
-
-/**
- * `npm ci` when there is a lockfile, `npm install` otherwise, skipped when already installed.
- *
- * npm rather than pnpm: this is the *user's* repository, and it may be checked out anywhere by
- * anyone. npm is the one package manager a Node install always has.
- */
-async function installDependencies(projectDir: string): Promise<string | null> {
-  if (existsSync(path.join(projectDir, "node_modules"))) {
-    return null;
-  }
-  // No manifest, no install. npm without a package.json walks *up* the directory tree looking
-  // for one, so a repository that has none reaches whatever project happens to sit above the
-  // working copy and tries to resolve its tree instead — which is both wrong and, against a
-  // pnpm tree, a crash inside npm. Say what is missing rather than let npm guess.
-  if (!existsSync(path.join(projectDir, "package.json"))) {
-    return (
-      "This repository has no package.json, so there are no dependencies to install and " +
-      "no engine to run. Generate and commit a test project first."
-    );
-  }
-  const lockfile = existsSync(path.join(projectDir, "package-lock.json"));
-  const result = await run(
-    process.execPath,
-    [npmCliPath(), lockfile ? "ci" : "install"],
-    projectDir,
-    {},
-    INSTALL_TIMEOUT_MS,
-  );
-  return result.code === 0
-    ? null
-    : `Installing dependencies failed:\n${result.output.trim().slice(-2000)}`;
 }
 
 /**
@@ -276,18 +241,6 @@ function run(
       resolve({ code, output });
     });
   });
-}
-
-/**
- * npm's own JavaScript entry point, beside the Node binary that is running.
- *
- * Not the `npm` launcher: it is a `.cmd` shim on Windows, and Node refuses to `spawn` one
- * without a shell — the same `EINVAL` the engine hit, for the same reason. Running the CLI
- * under `process.execPath` keeps `shell: false` everywhere, which is the property that matters
- * in the component that executes code a model wrote.
- */
-function npmCliPath(): string {
-  return path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 }
 
 /**
