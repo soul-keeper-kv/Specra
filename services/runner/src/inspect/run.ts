@@ -1,4 +1,5 @@
 import { readPage } from "../adapters/playwright/inspect.js";
+import { installDependencies } from "../execute/install.js";
 import { planElements } from "./plan.js";
 import type { InspectRequest, InspectResult } from "./types.js";
 
@@ -14,6 +15,16 @@ import type { InspectRequest, InspectResult } from "./types.js";
  * person can override it. Inspection's job is to make sure nobody has to guess.
  */
 export async function inspect(request: InspectRequest): Promise<InspectResult> {
+  // Before the browser, because inspection borrows the engine from the user's working copy and
+  // a freshly cloned one has no node_modules. Telling a QA user to "run npm install in the
+  // repository" names a shell they do not have, in a directory they cannot see — and execution
+  // already installs for itself, so the two jobs would otherwise disagree about which
+  // repositories are usable.
+  const install = await installDependencies(request.projectDir);
+  if (install) {
+    throw new Error(install);
+  }
+
   const page = await readPage(request);
   const { elements, ambiguous } = planElements(page.elements);
 
