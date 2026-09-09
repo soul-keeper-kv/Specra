@@ -57,6 +57,28 @@ const PAGE = `data:text/html,${encodeURIComponent(`
   </body></html>
 `)}`;
 
+/**
+ * A page that is empty at `domcontentloaded` and fills in later.
+ *
+ * The shape every client-rendered application has, and the one a fixed settle got wrong: a real
+ * site measured during this fix had zero interactive nodes at 500ms and five at two seconds.
+ * 1200ms is comfortably past any fixed pause that would have been plausible, so this fails
+ * against the old behaviour and passes against a wait that watches the page.
+ */
+const LATE_PAGE = `data:text/html,${encodeURIComponent(`
+  <html><body>
+    <div id="root"></div>
+    <script>
+      setTimeout(function () {
+        document.getElementById('root').innerHTML =
+          '<label for="email">Email</label>' +
+          '<input id="email" placeholder="you@example.com" />' +
+          '<button data-testid="submit">Log in</button>';
+      }, 1200);
+    </script>
+  </body></html>
+`)}`;
+
 describe.skipIf(!INSTALLED)("inspecting a page in a real browser", () => {
   it("reads the elements rather than failing inside the page", async () => {
     const result = await inspect({
@@ -82,5 +104,22 @@ describe.skipIf(!INSTALLED)("inspecting a page in a real browser", () => {
     // And the planner ranked the test id first, so the facts arrived intact rather than empty.
     const submit = result.elements.find((element) => element.name === "logInButton");
     expect(submit?.candidates[0]?.strategy).toBe("testId");
+  }, 120_000);
+
+  it("waits for a client-rendered page instead of reading it empty", async () => {
+    const result = await inspect({
+      url: LATE_PAGE,
+      pageName: "LoginPage",
+      projectDir: ENGINE_PROJECT as string,
+      timeoutMs: 30_000,
+    });
+
+    // The regression itself: a fixed 500ms settle returned zero elements here, and zero is
+    // indistinguishable from a page that genuinely has nothing on it — so the user was told
+    // nothing was found on a page full of things to find.
+    expect(result.elements.map((element) => element.name)).toEqual([
+      "emailInput",
+      "logInButton",
+    ]);
   }, 120_000);
 });

@@ -71,6 +71,20 @@ declare const window: {
 declare const CSS: { escape(value: string): string };
 
 /**
+ * What counts as interactive, as a CSS selector.
+ *
+ * A copy of the one inside `COLLECT_SCRIPT`, and deliberately a copy: that function is
+ * serialised into the page and may close over nothing from this module, so it cannot read this
+ * constant and this constant cannot be extracted out of it. The adapter waits for one of these
+ * nodes to appear before collecting, and a wait watching a different set than the collector
+ * reads would settle at the wrong moment. `collect.test.ts` fails when the two drift.
+ */
+export const INTERACTIVE =
+  "a[href], button, input:not([type=hidden]), select, textarea, [role=button]," +
+  " [role=link], [role=checkbox], [role=radio], [role=tab], [role=menuitem]," +
+  " [role=textbox], [role=combobox], [contenteditable=true]";
+
+/**
  * Runs in the page. Takes the test-id attribute name because it is configurable per project.
  *
  * Kept in this file rather than in the adapter because it names no engine API — it is DOM, which

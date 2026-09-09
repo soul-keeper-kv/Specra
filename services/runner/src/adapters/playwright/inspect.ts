@@ -19,10 +19,30 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { COLLECT_SCRIPT, type RawElement } from "../../inspect/collect.js";
+import { COLLECT_SCRIPT, INTERACTIVE, type RawElement } from "../../inspect/collect.js";
 import type { InspectRequest } from "../../inspect/types.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+/**
+ * How long to keep waiting for a page to put something interactive on screen.
+ *
+ * Its own budget rather than the request's: the whole timeout covers navigation too, and a
+ * client-rendered page that never renders should be reported quickly rather than after thirty
+ * seconds of an empty document. Capped by the request timeout at the call site.
+ */
+const SETTLE_BUDGET_MS = 10_000;
+
+/** How often to look. Short enough to add nothing perceptible once the page is up. */
+const SETTLE_POLL_MS = 100;
+
+/**
+ * How long the count must hold still before it counts as settled.
+ *
+ * A framework paints in more than one commit — the first input can appear a frame before the
+ * rest of the form — so collecting on the first non-zero count would read a half-built page.
+ */
+const SETTLE_STABLE_MS = 400;
 
 /**
  * esbuild's name helper, as identity.
@@ -91,10 +111,7 @@ export async function readPage(request: InspectRequest): Promise<RawPage> {
     const page = await context.newPage();
     await page.goto(request.url, { waitUntil: "domcontentloaded", timeout });
 
-    // One short settle for a framework to paint. Deliberately fixed and deliberately small: this
-    // is inspection, not a test, and a page still moving after half a second is one whose
-    // locators would be unstable anyway.
-    await page.waitForTimeout(500);
+    await settle(page, Math.min(SETTLE_BUDGET_MS, timeout));
 
     const testIdAttribute = request.testIdAttribute ?? "data-testid";
     // The collect script is serialised and re-parsed in the page, which means it arrives as
@@ -112,6 +129,50 @@ export async function readPage(request: InspectRequest): Promise<RawPage> {
     return { url: page.url(), title: await page.title(), elements };
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * Waits until the page has put its interactive elements on screen and stopped adding to them.
+ *
+ * This replaced a fixed 500ms pause, which was wrong for the applications this tool exists for.
+ * A client-rendered page commonly has *nothing* interactive at `domcontentloaded` — a real one
+ * measured here had zero nodes at 500ms and five at two seconds — so a fixed wait returned an
+ * empty inspection, and an empty inspection is indistinguishable from a page with no elements.
+ * The user is told nothing was found, on a page full of things to find.
+ *
+ * Two conditions rather than one. **Something appeared** rules out the empty read. **The count
+ * held still** rules out the half-built one, because a framework paints in more than one commit.
+ *
+ * Returning on the budget rather than throwing is deliberate: a page with genuinely nothing
+ * interactive on it is a legitimate answer, and `plan.ts` already reports an empty result as
+ * an empty result. Refusing here would turn a static page into an error.
+ */
+async function settle(page: EnginePage, budgetMs: number): Promise<void> {
+  const deadline = Date.now() + budgetMs;
+  let previous = -1;
+  let stableSince = 0;
+
+  while (Date.now() < deadline) {
+    // The string form for the same reason the collect script uses it: a function passed here
+    // would be transpiled, and the selector is shared with the collector so the wait and the
+    // read agree about what they are watching.
+    const count = Number(
+      await page.evaluate(`document.querySelectorAll(${JSON.stringify(INTERACTIVE)}).length`),
+    );
+
+    if (count > 0 && count === previous) {
+      if (stableSince === 0) {
+        stableSince = Date.now();
+      } else if (Date.now() - stableSince >= SETTLE_STABLE_MS) {
+        return;
+      }
+    } else {
+      stableSince = 0;
+    }
+
+    previous = count;
+    await page.waitForTimeout(SETTLE_POLL_MS);
   }
 }
 
