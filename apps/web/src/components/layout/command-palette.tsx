@@ -4,7 +4,7 @@ import { Languages, Monitor, Moon, Sun } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback } from "react";
 
 import {
   Command,
@@ -16,6 +16,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { usePaletteShortcut } from "@/hooks/use-palette-shortcut";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { LOCALE_LABELS, routing, type Locale } from "@/i18n/routing";
 import { WORKSPACE_NAV } from "@/lib/config/navigation";
@@ -42,16 +43,11 @@ export function CommandPalette() {
   const { setTheme } = useTheme();
   const activeLocale = useLocale() as Locale;
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key.toLowerCase() !== "k" || !(event.metaKey || event.ctrlKey)) return;
-      // Otherwise the browser's own "search page" binding fires as well.
-      event.preventDefault();
-      setOpen(!useUiStore.getState().commandPaletteOpen);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [setOpen]);
+  const toggle = useCallback(
+    () => setOpen(!useUiStore.getState().commandPaletteOpen),
+    [setOpen],
+  );
+  usePaletteShortcut(toggle);
 
   /** Every item closes the dialog first, so the route change is not animated behind an overlay. */
   function run(action: () => void) {
