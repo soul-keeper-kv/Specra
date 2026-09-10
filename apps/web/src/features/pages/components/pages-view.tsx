@@ -341,6 +341,15 @@ function ElementRow({
 /** Branches on `code`, never on the message — the message is translated per request. */
 function describe(error: unknown, t: ReturnType<typeof useTranslations<"pages">>): string {
   if (error instanceof ApiError) {
+    // The browser never reached the page. Naming where it landed is the whole value of this
+    // message: "it went to /login" is what tells a person the page needs a signed-in session,
+    // and the API sends that URL as an extension for exactly this.
+    if (error.code === "inspection-redirected") {
+      const reached = error.problem?.reached;
+      return typeof reached === "string"
+        ? t("problems.redirected", { url: reached })
+        : (error.problem?.detail ?? t("problems.generic"));
+    }
     if (error.code === "conflict") {
       return error.problem?.detail ?? t("problems.conflict");
     }

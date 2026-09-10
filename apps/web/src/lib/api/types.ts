@@ -43,6 +43,13 @@ export type ApiProblem = {
   /** Present when the runner refused a codegen job: its own machine-readable reason. */
   runnerCode?: string;
   runnerMessage?: string;
+  /**
+   * Present only when `code` is "inspection-redirected": the page asked for, and the one the
+   * browser was sent to instead. Naming the second is what tells a person the page needs a
+   * signed-in session rather than a retry.
+   */
+  requested?: string;
+  reached?: string;
 };
 
 export type ChatReply = {

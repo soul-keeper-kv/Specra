@@ -95,6 +95,19 @@ export interface InspectResult {
   pageName: string;
   /** Where the browser actually ended up — a redirect makes this differ from the request. */
   url: string;
+  /**
+   * Set when the browser did not end up on the page that was asked for.
+   *
+   * The single most common reason is an application bouncing an anonymous visitor to its sign-in
+   * screen, and the failure it used to cause was silent: the collector read the login form, the
+   * planner ranked it happily, and `DashboardPage` was stored holding `emailInput` and
+   * `passwordInput`. Nothing anywhere said the page had never been seen.
+   *
+   * Reported rather than thrown here because the runner reports and the caller decides — the same
+   * split as `ambiguous`. What it carries is the requested URL and the one actually reached, so
+   * the message a person reads can name both.
+   */
+  redirectedTo?: { requested: string; reached: string };
   title: string;
   elements: InspectedElement[];
   /**

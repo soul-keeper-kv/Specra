@@ -934,7 +934,8 @@
     "problems": {
       "conflict": "Không thể khảo sát trang này.",
       "noEnvironment": "Hãy thêm môi trường trước, để việc khảo sát biết nhìn vào đâu.",
-      "generic": "Đã có lỗi xảy ra. Vui lòng thử lại."
+      "generic": "Đã có lỗi xảy ra. Vui lòng thử lại.",
+      "redirected": "Trình duyệt bị chuyển tới {url}. Trang này có thể cần đăng nhập."
     }
   },
   "analysis": {

@@ -102,13 +102,36 @@ public class PageObjectService {
 
     RunnerClient.RunnerJobResult job = runner.run("inspect", payload);
     if (!job.ok()) {
-      // A page that will not open is the user's to fix — a wrong route, a site that is down, a
-      // redirect to a login. It reaches them as a message rather than a stack trace.
+      // A page that will not open is the user's to fix — a wrong route, a site that is down. It
+      // reaches them as a message rather than a stack trace.
       log.info("Inspection refused for {}: {}", request.pageName(), job.message());
       throw new ConflictException("error.inspection.failed", job.message());
     }
 
+    // The runner reads a page and reports; whether a page it did not ask for is usable is a
+    // decision, and decisions live here. Storing it would name a login form after the screen
+    // behind it, and nothing downstream could tell.
+    requireTheRequestedPage(job.result());
+
     return store(projectId, request, job.result());
+  }
+
+  /**
+   * Refuses a reading taken from a page nobody asked for.
+   *
+   * <p>The runner reports where it ended up; this decides that landing somewhere else means the
+   * inspection failed. The overwhelmingly common cause is an application redirecting an anonymous
+   * visitor to its sign-in screen, and the elements read there belong to that screen — storing them
+   * under the requested page's name is a wrong nothing downstream could detect.
+   */
+  private static void requireTheRequestedPage(Map<String, Object> result) {
+    if (!(result.get("redirectedTo") instanceof Map<?, ?> redirect)) {
+      return;
+    }
+    String requested = String.valueOf(redirect.get("requested"));
+    String reached = String.valueOf(redirect.get("reached"));
+    log.info("Inspection of {} was redirected to {}", requested, reached);
+    throw new InspectionRedirectedException(requested, reached);
   }
 
   @Transactional

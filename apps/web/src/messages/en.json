@@ -934,7 +934,8 @@
     "problems": {
       "conflict": "The page could not be inspected.",
       "noEnvironment": "Add an environment first, so inspection knows where to look.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "redirected": "The browser was sent to {url} instead. This page probably needs a signed-in session."
     }
   },
   "analysis": {

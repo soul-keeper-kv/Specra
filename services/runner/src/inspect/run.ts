@@ -36,5 +36,42 @@ export async function inspect(request: InspectRequest): Promise<InspectResult> {
     title: page.title,
     elements,
     ambiguous,
+    ...redirect(request.url, page.url),
   };
+}
+
+/**
+ * Whether the browser ended up somewhere other than the page that was asked for.
+ *
+ * Compared on origin and path only. A query string or a fragment the application added is still
+ * the same page — `?tab=recent` is a view of the dashboard, not a different screen — and treating
+ * either as a redirect would refuse inspections that worked. A trailing slash is likewise the same
+ * path: servers add and drop it freely, and no user has ever meant the two differently.
+ *
+ * An unparseable URL reports nothing rather than guessing. The request's URL is built by the API
+ * from an environment's base URL, so a malformed one is a different bug and inventing a redirect
+ * out of it would hide it.
+ */
+export function redirect(
+  requested: string,
+  reached: string,
+): Pick<InspectResult, "redirectedTo"> | Record<string, never> {
+  let from: URL;
+  let to: URL;
+  try {
+    from = new URL(requested);
+    to = new URL(reached);
+  } catch {
+    return {};
+  }
+
+  if (from.origin === to.origin && path(from) === path(to)) {
+    return {};
+  }
+  return { redirectedTo: { requested, reached } };
+}
+
+/** The path, with a trailing slash normalised away — `/login/` and `/login` are one page. */
+function path(url: URL): string {
+  return url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
 }

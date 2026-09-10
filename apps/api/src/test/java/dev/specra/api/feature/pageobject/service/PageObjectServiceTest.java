@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.specra.api.core.error.BusinessException;
+import dev.specra.api.core.error.ErrorCode;
 import dev.specra.api.core.runner.RunnerClient;
 import dev.specra.api.core.security.Permission;
 import dev.specra.api.feature.environment.service.EnvironmentService;
@@ -181,6 +182,51 @@ class PageObjectServiceTest {
     when(repository.findByProjectIdOrderByNameAsc(PROJECT)).thenReturn(List.of(never));
 
     assertThat(service.forGeneration(PROJECT, List.of("LoginPage"))).isEmpty();
+  }
+
+  // ── a page that was never reached ───────────────────────────────────────────
+
+  /**
+   * The silent wrong this refusal exists to prevent.
+   *
+   * <p>An application that bounces an anonymous visitor to its sign-in screen used to produce a
+   * {@code DashboardPage} holding the login form's elements, with no error anywhere. Everything
+   * downstream believed it, and nobody could tell by looking.
+   */
+  @Test
+  void aPageThatRedirectedIsRefusedRatherThanStored() {
+    when(runner.run(eq("inspect"), any()))
+        .thenReturn(
+            RunnerClient.RunnerJobResult.succeeded(
+                Map.of(
+                    "elements",
+                    List.of(),
+                    "redirectedTo",
+                    Map.of(
+                        "requested", "https://staging.acme.dev/dashboard",
+                        "reached", "https://staging.acme.dev/login"))));
+
+    assertThatThrownBy(() -> service.inspect(PROJECT, request()))
+        .isInstanceOf(InspectionRedirectedException.class)
+        .satisfies(
+            thrown -> {
+              InspectionRedirectedException redirected = (InspectionRedirectedException) thrown;
+              // Both URLs reach the client, so the UI can say where it landed rather than only
+              // that something went wrong.
+              assertThat(redirected.extensions())
+                  .containsEntry("reached", "https://staging.acme.dev/login");
+              assertThat(redirected.errorCode()).isEqualTo(ErrorCode.INSPECTION_REDIRECTED);
+            });
+
+    verify(repository, never()).save(any());
+  }
+
+  /** The ordinary case must not pay for the check: no redirect reported, nothing refused. */
+  @Test
+  void aPageThatWasReachedIsStored() {
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    assertThat(service.inspect(PROJECT, request()).elements()).hasSize(1);
   }
 
   // ── re-inspection ───────────────────────────────────────────────────────────

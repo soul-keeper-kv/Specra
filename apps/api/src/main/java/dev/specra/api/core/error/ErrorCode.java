@@ -84,6 +84,17 @@ public enum ErrorCode {
    * case is the fix.
    */
   TEST_CASE_AMBIGUOUS(HttpStatus.UNPROCESSABLE_ENTITY),
+  /**
+   * The browser was sent somewhere other than the page that was asked for — almost always an
+   * application bouncing an anonymous visitor to its sign-in screen.
+   *
+   * <p>A distinct code because the UI can act on it: the page it landed on travels with the
+   * problem, and the answer is to give the inspection a way to sign in rather than to retry.
+   * Storing what was read instead would put a login form's elements in a page object named after
+   * the screen behind it, which is the silent wrong invariant 5 exists to prevent. Declared after
+   * {@link #TEST_MODEL_INVALID} so {@link #forStatus} keeps the general 422.
+   */
+  INSPECTION_REDIRECTED(HttpStatus.UNPROCESSABLE_ENTITY),
   PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE),
   RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
   /** The model provider answered, but refused the request (bad key, quota, unknown model). */
