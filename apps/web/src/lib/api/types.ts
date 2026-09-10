@@ -851,6 +851,11 @@ export type Environment = {
   baseUrl: string;
   isDefault: boolean;
   variables: EnvironmentVariable[];
+  /**
+   * The test case replayed before an inspection here, so a page behind a sign-in — or behind any
+   * other state someone set up by hand — can be read. Null when nothing has to happen first.
+   */
+  preludeTestCaseId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -860,4 +865,6 @@ export type EnvironmentInput = {
   baseUrl: string;
   isDefault?: boolean;
   variables: { key: string; value?: string; secret?: boolean }[];
+  /** Null clears it. */
+  preludeTestCaseId?: string | null;
 };

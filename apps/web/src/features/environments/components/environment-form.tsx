@@ -8,16 +8,26 @@ import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   buildEnvironmentSchema,
   type EnvironmentFormValues,
   type EnvironmentVariableValues,
 } from "@/features/environments/schemas";
+import { useTestCases } from "@/features/testcases/api/testcases";
 import type { Environment } from "@/lib/api/types";
 
 type Props = {
   environment?: Environment;
+  /** Which project's test cases can be picked as a prelude. */
+  projectId: string;
   submitLabel: string;
   pending?: boolean;
   /** Field-level errors from the API's bean validation, keyed by field name. */
@@ -30,7 +40,14 @@ const EMPTY: EnvironmentFormValues = {
   baseUrl: "",
   isDefault: false,
   variables: [],
+  preludeTestCaseId: "",
 };
+
+/**
+ * Radix refuses an empty string as an item value, so "nothing" needs a token of its own; it is
+ * mapped back to an empty string on the way into the form.
+ */
+const NO_PRELUDE = "none";
 
 const NEW_VARIABLE: EnvironmentVariableValues = {
   key: "",
@@ -53,6 +70,7 @@ function toFormValues(environment: Environment | undefined): EnvironmentFormValu
     name: environment.name,
     baseUrl: environment.baseUrl,
     isDefault: environment.isDefault,
+    preludeTestCaseId: environment.preludeTestCaseId ?? "",
     variables: environment.variables.map((variable) => ({
       key: variable.key,
       value: variable.value ?? "",
@@ -64,6 +82,7 @@ function toFormValues(environment: Environment | undefined): EnvironmentFormValu
 
 export function EnvironmentForm({
   environment,
+  projectId,
   submitLabel,
   pending,
   serverErrors,
@@ -71,6 +90,14 @@ export function EnvironmentForm({
 }: Props) {
   const t = useTranslations("environments.form");
   const tValidation = useTranslations("environments.validation");
+
+  // Only a case that has been modelled can be replayed: a prelude runs an IR, and a case with
+  // none has nothing to run. Filtered here rather than by asking the API for one status, because
+  // GENERATED and COMMITTED have an IR too — they are what MODELLED becomes.
+  const testCases = useTestCases(projectId, { size: 100, sort: "reference,asc" });
+  const replayable = (testCases.data?.content ?? []).filter(
+    (testCase) => testCase.automationStatus !== "NOT_AUTOMATED",
+  );
 
   const schema = useMemo(() => buildEnvironmentSchema(tValidation), [tValidation]);
   const defaultValues = useMemo(() => toFormValues(environment), [environment]);
@@ -146,6 +173,38 @@ export function EnvironmentForm({
               checked={field.state.value}
               onCheckedChange={(checked) => field.handleChange(checked)}
             />
+          </div>
+        )}
+      </form.Field>
+
+      {/*
+        What has to happen before a page of this deployment can be seen.
+
+        Most inspections want the same answer — sign in — so it belongs on the environment rather
+        than in the dialog: a prelude a person has to remember to pick is one they will forget, and
+        forgetting it reads the login form instead of the page.
+      */}
+      <form.Field name="preludeTestCaseId">
+        {(field) => (
+          <div className="grid gap-2">
+            <Label htmlFor={field.name}>{t("prelude")}</Label>
+            <Select
+              value={field.state.value || NO_PRELUDE}
+              onValueChange={(value) => field.handleChange(value === NO_PRELUDE ? "" : value)}
+            >
+              <SelectTrigger id={field.name}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PRELUDE}>{t("preludeNone")}</SelectItem>
+                {replayable.map((testCase) => (
+                  <SelectItem key={testCase.id} value={testCase.id}>
+                    {testCase.reference} — {testCase.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{t("preludeHint")}</p>
           </div>
         )}
       </form.Field>

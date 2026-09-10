@@ -43,6 +43,11 @@ export function buildEnvironmentSchema(t: EnvironmentValidationMessages) {
         .regex(/^https?:\/\/.+/, t("baseUrlFormat")),
       isDefault: z.boolean(),
       variables: z.array(variable).max(100, t("variablesMax")),
+      /**
+       * The test case replayed before an inspection here. Empty means nothing has to happen
+       * first, which is right for an application whose pages are all reachable anonymously.
+       */
+      preludeTestCaseId: z.string(),
     })
     .check((ctx) => {
       const seen = new Set<string>();

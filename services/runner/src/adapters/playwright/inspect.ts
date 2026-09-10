@@ -20,6 +20,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { COLLECT_SCRIPT, INTERACTIVE, type RawElement } from "../../inspect/collect.js";
+import { runPrelude, type PreludePage } from "./prelude.js";
 import type { InspectRequest } from "../../inspect/types.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -78,8 +79,11 @@ interface EngineContext {
   newPage(): Promise<EnginePage>;
 }
 
-interface EnginePage {
-  goto(url: string, options?: { waitUntil?: string; timeout?: number }): Promise<unknown>;
+/**
+ * Extends the prelude's view of a page rather than restating it: the two files drive the same
+ * object, and declaring its methods twice is how they would drift.
+ */
+interface EnginePage extends PreludePage {
   waitForTimeout(ms: number): Promise<void>;
   evaluate<T>(fn: (arg: string) => T, arg: string): Promise<T>;
   /** The string form: source text the page parses itself, which no transpiler rewrites. */
@@ -109,6 +113,19 @@ export async function readPage(request: InspectRequest): Promise<RawPage> {
   try {
     const context = await browser.newContext();
     const page = await context.newPage();
+
+    // Before the page is opened, and in the same context, so whatever the prelude establishes —
+    // a session cookie, a created record, three completed wizard steps — is still there when the
+    // reading happens. A fresh context afterwards would throw all of it away.
+    if (request.prelude) {
+      await runPrelude(page, request.prelude.model, {
+        pages: request.prelude.pages,
+        variables: request.variables ?? {},
+        flows: request.prelude.flows,
+        timeoutMs: timeout,
+      });
+    }
+
     await page.goto(request.url, { waitUntil: "domcontentloaded", timeout });
 
     await settle(page, Math.min(SETTLE_BUDGET_MS, timeout));

@@ -1014,7 +1014,10 @@
       "variableValuePlaceholder": "Value",
       "variableSecret": "Secret",
       "secretStored": "Stored. Leave blank to keep it.",
-      "secretStoredPlaceholder": "Unchanged"
+      "secretStoredPlaceholder": "Unchanged",
+      "prelude": "Prelude",
+      "preludeNone": "Nothing — every page is reachable directly",
+      "preludeHint": "A test case replayed before an inspection of this environment, so a page behind a sign-in — or behind any other state you set up by hand — can be read."
     },
     "validation": {
       "nameRequired": "A name is required.",

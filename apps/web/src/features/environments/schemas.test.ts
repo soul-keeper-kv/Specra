@@ -15,6 +15,7 @@ function values(overrides: Partial<EnvironmentFormValues> = {}): EnvironmentForm
     baseUrl: "https://staging.example.com",
     isDefault: false,
     variables: [],
+    preludeTestCaseId: "",
     ...overrides,
   };
 }

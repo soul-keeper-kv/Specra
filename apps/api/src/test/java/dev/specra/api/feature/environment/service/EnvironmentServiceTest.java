@@ -13,6 +13,7 @@ import dev.specra.api.feature.environment.domain.EnvironmentRepository;
 import dev.specra.api.feature.environment.dto.EnvironmentRequest;
 import dev.specra.api.feature.environment.dto.EnvironmentVariableRequest;
 import dev.specra.api.feature.project.service.ProjectService;
+import dev.specra.api.feature.testcase.service.TestCaseService;
 import dev.specra.api.support.TestProperties;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,7 @@ class EnvironmentServiceTest {
 
   @Mock EnvironmentRepository repository;
   @Mock ProjectService projects;
+  @Mock TestCaseService testCases;
 
   EnvironmentService service;
 
@@ -51,11 +53,12 @@ class EnvironmentServiceTest {
   private EnvironmentService build(SecretsCipher cipher) {
     lenient().when(projects.workspaceOf(PROJECT)).thenReturn(WORKSPACE);
     lenient().when(repository.save(any(Environment.class))).thenAnswer(inv -> inv.getArgument(0));
-    return new EnvironmentService(repository, projects, cipher);
+    return new EnvironmentService(repository, projects, cipher, testCases);
   }
 
   private EnvironmentRequest request(EnvironmentVariableRequest... variables) {
-    return new EnvironmentRequest("STAGING", "https://staging.acme.dev", true, List.of(variables));
+    return new EnvironmentRequest(
+        "STAGING", "https://staging.acme.dev", true, List.of(variables), null);
   }
 
   @Test
@@ -198,7 +201,7 @@ class EnvironmentServiceTest {
     var response =
         service.create(
             PROJECT,
-            new EnvironmentRequest("STAGING", "https://staging.acme.dev", false, List.of()));
+            new EnvironmentRequest("STAGING", "https://staging.acme.dev", false, List.of(), null));
 
     assertThat(response.isDefault()).isTrue();
   }

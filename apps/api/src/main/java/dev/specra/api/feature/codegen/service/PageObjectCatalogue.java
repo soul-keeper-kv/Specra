@@ -1,10 +1,7 @@
 package dev.specra.api.feature.codegen.service;
 
-import dev.specra.api.core.testmodel.Target;
 import dev.specra.api.feature.pageobject.service.PageObjectService;
 import dev.specra.api.feature.testmodel.dto.TestModelResponse;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,21 +36,6 @@ public class PageObjectCatalogue {
 
   /** Every page the IR addresses, in the order it first mentions them. */
   static List<String> referencedPages(TestModelResponse model) {
-    Map<String, Boolean> seen = new LinkedHashMap<>();
-    model
-        .document()
-        .allSteps()
-        .forEach(
-            step -> {
-              collect(step.target(), seen);
-              collect(step.to(), seen);
-            });
-    return new ArrayList<>(seen.keySet());
-  }
-
-  private static void collect(Target target, Map<String, Boolean> seen) {
-    if (target != null && target.isPage()) {
-      seen.putIfAbsent(target.page(), Boolean.TRUE);
-    }
+    return model.document().referencedPages();
   }
 }

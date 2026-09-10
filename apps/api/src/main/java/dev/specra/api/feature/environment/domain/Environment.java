@@ -57,6 +57,18 @@ public class Environment {
   @Column(name = "base_url", nullable = false, length = 500)
   private String baseUrl;
 
+  /**
+   * The test case replayed before an inspection, to reach a page an anonymous visitor cannot.
+   *
+   * <p>An id rather than a relation: the test case belongs to another feature, and a foreign key in
+   * Java would let a caller walk from an environment into that aggregate and edit it.
+   *
+   * <p>A whole test case rather than a login setting, because sign-in is only the commonest case —
+   * a screen listing an order needs an order, and a wizard's fourth step needs the first three.
+   */
+  @Column(name = "prelude_test_case_id")
+  private UUID preludeTestCaseId;
+
   /** Which one a run uses when the request does not name one. At most one per project. */
   @Column(name = "is_default", nullable = false)
   private boolean isDefault;

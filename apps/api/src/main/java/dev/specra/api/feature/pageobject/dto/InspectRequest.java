@@ -14,6 +14,9 @@ import java.util.UUID;
  * @param route joined to the environment's base URL. A path rather than a URL so the same page
  *     object can be re-inspected against staging or production without editing it.
  * @param environmentId which deployment to look at; null uses the project's default
+ * @param preludeTestCaseId a test case replayed before the page is opened, so a screen behind a
+ *     sign-in — or behind any other state someone had to set up by hand — can be read. Null falls
+ *     back to whatever the environment names, which is the answer most inspections want.
  */
 public record InspectRequest(
     @NotBlank(message = "{validation.page-object.name.required}") @Size(max = 120, message = "{validation.page-object.name.size}") @Pattern(
@@ -23,4 +26,5 @@ public record InspectRequest(
         String pageName,
     @NotBlank(message = "{validation.page-object.route.required}") @Size(max = 500, message = "{validation.page-object.route.size}") @Schema(example = "/login")
         String route,
-    UUID environmentId) {}
+    UUID environmentId,
+    UUID preludeTestCaseId) {}

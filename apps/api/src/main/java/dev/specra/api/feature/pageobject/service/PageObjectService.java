@@ -14,6 +14,8 @@ import dev.specra.api.feature.pageobject.dto.InspectRequest;
 import dev.specra.api.feature.pageobject.dto.PageElementResponse;
 import dev.specra.api.feature.pageobject.dto.PageObjectResponse;
 import dev.specra.api.feature.project.service.ProjectService;
+import dev.specra.api.feature.testmodel.dto.TestModelResponse;
+import dev.specra.api.feature.testmodel.service.TestModelStore;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -49,18 +51,21 @@ public class PageObjectService {
   private final EnvironmentService environments;
   private final GitService git;
   private final RunnerClient runner;
+  private final TestModelStore testModels;
 
   public PageObjectService(
       PageObjectRepository repository,
       ProjectService projects,
       EnvironmentService environments,
       GitService git,
-      RunnerClient runner) {
+      RunnerClient runner,
+      TestModelStore testModels) {
     this.repository = repository;
     this.projects = projects;
     this.environments = environments;
     this.git = git;
     this.runner = runner;
+    this.testModels = testModels;
   }
 
   @Transactional(readOnly = true)
@@ -81,9 +86,9 @@ public class PageObjectService {
   /**
    * Opens the page and records what it found.
    *
-   * <p>Re-inspecting **replaces** the elements rather than merging them. A merge would keep a
-   * locator for an element the page no longer has, and a page object that quietly accumulates dead
-   * entries is how "the tests were passing yesterday" becomes unanswerable.
+   * <p>Re-inspecting brings the elements in line with what is on the page now: one that is still
+   * there takes the new locator, one that is gone is dropped. A page object that quietly
+   * accumulated dead entries would be how "the tests were passing yesterday" becomes unanswerable.
    */
   public PageObjectResponse inspect(UUID projectId, InspectRequest request) {
     projects.requireAccess(projectId, Permission.CONTENT_EDIT);
@@ -100,6 +105,17 @@ public class PageObjectService {
     // — the same arrangement execution uses, and the reason the runner has no engine dependency.
     payload.put("projectDir", git.materialise(projectId).path());
 
+    // What has to happen before this page exists at all. Without it, anything an anonymous
+    // visitor cannot reach is refused as a redirect — correct, but not useful on its own.
+    UUID prelude = preludeFor(request, environmentId);
+    if (prelude != null) {
+      payload.put("prelude", preludePayload(projectId, prelude));
+      // Only alongside a prelude: variables exist to fill in its `param` and `secret` references,
+      // and sending decrypted secrets to a job that has no use for them widens their reach for
+      // nothing.
+      payload.put("variables", environments.resolveForDispatch(environmentId));
+    }
+
     RunnerClient.RunnerJobResult job = runner.run("inspect", payload);
     if (!job.ok()) {
       // A page that will not open is the user's to fix — a wrong route, a site that is down. It
@@ -114,6 +130,39 @@ public class PageObjectService {
     requireTheRequestedPage(job.result());
 
     return store(projectId, request, job.result());
+  }
+
+  /**
+   * Which test case to replay first, if any.
+   *
+   * <p>The request wins over the environment so a person can inspect one page from a state nothing
+   * else needs, without editing the environment every project shares. The environment holds the
+   * answer that is true most of the time — for most projects, "sign in" — so the ordinary
+   * inspection needs no decision at all, which is the point: a prelude a person must remember to
+   * pick is one they will forget, and forgetting it produces the login form again.
+   */
+  private UUID preludeFor(InspectRequest request, UUID environmentId) {
+    if (request.preludeTestCaseId() != null) {
+      return request.preludeTestCaseId();
+    }
+    return environments.preludeTestCaseIdOf(environmentId);
+  }
+
+  /**
+   * The prelude, as the runner needs it: an IR, and the page objects its own targets resolve
+   * through.
+   *
+   * <p>Its pages, not the page being inspected — a sign-in case addresses {@code LoginPage}, and
+   * that is what has to be resolvable for it to run. Invariant 5 holds inside a prelude too: a page
+   * it targets that nobody has inspected contributes nothing, and the runner reports the step as
+   * unresolvable rather than guessing a selector to click.
+   */
+  private Map<String, Object> preludePayload(UUID projectId, UUID testCaseId) {
+    TestModelResponse model = testModels.current(testCaseId);
+    Map<String, Object> prelude = new LinkedHashMap<>();
+    prelude.put("model", model.document());
+    prelude.put("pages", forGeneration(projectId, model.document().referencedPages()));
+    return prelude;
   }
 
   /**

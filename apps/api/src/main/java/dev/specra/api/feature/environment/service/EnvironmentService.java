@@ -12,6 +12,7 @@ import dev.specra.api.feature.environment.dto.EnvironmentResponse;
 import dev.specra.api.feature.environment.dto.EnvironmentVariableRequest;
 import dev.specra.api.feature.environment.dto.EnvironmentVariableResponse;
 import dev.specra.api.feature.project.service.ProjectService;
+import dev.specra.api.feature.testcase.service.TestCaseService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,12 +44,17 @@ public class EnvironmentService {
   private final EnvironmentRepository repository;
   private final ProjectService projects;
   private final SecretsCipher cipher;
+  private final TestCaseService testCases;
 
   public EnvironmentService(
-      EnvironmentRepository repository, ProjectService projects, SecretsCipher cipher) {
+      EnvironmentRepository repository,
+      ProjectService projects,
+      SecretsCipher cipher,
+      TestCaseService testCases) {
     this.repository = repository;
     this.projects = projects;
     this.cipher = cipher;
+    this.testCases = testCases;
   }
 
   public List<EnvironmentResponse> list(UUID projectId) {
@@ -83,6 +89,7 @@ public class EnvironmentService {
     // with environments but no default would make every run ask a question with one answer.
     boolean first = repository.findByProjectIdOrderByNameAsc(projectId).isEmpty();
     applyDefault(environment, first || Boolean.TRUE.equals(request.isDefault()));
+    environment.setPreludeTestCaseId(preludeOf(request, projectId));
     environment.replaceVariables(variablesOf(request, environment));
 
     return toResponse(repository.save(environment));
@@ -102,6 +109,7 @@ public class EnvironmentService {
     environment.setName(name);
     environment.setBaseUrl(request.baseUrl().trim());
     applyDefault(environment, Boolean.TRUE.equals(request.isDefault()));
+    environment.setPreludeTestCaseId(preludeOf(request, environment.getProjectId()));
     environment.replaceVariables(variablesOf(request, environment));
 
     return toResponse(repository.save(environment));
@@ -146,6 +154,16 @@ public class EnvironmentService {
     return resolved;
   }
 
+  /**
+   * The test case an inspection of this environment should replay first, or null.
+   *
+   * <p>Public for the same structural reason {@link #resolveForDispatch} is: only another service
+   * can reach it, and it hands back an id rather than the aggregate.
+   */
+  public UUID preludeTestCaseIdOf(UUID environmentId) {
+    return require(environmentId).getPreludeTestCaseId();
+  }
+
   /** The base URL a run points at, for the job payload. */
   public String baseUrlOf(UUID environmentId) {
     return require(environmentId).getBaseUrl();
@@ -166,6 +184,25 @@ public class EnvironmentService {
     return repository
         .findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("resource.environment", id));
+  }
+
+  /**
+   * The prelude, checked to belong to this project.
+   *
+   * <p>Through the test case service rather than by reading the table: another feature owns that
+   * row, and the check has to be the one that feature makes. A case from another project is
+   * reported as not found for the reason {@link #requireAccessible} gives — confirming a row exists
+   * somewhere else is itself the leak.
+   */
+  private UUID preludeOf(EnvironmentRequest request, UUID projectId) {
+    UUID id = request.preludeTestCaseId();
+    if (id == null) {
+      return null;
+    }
+    if (!testCases.get(id).projectId().equals(projectId)) {
+      throw new ResourceNotFoundException("resource.test-case", id);
+    }
+    return id;
   }
 
   /** At most one default per project, so setting one clears whichever held it. */
@@ -252,6 +289,7 @@ public class EnvironmentService {
         environment.getBaseUrl(),
         environment.isDefault(),
         variables,
+        environment.getPreludeTestCaseId(),
         environment.getCreatedAt(),
         environment.getUpdatedAt());
   }

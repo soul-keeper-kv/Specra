@@ -2,6 +2,7 @@ package dev.specra.api.feature.pageobject.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -13,6 +14,10 @@ import dev.specra.api.core.error.BusinessException;
 import dev.specra.api.core.error.ErrorCode;
 import dev.specra.api.core.runner.RunnerClient;
 import dev.specra.api.core.security.Permission;
+import dev.specra.api.core.testmodel.StepAction;
+import dev.specra.api.core.testmodel.Target;
+import dev.specra.api.core.testmodel.TestModel;
+import dev.specra.api.core.testmodel.TestStep;
 import dev.specra.api.feature.environment.service.EnvironmentService;
 import dev.specra.api.feature.git.service.GitService;
 import dev.specra.api.feature.pageobject.domain.LocatorStrategy;
@@ -23,6 +28,8 @@ import dev.specra.api.feature.pageobject.dto.InspectRequest;
 import dev.specra.api.feature.pageobject.dto.PageElementResponse;
 import dev.specra.api.feature.pageobject.dto.PageObjectResponse;
 import dev.specra.api.feature.project.service.ProjectService;
+import dev.specra.api.feature.testmodel.dto.TestModelResponse;
+import dev.specra.api.feature.testmodel.service.TestModelStore;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -54,12 +61,13 @@ class PageObjectServiceTest {
   @Mock EnvironmentService environments;
   @Mock GitService git;
   @Mock RunnerClient runner;
+  @Mock TestModelStore testModels;
 
   PageObjectService service;
 
   @BeforeEach
   void setUp() {
-    service = new PageObjectService(repository, projects, environments, git, runner);
+    service = new PageObjectService(repository, projects, environments, git, runner, testModels);
     lenient().when(projects.workspaceOf(PROJECT)).thenReturn(WORKSPACE);
     lenient().when(environments.defaultEnvironmentId(PROJECT)).thenReturn(ENVIRONMENT);
     lenient().when(environments.baseUrlOf(ENVIRONMENT)).thenReturn("https://staging.acme.dev");
@@ -184,6 +192,65 @@ class PageObjectServiceTest {
     assertThat(service.forGeneration(PROJECT, List.of("LoginPage"))).isEmpty();
   }
 
+  // ── reaching a page that is behind something ────────────────────────────────
+
+  /**
+   * The answer to the refusal below: replay what a person had to do by hand before the screen
+   * appeared, and the reading sees the screen instead of the sign-in form.
+   */
+  @Test
+  void anEnvironmentsPreludeIsSentWithTheJob() {
+    UUID preludeCase = UUID.randomUUID();
+    when(environments.preludeTestCaseIdOf(ENVIRONMENT)).thenReturn(preludeCase);
+    when(testModels.current(preludeCase)).thenReturn(signInModel());
+    when(environments.resolveForDispatch(ENVIRONMENT)).thenReturn(Map.of("QA_PASSWORD", "hunter2"));
+    when(repository.findByProjectIdOrderByNameAsc(PROJECT)).thenReturn(List.of(loginPageObject()));
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    service.inspect(PROJECT, request());
+
+    Map<String, Object> sent = payloadSent();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> prelude = (Map<String, Object>) sent.get("prelude");
+    assertThat(prelude).isNotNull();
+    // Its own pages, not the page being inspected: a sign-in case addresses LoginPage, and that
+    // is what has to resolve for its steps to run at all.
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> pages = (List<Map<String, Object>>) prelude.get("pages");
+    assertThat(pages).singleElement().asInstanceOf(MAP).containsEntry("name", "LoginPage");
+    // Variables travel only because a prelude needs them to fill in its references.
+    assertThat(sent.get("variables")).isEqualTo(Map.of("QA_PASSWORD", "hunter2"));
+  }
+
+  /** A request may override the environment: one page may need a state nothing else does. */
+  @Test
+  void aRequestedPreludeWinsOverTheEnvironments() {
+    UUID chosen = UUID.randomUUID();
+    when(testModels.current(chosen)).thenReturn(signInModel());
+    when(repository.findByProjectIdOrderByNameAsc(PROJECT)).thenReturn(List.of(loginPageObject()));
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    service.inspect(PROJECT, new InspectRequest("OrdersPage", "/orders", null, chosen));
+
+    verify(testModels).current(chosen);
+    assertThat(payloadSent()).containsKey("prelude");
+  }
+
+  /**
+   * Invariant 6, applied to a job that does not need them: decrypted secrets are sent only where
+   * something will use them, so the ordinary inspection carries none.
+   */
+  @Test
+  void noPreludeMeansNoSecretsLeaveTheApi() {
+    when(environments.preludeTestCaseIdOf(ENVIRONMENT)).thenReturn(null);
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    service.inspect(PROJECT, request());
+
+    assertThat(payloadSent()).doesNotContainKeys("prelude", "variables");
+    verify(environments, never()).resolveForDispatch(any());
+  }
+
   // ── a page that was never reached ───────────────────────────────────────────
 
   /**
@@ -277,6 +344,59 @@ class PageObjectServiceTest {
 
   // ── fixtures ────────────────────────────────────────────────────────────────
 
+  /** What the runner was actually asked to do. */
+  private Map<String, Object> payloadSent() {
+    ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+    verify(runner).run(eq("inspect"), payload.capture());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> sent = (Map<String, Object>) payload.getValue();
+    return sent;
+  }
+
+  /** A sign-in case: the ordinary prelude, addressing a page of its own. */
+  private static TestModelResponse signInModel() {
+    TestStep click =
+        new TestStep(
+            "s1",
+            List.of(),
+            true,
+            "Sign in",
+            StepAction.CLICK,
+            new Target("LoginPage", "submitButton", null),
+            null,
+            null,
+            null,
+            null);
+    TestModel document =
+        new TestModel(
+            1, "Sign in", null, List.of(), List.of(), List.of(), List.of(click), List.of());
+    return new TestModelResponse(
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        1,
+        1,
+        document,
+        "sha",
+        Instant.now(),
+        List.of(),
+        List.of());
+  }
+
+  /** The page the prelude targets, inspected — so its steps can resolve. */
+  private static PageObject loginPageObject() {
+    PageObject page = new PageObject();
+    page.setProjectId(PROJECT);
+    page.setName("LoginPage");
+    page.setInspectedAt(Instant.now());
+
+    PageElement submit = new PageElement();
+    submit.setName("submitButton");
+    submit.setStrategy(LocatorStrategy.TEST_ID);
+    submit.setValue("submit");
+    page.getElements().add(submit);
+    return page;
+  }
+
   /** A page inspected once already, holding the same element under an older locator. */
   private static PageObject inspectedEarlier() {
     PageObject page = new PageObject();
@@ -296,7 +416,7 @@ class PageObjectServiceTest {
   }
 
   private static InspectRequest request() {
-    return new InspectRequest("LoginPage", "/login", null);
+    return new InspectRequest("LoginPage", "/login", null, null);
   }
 
   private static RunnerClient.RunnerJobResult inspected() {

@@ -1,7 +1,9 @@
 package dev.specra.api.core.testmodel;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -42,5 +44,30 @@ public record TestModel(
   /** Setup, steps and teardown in the order they run. */
   public Stream<TestStep> allSteps() {
     return Stream.of(setup, steps, teardown).flatMap(List::stream);
+  }
+
+  /**
+   * Every page this model addresses, in the order it first mentions them.
+   *
+   * <p>A question about an IR and nothing else, which is why it lives here rather than in whichever
+   * feature happens to ask. Two do: a generation needs the page objects for the code it writes, and
+   * an inspection needs them for the prelude it replays — and a feature reaching into another
+   * feature for this would be the cycle {@code ArchitectureTest} forbids.
+   */
+  public List<String> referencedPages() {
+    Map<String, Boolean> seen = new LinkedHashMap<>();
+    allSteps()
+        .forEach(
+            step -> {
+              collectPage(step.target(), seen);
+              collectPage(step.to(), seen);
+            });
+    return List.copyOf(seen.keySet());
+  }
+
+  private static void collectPage(Target target, Map<String, Boolean> seen) {
+    if (target != null && target.isPage()) {
+      seen.putIfAbsent(target.page(), Boolean.TRUE);
+    }
   }
 }

@@ -12,5 +12,7 @@ public record EnvironmentResponse(
     String baseUrl,
     boolean isDefault,
     List<EnvironmentVariableResponse> variables,
+    /** The test case replayed before an inspection here; null when nothing has to happen first. */
+    UUID preludeTestCaseId,
     Instant createdAt,
     Instant updatedAt) {}

@@ -1014,7 +1014,10 @@
       "variableValuePlaceholder": "Giá trị",
       "variableSecret": "Bí mật",
       "secretStored": "Đã lưu. Để trống để giữ nguyên.",
-      "secretStoredPlaceholder": "Không đổi"
+      "secretStoredPlaceholder": "Không đổi",
+      "prelude": "Bước chuẩn bị",
+      "preludeNone": "Không có — mọi trang đều mở được trực tiếp",
+      "preludeHint": "Ca kiểm thử được chạy lại trước khi khảo sát môi trường này, để đọc được trang nằm sau đăng nhập — hoặc sau bất kỳ trạng thái nào bạn phải tự tạo."
     },
     "validation": {
       "nameRequired": "Vui lòng nhập tên.",

@@ -10,6 +10,10 @@
  * locator that ends up in a page object was *read* rather than guessed.
  */
 
+import type { TestModel } from "@specra/test-model";
+
+import type { PageObject } from "../codegen/types.js";
+
 /** The ranked strategies of 02-test-model-ir.md, best first. Order is load-bearing. */
 export const LOCATOR_STRATEGIES = [
   "testId",
@@ -41,11 +45,30 @@ export interface InspectRequest {
    */
   pageName: string;
   /**
-   * Injected into the browser context as cookies/storage would be — not used yet, reserved so a
-   * page behind a login can be inspected without this contract changing. Secret values are
-   * masked out of everything this job returns, exactly as in `execute`.
+   * Values a prelude's `param` and `secret` references resolve to.
+   *
+   * Decrypted by the API at dispatch and held for the length of one inspection. Nothing this job
+   * returns contains one, exactly as in `execute`.
    */
   variables?: Record<string, string>;
+  /**
+   * A test case to replay before the page is opened, so the screen behind it can be seen.
+   *
+   * Without one, inspecting anything an anonymous visitor cannot reach reads the sign-in screen
+   * instead — the failure `redirectedTo` now reports. This is the answer to it: whatever a person
+   * had to do by hand before the screen appeared, they wrote down as a test case, and it runs in
+   * the same browser context immediately before the reading.
+   *
+   * Not only sign-in, though that is the common case. A screen that lists an order needs an
+   * order; a wizard's fourth step needs the first three.
+   */
+  prelude?: {
+    model: TestModel;
+    /** The page objects the prelude's own targets resolve through — invariant 5 applies here. */
+    pages: PageObject[];
+    /** Flows a `useFlow` step inside the prelude may name. */
+    flows?: Record<string, TestModel>;
+  };
   /** The attribute the project treats as a test id. Configurable because teams differ. */
   testIdAttribute?: string;
   timeoutMs?: number;

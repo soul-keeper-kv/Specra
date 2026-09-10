@@ -121,6 +121,7 @@ export function EnvironmentsView({ projectId }: { projectId: string }) {
               <DialogDescription>{t("new.description")}</DialogDescription>
             </DialogHeader>
             <EnvironmentForm
+              projectId={projectId}
               submitLabel={t("new.submit")}
               pending={create.isPending}
               serverErrors={
@@ -160,6 +161,7 @@ export function EnvironmentsView({ projectId }: { projectId: string }) {
           </DialogHeader>
           {editing ? (
             <EnvironmentForm
+              projectId={projectId}
               key={editing.id}
               environment={editing}
               submitLabel={t("edit.submit")}
@@ -260,6 +262,8 @@ function toInput(values: EnvironmentFormValues): EnvironmentInput {
     name: values.name.trim(),
     baseUrl: values.baseUrl.trim(),
     isDefault: values.isDefault,
+    // Empty clears it: an application whose pages are all reachable anonymously needs none.
+    preludeTestCaseId: values.preludeTestCaseId || null,
     variables: values.variables.map((variable) => ({
       key: variable.key.trim(),
       secret: variable.secret,
