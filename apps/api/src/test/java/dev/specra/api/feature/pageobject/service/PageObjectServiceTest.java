@@ -15,11 +15,14 @@ import dev.specra.api.core.security.Permission;
 import dev.specra.api.feature.environment.service.EnvironmentService;
 import dev.specra.api.feature.git.service.GitService;
 import dev.specra.api.feature.pageobject.domain.LocatorStrategy;
+import dev.specra.api.feature.pageobject.domain.PageElement;
 import dev.specra.api.feature.pageobject.domain.PageObject;
 import dev.specra.api.feature.pageobject.domain.PageObjectRepository;
 import dev.specra.api.feature.pageobject.dto.InspectRequest;
+import dev.specra.api.feature.pageobject.dto.PageElementResponse;
 import dev.specra.api.feature.pageobject.dto.PageObjectResponse;
 import dev.specra.api.feature.project.service.ProjectService;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,7 +183,71 @@ class PageObjectServiceTest {
     assertThat(service.forGeneration(PROJECT, List.of("LoginPage"))).isEmpty();
   }
 
+  // ── re-inspection ───────────────────────────────────────────────────────────
+
+  /**
+   * The case every test above missed by starting from a page that did not exist yet.
+   *
+   * <p>An element that is still on the page must keep its row. Clearing the collection and adding
+   * the same name back made Hibernate insert it while the old row was still there, and {@code
+   * uq_page_elements_name} refused — so the second inspection of any page failed with a 409 that
+   * said the resource had changed.
+   */
+  @Test
+  void reInspectingAPageKeepsTheRowAndTakesTheNewLocator() {
+    PageObject existing = inspectedEarlier();
+    PageElement before = existing.getElements().get(0);
+    when(repository.findByProjectIdAndName(PROJECT, "LoginPage")).thenReturn(Optional.of(existing));
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    service.inspect(PROJECT, request());
+
+    // The same instance, so there is no INSERT to collide with the row already on the table.
+    assertThat(existing.getElements()).singleElement().isSameAs(before);
+    // The UI moved and inspection read where it moved to; that is what a re-inspection is for.
+    assertThat(before.getStrategy()).isEqualTo(LocatorStrategy.TEST_ID);
+    assertThat(before.getValue()).isEqualTo("submit");
+  }
+
+  /** A page object that kept locators for elements the page no longer has would rot silently. */
+  @Test
+  void anElementThePageNoLongerHasIsDropped() {
+    PageObject existing = inspectedEarlier();
+    PageElement removed = new PageElement();
+    removed.setName("legacyButton");
+    removed.setStrategy(LocatorStrategy.CSS);
+    removed.setValue("#legacy");
+    removed.setPageObject(existing);
+    existing.getElements().add(removed);
+    when(repository.findByProjectIdAndName(PROJECT, "LoginPage")).thenReturn(Optional.of(existing));
+    when(runner.run(eq("inspect"), any())).thenReturn(inspected());
+
+    PageObjectResponse page = service.inspect(PROJECT, request());
+
+    assertThat(page.elements())
+        .extracting(PageElementResponse::name)
+        .containsExactly("submitButton");
+  }
+
   // ── fixtures ────────────────────────────────────────────────────────────────
+
+  /** A page inspected once already, holding the same element under an older locator. */
+  private static PageObject inspectedEarlier() {
+    PageObject page = new PageObject();
+    page.setProjectId(PROJECT);
+    page.setWorkspaceId(WORKSPACE);
+    page.setName("LoginPage");
+    page.setRoute("/login");
+    page.setInspectedAt(Instant.now());
+
+    PageElement element = new PageElement();
+    element.setName("submitButton");
+    element.setStrategy(LocatorStrategy.CSS);
+    element.setValue("#old-submit");
+    element.setPageObject(page);
+    page.getElements().add(element);
+    return page;
+  }
 
   private static InspectRequest request() {
     return new InspectRequest("LoginPage", "/login", null);

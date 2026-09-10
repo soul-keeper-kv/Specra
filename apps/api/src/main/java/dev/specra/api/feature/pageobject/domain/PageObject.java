@@ -13,7 +13,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -59,8 +61,8 @@ public class PageObject {
   private Instant inspectedAt;
 
   /**
-   * Cascaded and orphan-removed, because an element has no meaning apart from its page and a
-   * re-inspection replaces the whole set.
+   * Cascaded and orphan-removed, because an element has no meaning apart from its page: dropping it
+   * from this list during a re-inspection is what deletes the row.
    */
   @OneToMany(
       mappedBy = "pageObject",
@@ -81,17 +83,44 @@ public class PageObject {
   @Version private long version;
 
   /**
-   * Swaps in a fresh set of elements without replacing the collection.
+   * Brings the set of elements in line with what inspection just read, matching on {@code name}.
    *
-   * <p>Mutating in place rather than assigning is what stops Hibernate deleting and reinserting
-   * every row on each inspection — the same trap {@code Note.replaceTags} documents.
+   * <p>Matched by name rather than cleared and refilled, and the difference is the whole method.
+   * {@code uq_page_elements_name} is an immediate constraint, and Hibernate orders every INSERT
+   * before every DELETE within a flush — so clearing the list and adding the same names back
+   * inserted {@code emailInput} while the old {@code emailInput} was still on the table. The first
+   * inspection of a page worked because the table was empty; every re-inspection afterwards failed
+   * on a constraint, and the user was shown a bare 409 about a resource that had changed.
+   *
+   * <p>An element that is still on the page keeps its row and takes the new locator — the
+   * application's markup is what moved, and inspection has just read where it moved to. An element
+   * the page no longer has is dropped, so a page object cannot quietly accumulate locators for
+   * things that stopped existing.
    */
   public void replaceElements(List<PageElement> replacements) {
-    elements.clear();
-    for (PageElement element : replacements) {
-      element.setPageObject(this);
-      element.setWorkspaceId(workspaceId);
-      elements.add(element);
+    Map<String, PageElement> existing = new HashMap<>();
+    for (PageElement element : elements) {
+      existing.put(element.getName(), element);
     }
+
+    List<PageElement> merged = new ArrayList<>(replacements.size());
+    for (PageElement replacement : replacements) {
+      PageElement element = existing.remove(replacement.getName());
+      if (element == null) {
+        element = replacement;
+        element.setPageObject(this);
+        element.setWorkspaceId(workspaceId);
+      } else {
+        element.adopt(replacement);
+      }
+      merged.add(element);
+    }
+
+    // Whatever is left in the map is no longer on the page. Emptying the collection and refilling
+    // it from `merged` is safe where the original clear() was not: every surviving row is the same
+    // instance Hibernate is already managing, so it is re-added rather than reinserted, and only
+    // the genuinely absent ones are left orphaned for the DELETE.
+    elements.clear();
+    elements.addAll(merged);
   }
 }

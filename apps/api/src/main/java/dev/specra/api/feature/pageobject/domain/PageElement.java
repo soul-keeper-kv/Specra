@@ -92,4 +92,25 @@ public class PageElement {
   private Instant updatedAt;
 
   @Version private long version;
+
+  /**
+   * Takes the locator a fresh inspection read for this same element.
+   *
+   * <p>Everything the planner produces is overwritten, including a locator a person set by hand.
+   * That is deliberate: the markup under a name is expected to move — an application's UI changes
+   * far more often than its test cases do — and a re-inspection is a person asking to be told where
+   * it moved to. Keeping the old locator would leave the page object describing a page that no
+   * longer exists, which is the failure this table exists to prevent.
+   *
+   * <p>{@code name} is not copied: it is what the two were matched on, and it is what the IR
+   * references. Identity, audit columns and the version stay with the row.
+   */
+  void adopt(PageElement inspected) {
+    this.strategy = inspected.getStrategy();
+    this.value = inspected.getValue();
+    this.qualifier = inspected.getQualifier();
+    this.fallbackStrategy = inspected.getFallbackStrategy();
+    this.fallbackValue = inspected.getFallbackValue();
+    this.confidence = inspected.getConfidence();
+  }
 }
